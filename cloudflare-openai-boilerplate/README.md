@@ -151,7 +151,7 @@ You can deploy the static frontend (the contents of `frontend/frontend-app/dist`
 
 ## Customization
 
-*   **OpenAI Model:** Change the `model` parameter in `backend/worker-backend/src/index.js` to use different OpenAI models (e.g., `gpt-3.5-turbo` for chat completions, which would require changing the API endpoint and request/response structure).
+*   **OpenAI Model:** The default model is `gpt-3.5-turbo-instruct`. You can change the `model` parameter in `backend/worker-backend/src/index.js` to use different OpenAI models (e.g., other models compatible with the `/v1/completions` endpoint, or switch to `/v1/chat/completions` for models like `gpt-4` which would require changing the API endpoint and request/response structure).
 *   **Frontend UI:** Modify the React components in `frontend/frontend-app/src/` to change the appearance and functionality.
 *   **Worker Logic:** Extend the Cloudflare Worker in `backend/worker-backend/src/index.js` for more complex backend tasks.
 ```
