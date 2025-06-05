@@ -156,6 +156,35 @@ You can deploy the static frontend (the contents of `frontend/frontend-app/dist`
     Choose the option that best fits your Cloudflare Pages project configuration flow. Option 1 is generally cleaner if available.
 6.  Deploy!
 
+**Example: Deploying to Netlify**
+
+1.  Push your project to a GitHub (or GitLab, Bitbucket) repository.
+2.  Log in to your Netlify account.
+3.  Click on "Add new site" (or "Import from Git") and choose your Git provider.
+4.  Select your repository.
+5.  Configure the build settings. It's crucial to tell Netlify where your frontend code and build configuration are located:
+
+    **Recommended Configuration:**
+    *   **Base directory:** `frontend/frontend-app`
+        *   _This is the most important setting. It tells Netlify to change its working directory to `frontend/frontend-app` before running the build command. Ensure this exact path from your repository root is entered._
+    *   **Build command:** `npm run build` (or `vite build`)
+        *   _This command will be executed *inside* the Base directory specified above._
+    *   **Publish directory:** `dist`
+        *   _This path is relative to the Base directory. So, Netlify will look for `frontend/frontend-app/dist`._
+    *   Ensure there are no typos in these path settings in the Netlify UI.
+
+    **Alternative Configuration (if the above causes issues):**
+    If you continue to have problems with the "Base directory" setting, try this:
+    *   **Base directory:** (leave this blank or set to the repository root)
+    *   **Build command:** `cd frontend/frontend-app && npm run build`
+        *   _This manually changes the directory before building._
+    *   **Publish directory:** `frontend/frontend-app/dist`
+        *   _This path must be specified from the repository root._
+
+    You might also need to set `NODE_VERSION` in "Site settings" > "Build & deploy" > "Environment" > "Environment variables" (e.g., `NODE_VERSION` to `18` or `20`).
+
+6.  Click "Deploy site". After deployment, check the deploy log on Netlify for any errors.
+
 ## How it Works
 
 1.  The React frontend makes a POST request to the Cloudflare Worker endpoint (`WORKER_URL`).
