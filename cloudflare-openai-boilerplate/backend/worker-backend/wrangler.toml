@@ -1,0 +1,7 @@
+name = "worker-backend"
+main = "src/index.js" # or src/index.ts if using TypeScript
+compatibility_date = "2023-10-30" # Use a recent compatibility date
+
+# We will instruct the user to add the following for secrets:
+# [vars]
+# OPENAI_API_KEY = "your-openai-api-key-here"
