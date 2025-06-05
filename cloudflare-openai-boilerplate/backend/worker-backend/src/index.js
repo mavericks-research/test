@@ -36,7 +36,7 @@ export default {
           'Authorization': `Bearer ${env.OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
-          model: 'text-davinci-003', // You can change the model as needed
+          model: 'gpt-3.5-turbo-instruct', // You can change the model as needed
           prompt: prompt,
           max_tokens: 150,
         }),
