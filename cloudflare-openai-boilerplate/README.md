@@ -162,9 +162,10 @@ You can deploy the static frontend (the contents of `frontend/frontend-app/dist`
 2.  Log in to your Netlify account.
 3.  Click on "Add new site" (or "Import from Git") and choose your Git provider.
 4.  Select your repository.
-5.  Configure the build settings. It's crucial to tell Netlify where your frontend code and build configuration are located:
+5.  Configure the build settings.
+    **Note:** This repository includes a `netlify.toml` file in the root directory which pre-configures these settings for you. Netlify should automatically detect and use it. If you need to configure manually or understand the settings, they are typically:
 
-    **Recommended Configuration:**
+    **Recommended Configuration (as in `netlify.toml`):**
     *   **Base directory:** `frontend/frontend-app`
         *   _This is the most important setting. It tells Netlify to change its working directory to `frontend/frontend-app` before running the build command. Ensure this exact path from your repository root is entered._
     *   **Build command:** `npm run build` (or `vite build`)
