@@ -1,0 +1,31 @@
+# Netlify configuration file
+
+# Build settings for the frontend application
+[build]
+  # Directory to change to before starting a build.
+  # This is where Netlify will look for package.json and run the build command.
+  base = "cloudflare-openai-boilerplate/frontend/frontend-app"
+
+  # Command to build the project
+  command = "npm run build"
+
+  # Directory (relative to the root of your repo, after the build finishes)
+  # that contains the deploy-ready assets.
+  # Since 'base' is 'frontend/frontend-app', 'publish' should be 'frontend/frontend-app/dist'.
+  # Alternatively, if 'base' truly changes context for 'publish' too, it could be 'dist'.
+  # Netlify's docs suggest 'publish' is relative to the repository root if 'base' is set for the build.
+  # Let's be explicit from the root to be safe, as this is a common point of confusion.
+  # Update: Netlify's more recent behavior/recommendation is that if `build.base` is set,
+  # `build.publish` should be relative to that `build.base`.
+  publish = "dist"
+
+# Optional: Specify Node.js version
+[build.environment]
+  NODE_VERSION = "18" # Or "20", or your preferred version
+
+# Optional: Redirects and Headers can be defined here if needed
+# Example for a Single Page Application (SPA) redirect rule:
+# [[redirects]]
+#  from = "/*"
+#  to = "/index.html"
+#  status = 200
