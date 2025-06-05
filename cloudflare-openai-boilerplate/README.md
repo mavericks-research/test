@@ -64,6 +64,19 @@ npx wrangler dev
 ```
 This will typically start the worker on `http://localhost:8787`. You would also need to create a `.dev.vars` file in `backend/worker-backend` with `OPENAI_API_KEY="your-key"` for local testing with secrets.
 
+**Important Note on CORS during Local Development:**
+The frontend (e.g., running on `http://localhost:5173`) and the local worker (`wrangler dev`, typically on `http://localhost:8787`) are on different origins. Browsers will make a "preflight" `OPTIONS` request to the worker before the actual `POST` request to ensure the server allows cross-origin requests. The provided `backend/worker-backend/src/index.js` has been configured to handle these `OPTIONS` requests correctly.
+
+The `corsHeaders` in `index.js` are set to:
+```javascript
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*', // For local dev, '*' is fine. For prod, restrict this to your frontend domain.
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+```
+For a production deployment, you should change `'Access-Control-Allow-Origin': '*'` to your specific frontend's domain (e.g., `'Access-Control-Allow-Origin': 'https://your-frontend-app.pages.dev'`) for enhanced security.
+
 ### 2. Frontend (React + Vite)
 
 The frontend is a React application built with Vite.
@@ -91,6 +104,9 @@ Find the `WORKER_URL` constant and replace the placeholder URL with the actual U
 // In frontend/frontend-app/src/App.jsx
 // Replace with your actual worker URL:
 const WORKER_URL = 'https://worker-backend.<your-cloudflare-subdomain>.workers.dev';
+
+// For local development, if your worker is running via `npx wrangler dev` (usually on port 8787):
+// const WORKER_URL = 'http://localhost:8787';
 ```
 If you are running the worker locally using `wrangler dev` (e.g., on `http://localhost:8787`), you can use that URL for local frontend development.
 
