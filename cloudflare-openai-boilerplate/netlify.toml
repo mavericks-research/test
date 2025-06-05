@@ -4,7 +4,7 @@
 [build]
   # Directory to change to before starting a build.
   # This is where Netlify will look for package.json and run the build command.
-  base = "frontend/frontend-app"
+  base = "cloudflare-openai-boilerplate/frontend/frontend-app"
 
   # Command to build the project
   command = "npm run build"

@@ -4,7 +4,7 @@ import './App.css';
 
 // Assume the Cloudflare Worker is deployed at this URL
 // The user will need to replace this with their actual worker URL.
-const WORKER_URL = 'https://worker-backend.your-cloudflare-username.workers.dev'; // Placeholder
+const WORKER_URL = 'https://worker-backend.lumexai.workers.dev'; // Placeholder
 
 function App() {
   const [prompt, setPrompt] = useState('');
