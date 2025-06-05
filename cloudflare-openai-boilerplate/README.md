@@ -133,12 +133,27 @@ You can deploy the static frontend (the contents of `frontend/frontend-app/dist`
 2.  In your Cloudflare dashboard, go to "Workers & Pages".
 3.  Select "Create application" > "Pages" > "Connect to Git".
 4.  Choose your repository.
-5.  Configure the build settings:
+5.  Configure the build settings. There are two common ways to set this up for a project within a subdirectory:
+
+    **Option 1 (Recommended for Simplicity): Set Root Directory in Pages**
+    *   **Framework preset:** Select `Vite`.
+    *   **Root directory:** `frontend/frontend-app`
+        *   _This tells Cloudflare Pages to change to this directory before running the build command._
+    *   **Build command:** `npm run build` (or `vite build`)
+    *   **Build output directory:** `dist`
+        *   _This is relative to the "Root directory". So, Pages will look for `frontend/frontend-app/dist`._
+    *   **Environment Variables (optional but good practice):**
+        *   `NODE_VERSION`: `18` or `20` (or your preferred recent Node.js version)
+
+    **Option 2: Adjust Build Command and Output Path (if Root Directory cannot be set)**
+    If your hosting platform does not allow setting a "Root directory" for the build, you might need to adjust your build command and output path from the repository root:
     *   **Framework preset:** `Vite`
-    *   **Build command:** `npm run build`
+    *   **Build command:** `cd frontend/frontend-app && npm run build`
     *   **Build output directory:** `frontend/frontend-app/dist`
-    *   **Root Directory (under "Build configuration"):** Set this to `frontend/frontend-app` if you are running the build from the repository root. If your Git repository root is `frontend-app` itself, then the build output directory would just be `dist`.
-    *   You might need to set the Node.js version in Environment Variables (e.g., `NODE_VERSION` to `20`).
+    *   **Environment Variables (optional but good practice):**
+        *   `NODE_VERSION`: `18` or `20`
+
+    Choose the option that best fits your Cloudflare Pages project configuration flow. Option 1 is generally cleaner if available.
 6.  Deploy!
 
 ## How it Works
