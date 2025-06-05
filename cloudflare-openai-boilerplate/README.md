@@ -133,13 +133,58 @@ You can deploy the static frontend (the contents of `frontend/frontend-app/dist`
 2.  In your Cloudflare dashboard, go to "Workers & Pages".
 3.  Select "Create application" > "Pages" > "Connect to Git".
 4.  Choose your repository.
-5.  Configure the build settings:
+5.  Configure the build settings. There are two common ways to set this up for a project within a subdirectory:
+
+    **Option 1 (Recommended for Simplicity): Set Root Directory in Pages**
+    *   **Framework preset:** Select `Vite`.
+    *   **Root directory:** `frontend/frontend-app`
+        *   _This tells Cloudflare Pages to change to this directory before running the build command._
+    *   **Build command:** `npm run build` (or `vite build`)
+    *   **Build output directory:** `dist`
+        *   _This is relative to the "Root directory". So, Pages will look for `frontend/frontend-app/dist`._
+    *   **Environment Variables (optional but good practice):**
+        *   `NODE_VERSION`: `18` or `20` (or your preferred recent Node.js version)
+
+    **Option 2: Adjust Build Command and Output Path (if Root Directory cannot be set)**
+    If your hosting platform does not allow setting a "Root directory" for the build, you might need to adjust your build command and output path from the repository root:
     *   **Framework preset:** `Vite`
-    *   **Build command:** `npm run build`
+    *   **Build command:** `cd frontend/frontend-app && npm run build`
     *   **Build output directory:** `frontend/frontend-app/dist`
-    *   **Root Directory (under "Build configuration"):** Set this to `frontend/frontend-app` if you are running the build from the repository root. If your Git repository root is `frontend-app` itself, then the build output directory would just be `dist`.
-    *   You might need to set the Node.js version in Environment Variables (e.g., `NODE_VERSION` to `20`).
+    *   **Environment Variables (optional but good practice):**
+        *   `NODE_VERSION`: `18` or `20`
+
+    Choose the option that best fits your Cloudflare Pages project configuration flow. Option 1 is generally cleaner if available.
 6.  Deploy!
+
+**Example: Deploying to Netlify**
+
+1.  Push your project to a GitHub (or GitLab, Bitbucket) repository.
+2.  Log in to your Netlify account.
+3.  Click on "Add new site" (or "Import from Git") and choose your Git provider.
+4.  Select your repository.
+5.  Configure the build settings.
+    **Note:** This repository includes a `netlify.toml` file in the root directory which pre-configures these settings for you. Netlify should automatically detect and use it. If you need to configure manually or understand the settings, they are typically:
+
+    **Recommended Configuration (as in `netlify.toml`):**
+    *   **Base directory:** `frontend/frontend-app`
+        *   _This is the most important setting. It tells Netlify to change its working directory to `frontend/frontend-app` before running the build command. Ensure this exact path from your repository root is entered._
+    *   **Build command:** `npm run build` (or `vite build`)
+        *   _This command will be executed *inside* the Base directory specified above._
+    *   **Publish directory:** `dist`
+        *   _This path is relative to the Base directory. So, Netlify will look for `frontend/frontend-app/dist`._
+    *   Ensure there are no typos in these path settings in the Netlify UI.
+
+    **Alternative Configuration (if the above causes issues):**
+    If you continue to have problems with the "Base directory" setting, try this:
+    *   **Base directory:** (leave this blank or set to the repository root)
+    *   **Build command:** `cd frontend/frontend-app && npm run build`
+        *   _This manually changes the directory before building._
+    *   **Publish directory:** `frontend/frontend-app/dist`
+        *   _This path must be specified from the repository root._
+
+    You might also need to set `NODE_VERSION` in "Site settings" > "Build & deploy" > "Environment" > "Environment variables" (e.g., `NODE_VERSION` to `18` or `20`).
+
+6.  Click "Deploy site". After deployment, check the deploy log on Netlify for any errors.
 
 ## How it Works
 
