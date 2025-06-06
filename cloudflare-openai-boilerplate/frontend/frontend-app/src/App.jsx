@@ -1,77 +1,234 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+// frontend/frontend-app/src/App.jsx
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import LoginPage from './pages/LoginPage';
+import DashboardPage from './pages/DashboardPage';
+// import AccountPage from './pages/AccountPage'; // Replaced by SettingsPage
+import SplashScreen from './pages/SplashScreen';
+import WalletsPage from './pages/WalletsPage';
+import BudgetPlannerPage from './pages/BudgetPlannerPage';
+import ReportsPage from './pages/ReportsPage';
+import SettingsPage from './pages/SettingsPage';
+import Header from './components/Header';
+import Footer from './components/Footer';
+import NavigationBar from './components/NavigationBar'; // Import NavigationBar
 import './App.css';
 
-// Assume the Cloudflare Worker is deployed at this URL
-// The user will need to replace this with their actual worker URL.
-const WORKER_URL = 'https://worker-backend.lumexai.workers.dev'; // Placeholder
-
-function App() {
-  const [prompt, setPrompt] = useState('');
-  const [response, setResponse] = useState('');
-  const [loading, setLoading] = useState(false);
+// WalletAnalyzer component (assuming it's still defined or imported if used by DashboardPage)
+// Duplicating definition as per previous step, ideally this would be in its own file
+function WalletAnalyzer({ workerUrl }) {
+  const [walletAddress, setWalletAddress] = useState('');
+  const [summary, setSummary] = useState('');
+  const [transactions, setTransactions] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = async () => {
-    if (!prompt.trim()) {
-      setError('Please enter a prompt.');
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!walletAddress) {
+      setError('Please enter a wallet address.');
       return;
     }
-    setLoading(true);
+    setIsLoading(true);
     setError('');
-    setResponse('');
+    setSummary('');
+    setTransactions([]);
 
     try {
-      // IMPORTANT: Replace WORKER_URL with the actual deployed Cloudflare Worker URL
-      // For local development, this might be 'http://localhost:8787' if running `wrangler dev`
-      const result = await axios.post(WORKER_URL, { prompt });
+      const response = await fetch(workerUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletAddress }),
+      });
 
-      if (result.data && result.data.choices && result.data.choices[0]) {
-        setResponse(result.data.choices[0].text);
-      } else {
-        setResponse('No response text found.');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Network response was not ok: ${response.status} ${errorText}`);
       }
+
+      const data = await response.json();
+      setSummary(data.summary || 'No summary returned.');
+      setTransactions(data.transactionData || []);
     } catch (err) {
-      console.error('Error calling worker:', err);
-      let errorMessage = 'Failed to fetch response from the worker.';
-      if (err.response) {
-        errorMessage += ` Status: ${err.response.status} - ${err.response.data}`;
-      } else if (err.request) {
-        errorMessage += ' No response received from server. Check worker URL and if the worker is running.';
-      } else {
-        errorMessage += ` ${err.message}`;
-      }
-      setError(errorMessage);
-      setResponse(''); // Clear any previous successful response
+      console.error('Fetch error:', err);
+      setError(err.message || 'Failed to fetch data.');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>Cloudflare Worker + OpenAI</h1>
-        <p>Enter a prompt for OpenAI:</p>
-        <textarea
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="e.g., Write a short poem about clouds"
-          rows="3"
-          cols="50"
+    <>
+      <h2>Wallet Activity Analyzer</h2>
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          value={walletAddress}
+          onChange={(e) => setWalletAddress(e.target.value)}
+          placeholder="Enter Ethereum Wallet Address"
+          disabled={isLoading}
         />
-        <button onClick={handleSubmit} disabled={loading}>
-          {loading ? 'Loading...' : 'Submit to OpenAI'}
+        <button type="submit" disabled={isLoading}>
+          {isLoading ? 'Analyzing...' : 'Get Summary'}
         </button>
-        {error && <p style={{ color: 'red' }}>Error: {error}</p>}
-        {response && (
-          <div className="response-area">
-            <h2>Response from OpenAI:</h2>
-            <pre>{response}</pre>
+      </form>
+
+      {error && <p style={{ color: 'red' }}>Error: {error}</p>}
+      {summary && (
+        <div>
+          <h3>AI Summary:</h3>
+          <p>{summary}</p>
+        </div>
+      )}
+      {transactions.length > 0 && (
+        <div>
+          <h3>Transactions:</h3>
+          <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', background: '#f4f4f4', padding: '10px', maxHeight: '300px', overflowY: 'auto' }}>
+            {JSON.stringify(transactions, null, 2)}
+          </pre>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ProtectedRoute component (remains the same)
+function ProtectedRoute({ children, isAuthenticated }) {
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+}
+
+function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isNavVisible, setIsNavVisible] = useState(true); // State for Nav visibility
+  const WORKER_URL = 'http://localhost:8787'; // Default for local worker
+
+  const toggleNav = () => { // Function to toggle Nav visibility
+    setIsNavVisible(prev => !prev);
+  };
+
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    // User will be redirected by ProtectedRoute if on a protected page.
+    // If they are on a non-protected page (e.g. /splash if we had logout there),
+    // they would stay. Explicit navigation can be added if needed:
+    // navigate('/login'); // Would require useNavigate hook in App component
+  };
+
+  // Helper to pass props to children of ProtectedRoute
+  const wrapWithProps = (element, props) => {
+    return React.cloneElement(element, props);
+  };
+
+  return (
+    <BrowserRouter>
+      <div className="App" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        {/* Pass onToggleNav to Header. Render NavigationBar only if authenticated. */}
+        {isAuthenticated && <Header onToggleNav={toggleNav} />}
+        {isAuthenticated && <NavigationBar isNavVisible={isNavVisible} handleLogout={handleLogout} />}
+        <div style={{ flexGrow: 1, width: '100%', display: 'flex' }}> {/* Content wrapper now also a flex container */}
+          {/* Potential: Add a sidebar div here if NavigationBar is not 'fixed' but part of flow */}
+          {/* Main content area: Added paddingTop if authenticated for sticky header */}
+          <div style={{ flexGrow: 1, overflowY: 'auto', paddingTop: isAuthenticated ? '56px' : '0px' }}>
+            <Routes>
+              <Route
+                path="/login"
+              element={
+                isAuthenticated ? <Navigate to="/dashboard" /> : <LoginPage onLogin={handleLogin} />
+              }
+            />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute isAuthenticated={isAuthenticated}>
+                  {/* Remove handleLogout from page props if Nav handles it */}
+                  <DashboardPage workerUrl={WORKER_URL} />
+                </ProtectedRoute>
+              }
+            />
+            {/* <Route
+              path="/account" // Route removed as per NavigationBar change, SettingsPage takes over
+              element={
+                <ProtectedRoute isAuthenticated={isAuthenticated}>
+                  <AccountPage />
+                </ProtectedRoute>
+              }
+            /> */}
+            <Route
+              path="/wallets"
+              element={
+                <ProtectedRoute isAuthenticated={isAuthenticated}>
+                  <WalletsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/planner"
+              element={
+                <ProtectedRoute isAuthenticated={isAuthenticated}>
+                  <BudgetPlannerPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <ProtectedRoute isAuthenticated={isAuthenticated}>
+                  <ReportsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute isAuthenticated={isAuthenticated}>
+                  <SettingsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+            path="/planner"
+            element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <BudgetPlannerPage handleLogout={handleLogout} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <ReportsPage handleLogout={handleLogout} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <SettingsPage handleLogout={handleLogout} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+              path="/"
+              element={
+                isAuthenticated ? <Navigate to="/dashboard" /> : <SplashScreen />
+              }
+            />
+            <Route path="*" element={<Navigate to="/" />} /> {/* Catch-all redirects to home */}
+            </Routes>
           </div>
-        )}
-      </header>
-    </div>
+        </div>
+        {isAuthenticated && <Footer />} {/* Render Footer only if authenticated */}
+      </div>
+    </BrowserRouter>
   );
 }
 

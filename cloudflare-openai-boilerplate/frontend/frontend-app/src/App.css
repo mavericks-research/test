@@ -1,57 +1,159 @@
-.App {
-  text-align: center;
+/* General App Layout */
+body {
+  font-family: sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f4f4f4;
+  color: #333;
 }
 
-.App-header {
-  background-color: #282c34;
+.App {
+  /* max-width: 1200px; Removed to allow full width */
+  /* margin: 0 auto; Removed as it's for centering fixed-width */
+  padding: 20px; /* Kept for now, provides default spacing */
+  background-color: #fff;
   min-height: 100vh;
+  width: 100%; /* Ensure it tries to take full width */
+  box-sizing: border-box; /* To include padding in the 100% width calculation */
+}
+
+h1, h2, h3 {
+  color: #333;
+}
+
+/* LoginPage Styles */
+.login-page-container { /* Add a class to LoginPage's root div if needed for specific centering */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  padding-top: 50px;
 }
 
-textarea {
-  font-size: calc(8px + 1vmin);
-  padding: 10px;
-  margin-bottom: 20px;
-  border-radius: 5px;
+.login-page-container form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 20px;
   border: 1px solid #ccc;
-  width: 80%;
-  max-width: 500px;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+  width: 300px;
 }
 
-button {
-  font-size: calc(8px + 1vmin);
-  padding: 10px 20px;
-  background-color: #61dafb;
+.login-page-container label {
+  font-weight: bold;
+}
+
+.login-page-container input[type="text"],
+.login-page-container input[type="password"] {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: calc(100% - 22px); /* Account for padding and border */
+}
+
+.login-page-container button[type="submit"] {
+  padding: 10px 15px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.login-page-container button[type="submit"]:hover {
+  background-color: #0056b3;
+}
+
+/* NavigationBar Styles (supplements inline styles) */
+/* The NavigationBar.jsx already has inline styles for basic layout.
+   These can be expanded or moved here if preferred.
+   For example, to style the links: */
+nav a {
+  text-decoration: none;
+  color: #007bff;
+  font-weight: bold;
+}
+
+nav a:hover {
+  text-decoration: underline;
+}
+
+/* Page Content basic styling */
+.page-content { /* A wrapper div can be added to DashboardPage and AccountPage if needed */
+  padding: 20px;
+}
+
+/* Wallet Analyzer specific styles (if any were needed beyond existing) */
+/* For example, if the pre tag needs more specific styling */
+.wallet-analyzer-container pre {
+  white-space: pre-wrap;
+  word-break: break-all;
+  background: #f4f4f4;
+  padding: 10px;
+  border-radius: 4px;
+  max-height: 400px; /* Increased from 300px */
+  overflow-y: auto;
+  border: 1px solid #eee;
+}
+
+/* Ensure LoginPage.jsx uses the .login-page-container class */
+/* Example for LoginPage.jsx:
+function LoginPage({ onLogin }) {
+  // ...
+  return (
+    <div className="login-page-container"> // Added className
+      <h1>Login</h1>
+      // ... form
+    </div>
+  );
+}
+*/
+
+/* SplashScreen Styles */
+.splash-screen-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh; /* Use min-height to allow for content below if ever needed, or use 100vh for full page */
+  text-align: center;
+  padding: 20px;
+  box-sizing: border-box; /* Ensures padding doesn't add to width/height for full screen attempts */
+}
+
+.splash-screen-container img {
+  /* Styles for the logo are mostly inline in the JSX for now,
+     but can be moved here if preferred. e.g.: */
+  /* width: 150px; */
+  /* height: 150px; */
+  /* border-radius: 10px; */
+  /* margin-bottom: 20px; */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Added a subtle shadow to the logo */
+}
+
+.splash-screen-container h1 {
+  font-size: 2.5em; /* Larger slogan */
+  color: #333; /* Slogan color */
+  margin-top: 20px;
+  margin-bottom: 30px;
+}
+
+.splash-screen-container button {
+  background-color: #007bff; /* Primary button color */
+  color: white;
+  padding: 12px 25px;
+  font-size: 1.2em;
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  color: #282c34;
-  margin-bottom: 20px;
+  transition: background-color 0.3s ease;
 }
 
-button:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
+.splash-screen-container button:hover {
+  background-color: #0056b3; /* Darker shade on hover */
 }
 
-.response-area {
-  margin-top: 20px;
-  padding: 15px;
-  background-color: #f9f9f9;
-  color: #282c34;
-  border-radius: 5px;
-  text-align: left;
-  width: 80%;
-  max-width: 700px;
-  overflow-x: auto; /* For very long responses */
-}
-
-pre {
-  white-space: pre-wrap; /* Allows text to wrap */
-  word-wrap: break-word; /* Breaks long words */
-}
+/* Ensure previous styles in App.css are maintained */
