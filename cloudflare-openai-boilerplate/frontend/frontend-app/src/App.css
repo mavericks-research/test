@@ -1,57 +1,111 @@
-.App {
-  text-align: center;
+/* General App Layout */
+body {
+  font-family: sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f4f4f4;
+  color: #333;
 }
 
-.App-header {
-  background-color: #282c34;
+.App {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #fff;
   min-height: 100vh;
+}
+
+h1, h2, h3 {
+  color: #333;
+}
+
+/* LoginPage Styles */
+.login-page-container { /* Add a class to LoginPage's root div if needed for specific centering */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  padding-top: 50px;
 }
 
-textarea {
-  font-size: calc(8px + 1vmin);
-  padding: 10px;
-  margin-bottom: 20px;
-  border-radius: 5px;
+.login-page-container form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 20px;
   border: 1px solid #ccc;
-  width: 80%;
-  max-width: 500px;
-}
-
-button {
-  font-size: calc(8px + 1vmin);
-  padding: 10px 20px;
-  background-color: #61dafb;
-  border: none;
   border-radius: 5px;
-  cursor: pointer;
-  color: #282c34;
-  margin-bottom: 20px;
-}
-
-button:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
-
-.response-area {
-  margin-top: 20px;
-  padding: 15px;
   background-color: #f9f9f9;
-  color: #282c34;
-  border-radius: 5px;
-  text-align: left;
-  width: 80%;
-  max-width: 700px;
-  overflow-x: auto; /* For very long responses */
+  width: 300px;
 }
 
-pre {
-  white-space: pre-wrap; /* Allows text to wrap */
-  word-wrap: break-word; /* Breaks long words */
+.login-page-container label {
+  font-weight: bold;
 }
+
+.login-page-container input[type="text"],
+.login-page-container input[type="password"] {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: calc(100% - 22px); /* Account for padding and border */
+}
+
+.login-page-container button[type="submit"] {
+  padding: 10px 15px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.login-page-container button[type="submit"]:hover {
+  background-color: #0056b3;
+}
+
+/* NavigationBar Styles (supplements inline styles) */
+/* The NavigationBar.jsx already has inline styles for basic layout.
+   These can be expanded or moved here if preferred.
+   For example, to style the links: */
+nav a {
+  text-decoration: none;
+  color: #007bff;
+  font-weight: bold;
+}
+
+nav a:hover {
+  text-decoration: underline;
+}
+
+/* Page Content basic styling */
+.page-content { /* A wrapper div can be added to DashboardPage and AccountPage if needed */
+  padding: 20px;
+}
+
+/* Wallet Analyzer specific styles (if any were needed beyond existing) */
+/* For example, if the pre tag needs more specific styling */
+.wallet-analyzer-container pre {
+  white-space: pre-wrap;
+  word-break: break-all;
+  background: #f4f4f4;
+  padding: 10px;
+  border-radius: 4px;
+  max-height: 400px; /* Increased from 300px */
+  overflow-y: auto;
+  border: 1px solid #eee;
+}
+
+/* Ensure LoginPage.jsx uses the .login-page-container class */
+/* Example for LoginPage.jsx:
+function LoginPage({ onLogin }) {
+  // ...
+  return (
+    <div className="login-page-container"> // Added className
+      <h1>Login</h1>
+      // ... form
+    </div>
+  );
+}
+*/
