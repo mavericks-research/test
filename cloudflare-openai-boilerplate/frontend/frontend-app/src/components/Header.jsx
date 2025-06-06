@@ -1,11 +1,11 @@
-// frontend/frontend-app/src/components/Header.jsx
 import React from 'react';
 
-function Header({ onToggleNav }) {
+function Header({ onToggleNav, isLoggedIn }) {
+
   const headerStyle = {
     width: '100%',
-    backgroundColor: '#222',
-    color: '#00d1ff',
+    backgroundColor: '#0d0d0d', // darker black
+    color: '#26cc66', // vibrant green
     padding: '10px 20px',
     display: 'flex',
     justifyContent: 'space-between',
@@ -14,11 +14,12 @@ function Header({ onToggleNav }) {
     position: 'sticky',
     top: 0,
     zIndex: 1010,
+    borderBottom: '2px solid #26cc66',
   };
 
   const titleStyle = {
     margin: 0,
-    fontSize: '1.5em',
+    fontSize: '1.6em',
     fontWeight: 'bold',
   };
 
@@ -26,20 +27,25 @@ function Header({ onToggleNav }) {
     padding: '8px 15px',
     fontSize: '0.9em',
     cursor: 'pointer',
-    backgroundColor: '#00d1ff',
-    color: '#000',
+    backgroundColor: '#26cc66',
+    color: '#0d0d0d',
     border: 'none',
     borderRadius: '4px',
+    fontWeight: '600',
+    transition: 'background-color 0.3s ease',
   };
 
   return (
     <header style={headerStyle}>
-      <h1 style={titleStyle}>My App</h1>
-      <button onClick={onToggleNav} style={toggleButtonStyle}>
-        Toggle Nav
-      </button>
+      <h4 style={titleStyle}>Coincept AI</h4>
+      {isLoggedIn && (
+        <button onClick={onToggleNav} style={toggleButtonStyle}>
+          L
+        </button>
+      )}
     </header>
   );
 }
 
 export default Header;
+

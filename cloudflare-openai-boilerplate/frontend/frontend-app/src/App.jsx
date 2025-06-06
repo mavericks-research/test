@@ -34,13 +34,15 @@ function App() {
       <div className="App" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
 
         {/* Pass toggleNav only to Header */}
-        <Header onToggleNav={toggleNav} />
+        <Header onToggleNav={toggleNav} isLoggedIn={isAuthenticated} />
 
         {/* NavigationBar will only receive visibility + logout */}
         {isAuthenticated && (
           <NavigationBar
             isNavVisible={isNavVisible}
             handleLogout={handleLogout}
+            onToggleNav={toggleNav}
+            isLoggedIn={isAuthenticated} 
           />
         )}
 
