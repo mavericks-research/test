@@ -81,10 +81,10 @@ function WalletAnalyzer({ workerUrl }) {
 }
 
 
-function DashboardPage({ workerUrl }) { // Accept workerUrl as a prop
+function DashboardPage({ workerUrl, handleLogout }) { // Accept workerUrl and handleLogout as props
   return (
     <div>
-      <NavigationBar />
+      <NavigationBar handleLogout={handleLogout} />
       <h1>Dashboard</h1>
       <p>Welcome to your dashboard.</p>
       <hr />

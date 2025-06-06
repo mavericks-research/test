@@ -1,10 +1,14 @@
 // frontend/frontend-app/src/App.jsx
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'; // Removed useNavigate as it's not used directly in App.jsx for this change
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
-import AccountPage from './pages/AccountPage';
-import SplashScreen from './pages/SplashScreen'; // Import SplashScreen
+// import AccountPage from './pages/AccountPage'; // Replaced by SettingsPage
+import SplashScreen from './pages/SplashScreen';
+import WalletsPage from './pages/WalletsPage';
+import BudgetPlannerPage from './pages/BudgetPlannerPage';
+import ReportsPage from './pages/ReportsPage';
+import SettingsPage from './pages/SettingsPage';
 import './App.css';
 
 // WalletAnalyzer component (assuming it's still defined or imported if used by DashboardPage)
@@ -103,8 +107,15 @@ function App() {
 
   const handleLogout = () => {
     setIsAuthenticated(false);
-    // Consider navigating to '/' or '/login' after logout if not handled by ProtectedRoute implicitly
-    // For now, ProtectedRoute will handle redirection if on a protected page.
+    // User will be redirected by ProtectedRoute if on a protected page.
+    // If they are on a non-protected page (e.g. /splash if we had logout there),
+    // they would stay. Explicit navigation can be added if needed:
+    // navigate('/login'); // Would require useNavigate hook in App component
+  };
+
+  // Helper to pass props to children of ProtectedRoute
+  const wrapWithProps = (element, props) => {
+    return React.cloneElement(element, props);
   };
 
   return (
@@ -121,22 +132,54 @@ function App() {
             path="/dashboard"
             element={
               <ProtectedRoute isAuthenticated={isAuthenticated}>
-                <DashboardPage workerUrl={WORKER_URL} />
+                <DashboardPage workerUrl={WORKER_URL} handleLogout={handleLogout} />
+              </ProtectedRoute>
+            }
+          />
+          {/* <Route
+            path="/account" // Route removed as per NavigationBar change, SettingsPage takes over
+            element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <AccountPage handleLogout={handleLogout} />
+              </ProtectedRoute>
+            }
+          /> */}
+          <Route
+            path="/wallets"
+            element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <WalletsPage handleLogout={handleLogout} />
               </ProtectedRoute>
             }
           />
           <Route
-            path="/account"
+            path="/planner"
             element={
               <ProtectedRoute isAuthenticated={isAuthenticated}>
-                <AccountPage />
+                <BudgetPlannerPage handleLogout={handleLogout} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <ReportsPage handleLogout={handleLogout} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <SettingsPage handleLogout={handleLogout} />
               </ProtectedRoute>
             }
           />
           <Route
             path="/"
             element={
-              isAuthenticated ? <Navigate to="/dashboard" /> : <SplashScreen /> // Updated: Show SplashScreen if not authenticated
+              isAuthenticated ? <Navigate to="/dashboard" /> : <SplashScreen />
             }
           />
           <Route path="*" element={<Navigate to="/" />} /> {/* Catch-all redirects to home */}
