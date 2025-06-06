@@ -2,7 +2,31 @@ name = "worker-backend"
 main = "src/index.js" # or src/index.ts if using TypeScript
 compatibility_date = "2023-10-30" # Use a recent compatibility date
 
-# We will instruct the user to add the following for secrets:
+# [vars]
+# Variables defined here are accessible via `env.VAR_NAME` in your Worker.
+#
+# IMPORTANT:
+# 1. LOCAL DEVELOPMENT: For `wrangler dev`, values set here can be overridden by creating
+#    a `.dev.vars` file in this directory (this file is .gitignored by default).
+#    You should place your actual API keys and development-specific settings in `.dev.vars`.
+#
+# 2. PRODUCTION DEPLOYMENTS: For production, sensitive data such as API keys MUST be
+#    stored as SECRETS using the `npx wrangler secret put VAR_NAME` command.
+#    NEVER commit actual secrets to this `wrangler.toml` file or your repository.
+#    The placeholders below are for guidance only.
+#
+# 3. NON-SENSITIVE CONFIG: Non-sensitive configuration variables can be defined here directly
+#    if they are stable defaults. They can also be overridden by `.dev.vars` for local
+#    development or set as environment variables in the Cloudflare dashboard for production
+#    if they don't need to be secret.
+
 [vars]
-# OPENAI_API_KEY = "your-openai-api-key-here"
-ETHERSCAN_API_KEY = "your-etherscan-api-key-here"
+# --- Secret Placeholders (for guidance - use `npx wrangler secret put VAR_NAME` for actual values) ---
+# These lines should ideally be commented out or removed when you have set actual secrets.
+# OPENAI_API_KEY = "your-openai-api-key-goes-here-if-not-using-secrets-or-dev-vars"
+# ETHERSCAN_API_KEY = "your-etherscan-api-key-goes-here-if-not-using-secrets-or-dev-vars"
+# COINGECKO_API_KEY = "your-coingecko-api-key-goes-here-if-not-using-secrets-or-dev-vars"
+
+# --- Example Non-Sensitive Configuration Variable ---
+# This defines a default model that can be overridden by `.dev.vars` or a production environment variable.
+# OPENAI_MODEL = "gpt-3.5-turbo-instruct"

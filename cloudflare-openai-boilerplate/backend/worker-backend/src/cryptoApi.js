@@ -10,20 +10,21 @@ const API_BASE_URL = 'https://api.coingecko.com/api/v3';
  * Fetches data from the CoinGecko API.
  * @param {string} endpoint The API endpoint to call (e.g., '/simple/price').
  * @param {object} params Query parameters for the API call.
+ * @param {string|null} apiKey Optional CoinGecko API key.
  * @returns {Promise<object>} The JSON response from the API.
  */
-async function fetchFromCoinGecko(endpoint, params = {}) {
+async function fetchFromCoinGecko(endpoint, params = {}, apiKey = null) {
     const url = new URL(`${API_BASE_URL}${endpoint}`);
 
     // Add query parameters
     Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
 
-    // Add API key if available (recommended method is via header, adjust if needed)
-    // if (COINGECKO_API_KEY) {
-    //     url.searchParams.append('x_cg_demo_api_key', COINGECKO_API_KEY); // Or use header
-    // }
+    // Add API key if available
+    if (apiKey) {
+        url.searchParams.append('x_cg_demo_api_key', apiKey);
+    }
 
-    console.log(`Fetching from URL: ${url.toString()}`); // For debugging
+    // console.log(`Fetching from URL: ${url.toString()}`); // For debugging
 
     const response = await fetch(url.toString(), {
         method: 'GET',
@@ -46,11 +47,12 @@ async function fetchFromCoinGecko(endpoint, params = {}) {
 /**
  * Fetches the list of all supported coins and their IDs.
  * Useful for finding the correct 'id' for other API calls.
+ * @param {string|null} apiKey Optional CoinGecko API key.
  * @returns {Promise<Array<{id: string, symbol: string, name: string}>>} A list of coins.
  */
-async function getCoinList() {
+async function getCoinList(apiKey = null) {
     try {
-        const data = await fetchFromCoinGecko('/coins/list');
+        const data = await fetchFromCoinGecko('/coins/list', {}, apiKey);
         return data;
     } catch (error) {
         console.error('Error fetching coin list:', error);
@@ -63,10 +65,11 @@ async function getCoinList() {
  * Fetches the current price of specified cryptocurrencies in specified fiat currencies.
  * @param {string[]} coinIds - Array of coin IDs (e.g., ['bitcoin', 'ethereum']).
  * @param {string[]} vsCurrencies - Array of fiat currency codes (e.g., ['usd', 'eur']).
+ * @param {string|null} apiKey Optional CoinGecko API key.
  * @returns {Promise<object>} An object with coin IDs as keys, which in turn have currency codes as keys,
  *                            and prices as values. E.g., { "bitcoin": { "usd": 50000 } }
  */
-async function getCurrentPrices(coinIds, vsCurrencies) {
+async function getCurrentPrices(coinIds, vsCurrencies, apiKey = null) {
     if (!coinIds || coinIds.length === 0) {
         throw new Error('coinIds array cannot be empty.');
     }
@@ -84,7 +87,7 @@ async function getCurrentPrices(coinIds, vsCurrencies) {
     };
 
     try {
-        const data = await fetchFromCoinGecko('/simple/price', params);
+        const data = await fetchFromCoinGecko('/simple/price', params, apiKey);
         return data;
     } catch (error) {
         console.error('Error fetching current prices:', error);
@@ -97,10 +100,11 @@ async function getCurrentPrices(coinIds, vsCurrencies) {
  * Note: CoinGecko's free API limits historical data to the last 365 days.
  * @param {string} coinId - The ID of the coin (e.g., 'bitcoin').
  * @param {string} date - The date in dd-mm-yyyy format (e.g., '30-12-2022').
+ * @param {string|null} apiKey Optional CoinGecko API key.
  * @returns {Promise<object>} An object containing historical data like id, symbol, name, localization, image, market_data.
  *                            market_data includes current_price, market_cap, and total_volume in various currencies.
  */
-async function getHistoricalData(coinId, date) {
+async function getHistoricalData(coinId, date, apiKey = null) {
     if (!coinId) {
         throw new Error('coinId cannot be empty.');
     }
@@ -115,7 +119,7 @@ async function getHistoricalData(coinId, date) {
 
     try {
         // The endpoint is /coins/{id}/history
-        const data = await fetchFromCoinGecko(`/coins/${coinId}/history`, params);
+        const data = await fetchFromCoinGecko(`/coins/${coinId}/history`, params, apiKey);
         // The API returns price in market_data.current_price, market_cap in market_data.market_cap etc.
         // These are objects with currency codes as keys.
         return data;

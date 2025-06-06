@@ -25,7 +25,7 @@
 
 # Optional: Redirects and Headers can be defined here if needed
 # Example for a Single Page Application (SPA) redirect rule:
-# [[redirects]]
-#  from = "/*"
-#  to = "/index.html"
-#  status = 200
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

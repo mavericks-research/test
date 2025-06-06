@@ -3,7 +3,9 @@ import { getCurrentPrices, getHistoricalData, getCoinList } from './cryptoApi.js
 
 // Define CORS headers - Added GET
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*', // For local dev, '*' is fine. For prod, restrict this to your frontend domain.
+  // IMPORTANT FOR PRODUCTION: Replace 'YOUR_FRONTEND_DOMAIN_HERE' with your actual frontend application's domain.
+  // For local development, '*' can be used, but it's insecure for production.
+  'Access-Control-Allow-Origin': 'YOUR_FRONTEND_DOMAIN_HERE',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', // Added GET
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
@@ -29,6 +31,8 @@ export default {
     }
 
     const url = new URL(request.url);
+    const COINGECKO_API_KEY = env.COINGECKO_API_KEY || null;
+    const OPENAI_MODEL = env.OPENAI_MODEL || 'gpt-3.5-turbo-instruct';
 
     try {
       // Routing based on path
@@ -42,7 +46,7 @@ export default {
         const coinIds = coinIdsParam.split(',');
         const vsCurrencies = vsCurrenciesParam.split(',');
 
-        const data = await getCurrentPrices(coinIds, vsCurrencies);
+        const data = await getCurrentPrices(coinIds, vsCurrencies, COINGECKO_API_KEY);
         return new Response(JSON.stringify(data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
       } else if (url.pathname === '/api/crypto/historical' && request.method === 'GET') {
@@ -54,12 +58,12 @@ export default {
           return new Response('Missing "coin" or "date" query parameters', { status: 400, headers: corsHeaders });
         }
 
-        const data = await getHistoricalData(coinId, date);
+        const data = await getHistoricalData(coinId, date, COINGECKO_API_KEY);
         return new Response(JSON.stringify(data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
       } else if (url.pathname === '/api/crypto/coinslist' && request.method === 'GET') {
         // Optional: Expose getCoinList for testing/utility
-        const data = await getCoinList();
+        const data = await getCoinList(COINGECKO_API_KEY);
         return new Response(JSON.stringify(data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
       } else if (request.method === 'POST') { // Existing Etherscan/OpenAI functionality
@@ -75,6 +79,11 @@ export default {
 
         if (!walletAddress) {
           return new Response('Missing "walletAddress" in request body for POST request', { status: 400, headers: corsHeaders });
+        }
+
+        const ethAddressRegex = /^0x[a-fA-F0-9]{40}$/;
+        if (!ethAddressRegex.test(walletAddress)) {
+          return new Response('Invalid Ethereum wallet address format.', { status: 400, headers: corsHeaders });
         }
 
         if (!env.OPENAI_API_KEY) {
@@ -142,7 +151,7 @@ No transactions were found for this wallet. Please provide a general statement a
           const openaiResponse = await fetch('https://api.openai.com/v1/completions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.OPENAI_API_KEY}` },
-            body: JSON.stringify({ model: 'gpt-3.5-turbo-instruct', prompt: openAIPrompt, max_tokens: 250 }),
+            body: JSON.stringify({ model: OPENAI_MODEL, prompt: openAIPrompt, max_tokens: 250 }),
           });
 
           if (!openaiResponse.ok) {
@@ -161,7 +170,7 @@ No transactions were found for this wallet according to Etherscan (${etherscanDa
           const openaiResponse = await fetch('https://api.openai.com/v1/completions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.OPENAI_API_KEY}` },
-            body: JSON.stringify({ model: 'gpt-3.5-turbo-instruct', prompt: openAIPrompt, max_tokens: 150 }),
+            body: JSON.stringify({ model: OPENAI_MODEL, prompt: openAIPrompt, max_tokens: 150 }),
           });
 
           if (!openaiResponse.ok) {
