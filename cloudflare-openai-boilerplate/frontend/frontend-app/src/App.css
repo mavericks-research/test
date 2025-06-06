@@ -1,28 +1,37 @@
-/* General App Layout */
+/* ========== Global App Styles ========== */
+
 body {
   font-family: sans-serif;
   margin: 0;
   padding: 0;
-  background-color: #f4f4f4;
-  color: #333;
+  background-color: #ff0000; /* Red background */
+  color: #000000;            /* Black text */
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
 }
 
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+
+/* Main App container */
 .App {
-  /* max-width: 1200px; Removed to allow full width */
-  /* margin: 0 auto; Removed as it's for centering fixed-width */
-  padding: 20px; /* Kept for now, provides default spacing */
-  background-color: #fff;
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
-  width: 100%; /* Ensure it tries to take full width */
-  box-sizing: border-box; /* To include padding in the 100% width calculation */
+  width: 100%;
+  background-color: #ffffff;
+  box-sizing: border-box;
 }
 
 h1, h2, h3 {
   color: #333;
 }
 
-/* LoginPage Styles */
-.login-page-container { /* Add a class to LoginPage's root div if needed for specific centering */
+/* ========== Login Page ========== */
+.login-page-container {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -50,7 +59,7 @@ h1, h2, h3 {
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 4px;
-  width: calc(100% - 22px); /* Account for padding and border */
+  width: calc(100% - 22px);
 }
 
 .login-page-container button[type="submit"] {
@@ -67,10 +76,7 @@ h1, h2, h3 {
   background-color: #0056b3;
 }
 
-/* NavigationBar Styles (supplements inline styles) */
-/* The NavigationBar.jsx already has inline styles for basic layout.
-   These can be expanded or moved here if preferred.
-   For example, to style the links: */
+/* ========== Navigation Bar ========== */
 nav a {
   text-decoration: none;
   color: #007bff;
@@ -81,68 +87,48 @@ nav a:hover {
   text-decoration: underline;
 }
 
-/* Page Content basic styling */
-.page-content { /* A wrapper div can be added to DashboardPage and AccountPage if needed */
+/* ========== Page Content ========== */
+.page-content {
   padding: 20px;
 }
 
-/* Wallet Analyzer specific styles (if any were needed beyond existing) */
-/* For example, if the pre tag needs more specific styling */
+/* ========== Wallet Analyzer ========== */
 .wallet-analyzer-container pre {
   white-space: pre-wrap;
   word-break: break-all;
   background: #f4f4f4;
   padding: 10px;
   border-radius: 4px;
-  max-height: 400px; /* Increased from 300px */
+  max-height: 400px;
   overflow-y: auto;
   border: 1px solid #eee;
 }
 
-/* Ensure LoginPage.jsx uses the .login-page-container class */
-/* Example for LoginPage.jsx:
-function LoginPage({ onLogin }) {
-  // ...
-  return (
-    <div className="login-page-container"> // Added className
-      <h1>Login</h1>
-      // ... form
-    </div>
-  );
-}
-*/
-
-/* SplashScreen Styles */
+/* ========== Splash Screen ========== */
 .splash-screen-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 80vh; /* Use min-height to allow for content below if ever needed, or use 100vh for full page */
+  min-height: 80vh;
   text-align: center;
   padding: 20px;
-  box-sizing: border-box; /* Ensures padding doesn't add to width/height for full screen attempts */
+  box-sizing: border-box;
 }
 
 .splash-screen-container img {
-  /* Styles for the logo are mostly inline in the JSX for now,
-     but can be moved here if preferred. e.g.: */
-  /* width: 150px; */
-  /* height: 150px; */
-  /* border-radius: 10px; */
-  /* margin-bottom: 20px; */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Added a subtle shadow to the logo */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .splash-screen-container h1 {
-  font-size: 2.5em; /* Larger slogan */
-  color: #333; /* Slogan color */
+  font-size: 2.5em;
+  color: #333;
   margin-top: 20px;
   margin-bottom: 30px;
 }
 
 .splash-screen-container button {
-  background-color: #007bff; /* Primary button color */
+  background-color: #007bff;
   color: white;
   padding: 12px 25px;
   font-size: 1.2em;
@@ -153,7 +139,77 @@ function LoginPage({ onLogin }) {
 }
 
 .splash-screen-container button:hover {
-  background-color: #0056b3; /* Darker shade on hover */
+  background-color: #0056b3;
 }
 
-/* Ensure previous styles in App.css are maintained */
+/* ========== Hero Banner ========== */
+.hero-banner {
+  background: linear-gradient(to right, #007bff, #00bfff);
+  color: white;
+  padding: 60px 20px;
+  text-align: center;
+  border-radius: 8px;
+  margin-bottom: 40px;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+}
+
+.hero-banner h1 {
+  font-size: 3em;
+  margin-bottom: 10px;
+}
+
+.hero-banner p {
+  font-size: 1.2em;
+  opacity: 0.9;
+}
+
+/* ========== Toast Notification ========== */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #323232;
+  color: #fff;
+  padding: 15px 20px;
+  border-radius: 6px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  z-index: 1000;
+}
+
+/* ========== Cards ========== */
+.card {
+  background: #fff;
+  padding: 20px;
+  margin: 15px 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+}
+
+/* ========== Button Variants ========== */
+.button-secondary {
+  background-color: #6c757d;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+}
+
+.button-secondary:hover {
+  background-color: #5a6268;
+}
+
+/* ========== Global Animations ========== */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
