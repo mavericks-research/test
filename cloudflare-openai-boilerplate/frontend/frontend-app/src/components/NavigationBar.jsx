@@ -2,7 +2,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-// Now also accepts onToggleNav callback
 function NavigationBar({ isNavVisible, handleLogout, onToggleNav }) {
   const navigate = useNavigate();
 
@@ -29,10 +28,9 @@ function NavigationBar({ isNavVisible, handleLogout, onToggleNav }) {
     margin: '10px 0',
     cursor: 'pointer',
     borderRadius: '5px',
-    alignSelf: 'center',
-    textAlign: 'center',
     width: '30px',
     height: '30px',
+    fontSize: '1.2em',
   };
 
   const ulStyle = {
@@ -77,6 +75,7 @@ function NavigationBar({ isNavVisible, handleLogout, onToggleNav }) {
 
   return (
     <nav style={navStyle}>
+      {/* Single toggle button */}
       <button onClick={onToggleNav} style={toggleButtonStyle}>
         {isNavVisible ? '←' : '→'}
       </button>
