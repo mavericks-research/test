@@ -12,7 +12,7 @@ function NavigationBar({ isNavVisible, handleLogout, onToggleNav }) {
     right: 0,
     top: 0,
     height: '100vh',
-    width: isNavVisible ? '250px' : '50px',
+    width: isNavVisible ? '250px' : '0px',
     transition: 'width 0.3s ease',
     zIndex: 1000,
     display: 'flex',
