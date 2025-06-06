@@ -1,26 +1,55 @@
 // frontend/frontend-app/src/components/NavigationBar.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom'; // Added useNavigate for logout
 
 // Assuming handleLogout is passed as a prop from App.jsx if we implement actual logout
 function NavigationBar({ handleLogout }) {
   const navigate = useNavigate();
+  const [isNavVisible, setIsNavVisible] = useState(true);
+
+  const toggleNav = () => {
+    setIsNavVisible(!isNavVisible);
+  };
 
   const navStyle = {
     background: '#333', // Darker background for the nav
-    padding: '10px 20px',
-    marginBottom: '20px',
-    borderRadius: '5px',
+    padding: '10px', // Uniform padding
+    position: 'fixed', // Changed to fixed
+    right: 0,          // Position to the right
+    top: 0,            // Position to the top
+    height: '100vh',   // Full height
+    width: isNavVisible ? '250px' : '50px', // Dynamic width
+    transition: 'width 0.3s ease', // Smooth transition for width change
+    zIndex: 1000, // Ensure nav is above other content
+    display: 'flex', // Using flex to align items
+    flexDirection: 'column', // Stack items vertically
   };
+
+  const toggleButtonStyle = {
+    background: '#00d1ff',
+    color: '#333',
+    border: 'none',
+    padding: '8px', // Adjusted padding
+    margin: '10px 0', // Margin top/bottom, no side margin to fit better
+    cursor: 'pointer',
+    borderRadius: '5px',
+    alignSelf: 'center', // Center button in collapsed nav
+    textAlign: 'center', // Center text within the button
+  };
+
   const ulStyle = {
     listStyleType: 'none',
     margin: 0,
     padding: 0,
     display: 'flex',
-    alignItems: 'center', // Vertically align items
+    flexDirection: 'column', // Links stacked vertically
+    alignItems: 'flex-start', // Align links to the start
+    width: '100%', // Ensure ul takes full width of nav
   };
   const liStyle = {
-    marginRight: '20px',
+    marginRight: '0', // Remove right margin, items are stacked
+    marginBottom: '10px', // Add bottom margin for spacing
+    width: '100%', // Ensure li takes full width for better clickability
   };
   const linkStyle = {
     textDecoration: 'none',
@@ -33,8 +62,10 @@ function NavigationBar({ handleLogout }) {
     background: 'none',
     border: 'none',
     cursor: 'pointer',
-    marginLeft: 'auto', // Push logout to the far right
+    // marginLeft: 'auto', // No longer needed, parent li handles positioning
     color: '#ff4f81', // A different neon color for logout, e.g., pink/red
+    width: '100%', // Make button take full width of its li container
+    textAlign: 'left', // Align text to the left within the button
   };
 
   const onLogoutClick = () => {
@@ -48,33 +79,38 @@ function NavigationBar({ handleLogout }) {
 
   return (
     <nav style={navStyle}>
-      <ul style={ulStyle}>
-        <li style={liStyle}>
-          <Link to="/dashboard" style={linkStyle}>Dashboard</Link>
-        </li>
-        <li style={liStyle}>
-          <Link to="/wallets" style={linkStyle}>Wallets</Link>
-        </li>
-        <li style={liStyle}>
-          <Link to="/planner" style={linkStyle}>Planner</Link>
-        </li>
-        <li style={liStyle}>
-          <Link to="/reports" style={linkStyle}>Reports</Link>
-        </li>
-        <li style={liStyle}>
-          <Link to="/settings" style={linkStyle}>Settings</Link>
-        </li>
-        {/* Account link was there before, keeping it if distinct from settings, or merge as needed */}
-        {/* For now, assuming 'Settings' covers 'Account' based on user's page list */}
-        {/* <li style={liStyle}>
-          <Link to="/account" style={linkStyle}>Account</Link>
-        </li> */}
-        <li style={{ ...liStyle, marginLeft: 'auto' }}> {/* Pushes logout to the right */}
-          <button onClick={onLogoutClick} style={logoutButtonStyle}>
-            Logout
-          </button>
-        </li>
-      </ul>
+      <button onClick={toggleNav} style={toggleButtonStyle}>
+        {isNavVisible ? 'Hide' : 'Menu'}
+      </button>
+      {isNavVisible && (
+        <ul style={ulStyle}>
+          <li style={liStyle}>
+            <Link to="/dashboard" style={linkStyle}>Dashboard</Link>
+          </li>
+          <li style={liStyle}>
+            <Link to="/wallets" style={linkStyle}>Wallets</Link>
+          </li>
+          <li style={liStyle}>
+            <Link to="/planner" style={linkStyle}>Planner</Link>
+          </li>
+          <li style={liStyle}>
+            <Link to="/reports" style={linkStyle}>Reports</Link>
+          </li>
+          <li style={liStyle}>
+            <Link to="/settings" style={linkStyle}>Settings</Link>
+          </li>
+          {/* Account link was there before, keeping it if distinct from settings, or merge as needed */}
+          {/* For now, assuming 'Settings' covers 'Account' based on user's page list */}
+          {/* <li style={liStyle}>
+            <Link to="/account" style={linkStyle}>Account</Link>
+          </li> */}
+          <li style={{ ...liStyle, marginTop: 'auto' }}> {/* Pushes logout to the bottom */}
+            <button onClick={onLogoutClick} style={logoutButtonStyle}>
+              Logout
+            </button>
+          </li>
+        </ul>
+      )}
     </nav>
   );
 }
