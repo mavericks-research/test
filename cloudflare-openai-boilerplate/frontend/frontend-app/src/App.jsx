@@ -1,12 +1,14 @@
 // frontend/frontend-app/src/App.jsx
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'; // Removed useNavigate as it's not used directly in App.jsx for this change
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import AccountPage from './pages/AccountPage';
-import './App.css'; // Assuming this file exists for basic styles
+import SplashScreen from './pages/SplashScreen'; // Import SplashScreen
+import './App.css';
 
-// Placeholder for the original content of App.jsx if it needs to be moved
+// WalletAnalyzer component (assuming it's still defined or imported if used by DashboardPage)
+// Duplicating definition as per previous step, ideally this would be in its own file
 function WalletAnalyzer({ workerUrl }) {
   const [walletAddress, setWalletAddress] = useState('');
   const [summary, setSummary] = useState('');
@@ -83,8 +85,7 @@ function WalletAnalyzer({ workerUrl }) {
   );
 }
 
-
-// ProtectedRoute component to handle authentication checks
+// ProtectedRoute component (remains the same)
 function ProtectedRoute({ children, isAuthenticated }) {
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -93,35 +94,22 @@ function ProtectedRoute({ children, isAuthenticated }) {
 }
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false); // Or load from localStorage
-
-  // Replace with your actual worker URL:
-  const WORKER_URL = 'http://localhost:8787'; // Default for local worker, update if needed
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const WORKER_URL = 'http://localhost:8787'; // Default for local worker
 
   const handleLogin = () => {
     setIsAuthenticated(true);
-    // In a real app, you might store a token in localStorage here
   };
 
   const handleLogout = () => {
     setIsAuthenticated(false);
-    // In a real app, you might remove a token from localStorage here
-    // No explicit navigation needed here as ProtectedRoute will handle it.
+    // Consider navigating to '/' or '/login' after logout if not handled by ProtectedRoute implicitly
+    // For now, ProtectedRoute will handle redirection if on a protected page.
   };
-
-  // This effect will run when `isAuthenticated` changes.
-  // If we just logged out, and we are on a protected route, this setup
-  // with ProtectedRoute will automatically redirect to /login.
-  // If we want to explicitly navigate to /login on logout, that can be added to handleLogout.
 
   return (
     <BrowserRouter>
       <div className="App">
-        {/* NavigationBar could be placed here if it should be visible on all pages including login,
-            or inside DashboardPage/AccountPage if only for authenticated users.
-            The plan was to put it inside DashboardPage/AccountPage.
-            We can add a logout button to the NavigationBar later.
-        */}
         <Routes>
           <Route
             path="/login"
@@ -133,7 +121,6 @@ function App() {
             path="/dashboard"
             element={
               <ProtectedRoute isAuthenticated={isAuthenticated}>
-                {/* Pass WORKER_URL to DashboardPage if it needs to host WalletAnalyzer */}
                 <DashboardPage workerUrl={WORKER_URL} />
               </ProtectedRoute>
             }
@@ -149,7 +136,7 @@ function App() {
           <Route
             path="/"
             element={
-              isAuthenticated ? <Navigate to="/dashboard" /> : <Navigate to="/login" />
+              isAuthenticated ? <Navigate to="/dashboard" /> : <SplashScreen /> // Updated: Show SplashScreen if not authenticated
             }
           />
           <Route path="*" element={<Navigate to="/" />} /> {/* Catch-all redirects to home */}
@@ -158,10 +145,5 @@ function App() {
     </BrowserRouter>
   );
 }
-
-// Update DashboardPage to include the WalletAnalyzer logic
-// This requires modifying DashboardPage.jsx as well.
-// For now, this subtask will focus on App.jsx.
-// A follow-up subtask will move WalletAnalyzer into DashboardPage.jsx.
 
 export default App;

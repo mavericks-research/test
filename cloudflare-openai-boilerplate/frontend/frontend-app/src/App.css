@@ -109,3 +109,49 @@ function LoginPage({ onLogin }) {
   );
 }
 */
+
+/* SplashScreen Styles */
+.splash-screen-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh; /* Use min-height to allow for content below if ever needed, or use 100vh for full page */
+  text-align: center;
+  padding: 20px;
+  box-sizing: border-box; /* Ensures padding doesn't add to width/height for full screen attempts */
+}
+
+.splash-screen-container img {
+  /* Styles for the logo are mostly inline in the JSX for now,
+     but can be moved here if preferred. e.g.: */
+  /* width: 150px; */
+  /* height: 150px; */
+  /* border-radius: 10px; */
+  /* margin-bottom: 20px; */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Added a subtle shadow to the logo */
+}
+
+.splash-screen-container h1 {
+  font-size: 2.5em; /* Larger slogan */
+  color: #333; /* Slogan color */
+  margin-top: 20px;
+  margin-bottom: 30px;
+}
+
+.splash-screen-container button {
+  background-color: #007bff; /* Primary button color */
+  color: white;
+  padding: 12px 25px;
+  font-size: 1.2em;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.splash-screen-container button:hover {
+  background-color: #0056b3; /* Darker shade on hover */
+}
+
+/* Ensure previous styles in App.css are maintained */
