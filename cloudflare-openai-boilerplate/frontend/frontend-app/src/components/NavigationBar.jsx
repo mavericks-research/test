@@ -1,12 +1,12 @@
-// frontend/frontend-app/src/components/NavigationBar.jsx
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-function NavigationBar({ isNavVisible, handleLogout, onToggleNav }) {
+function NavigationBar({ isNavVisible, handleLogout, onToggleNav, isLoggedIn }) {
+
   const navigate = useNavigate();
 
   const navStyle = {
-    background: '#333',
+    background: '#0d0d0d', // Black background
     padding: '10px',
     position: 'fixed',
     right: 0,
@@ -18,11 +18,12 @@ function NavigationBar({ isNavVisible, handleLogout, onToggleNav }) {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
+    borderLeft: '2px solid #26cc66', // subtle green accent border
   };
 
   const toggleButtonStyle = {
-    background: '#00d1ff',
-    color: '#333',
+    background: '#26cc66',
+    color: '#0d0d0d',
     border: 'none',
     padding: '8px',
     margin: '10px 0',
@@ -31,6 +32,7 @@ function NavigationBar({ isNavVisible, handleLogout, onToggleNav }) {
     width: '30px',
     height: '30px',
     fontSize: '1.2em',
+    fontWeight: 'bold',
   };
 
   const ulStyle = {
@@ -50,10 +52,11 @@ function NavigationBar({ isNavVisible, handleLogout, onToggleNav }) {
 
   const linkStyle = {
     textDecoration: 'none',
-    color: '#00d1ff',
+    color: '#38ff88',
     fontWeight: 'bold',
     fontSize: '1.1em',
     paddingLeft: '10px',
+    transition: 'color 0.2s',
   };
 
   const logoutButtonStyle = {
@@ -75,10 +78,11 @@ function NavigationBar({ isNavVisible, handleLogout, onToggleNav }) {
 
   return (
     <nav style={navStyle}>
-      {/* Single toggle button */}
-      <button onClick={onToggleNav} style={toggleButtonStyle}>
-        {isNavVisible ? '←' : '→'}
-      </button>
+      {isLoggedIn && (
+        <button onClick={onToggleNav} style={toggleButtonStyle}>
+          {isNavVisible ? '←' : '→'}
+        </button>
+      )}
 
       {isNavVisible && (
         <ul style={ulStyle}>
