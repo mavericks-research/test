@@ -25,6 +25,7 @@ cloudflare-openai-boilerplate/
 *   **Cloudflare Account:** You'll need a Cloudflare account. If you don't have one, sign up at [cloudflare.com](https://www.cloudflare.com/).
 *   **OpenAI API Key:** Obtain an API key from [OpenAI](https://platform.openai.com/account/api-keys). This is required for summarizing wallet activity.
 *   **Etherscan API Key:** Obtain an API key from [Etherscan](https://etherscan.io/myapikey). This is required for fetching transaction data. A free plan is usually sufficient for development purposes.
+*   **CoinGecko API Key (Optional but Recommended):** For more stable access to cryptocurrency data, sign up for a free "Demo API Key" at [CoinGecko API](https://www.coingecko.com/en/api/pricing) (choose the Demo plan). This key will be set as `COINGECKO_API_KEY`.
 *   **Wrangler CLI:** Install the Cloudflare Wrangler CLI globally: `npm install -g wrangler` (or use `npx wrangler` for commands).
 
 ## Setup and Deployment
@@ -52,11 +53,15 @@ npx wrangler secret put OPENAI_API_KEY
 
 # For Etherscan
 npx wrangler secret put ETHERSCAN_API_KEY
+
+# For CoinGecko (Optional, but recommended for stability)
+npx wrangler secret put COINGECKO_API_KEY
 ```
 Alternatively, for local development with `wrangler dev`, you can create a `.dev.vars` file in the `backend/worker-backend` directory with the following content:
 ```
 OPENAI_API_KEY="your-openai-api-key-here"
 ETHERSCAN_API_KEY="your-etherscan-api-key-here"
+COINGECKO_API_KEY="your-coingecko-demo-api-key-here" # Add this line
 ```
 **Note:** The `wrangler.toml` file has placeholders for these keys in its `[vars]` section. For production, always use secrets. For local development, `.dev.vars` is convenient.
 
@@ -81,7 +86,7 @@ The `corsHeaders` in `index.js` are set to:
 ```javascript
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*', // For local dev, '*' is fine. For prod, restrict this to your frontend domain.
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', // Updated
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 ```
@@ -210,7 +215,7 @@ You can deploy the static frontend (the contents of `frontend/frontend-app/dist`
 7.  The Cloudflare Worker sends OpenAI's summary (along with the normalized transaction data) back to the React frontend.
 8.  The frontend displays the received summary and can optionally display the transaction data.
 
-## API Usage (Backend Worker)
+## Etherscan & OpenAI Wallet Summary API
 
 The backend worker expects a POST request with a JSON body.
 
@@ -259,6 +264,101 @@ The backend worker expects a POST request with a JSON body.
     or
     ```json
     "OPENAI_API_KEY not configured. Please set it in wrangler.toml or as a secret."
+    ```
+
+## CoinGecko Cryptocurrency Data API
+
+The backend worker also provides endpoints to fetch cryptocurrency data from CoinGecko. If you are using a CoinGecko Demo API Key (recommended), ensure it's set as the `COINGECKO_API_KEY` secret or in your `.dev.vars` file. If not set, requests will be made without an API key and rely on IP-based rate limiting from CoinGecko, which may be less reliable.
+
+### 1. Get Current Cryptocurrency Prices
+
+*   **URL:** Your deployed worker URL + `/api/crypto/current`
+*   **Method:** `GET`
+*   **Query Parameters:**
+    *   `coins`: Comma-separated list of coin IDs (e.g., `bitcoin,ethereum`). You can find coin IDs using the `/api/crypto/coinslist` endpoint or on the CoinGecko website.
+    *   `currencies`: Comma-separated list of currency codes to get prices in (e.g., `usd,eur`).
+*   **Example Request (using curl):**
+    ```bash
+    curl "https://your-worker-url.workers.dev/api/crypto/current?coins=bitcoin,ethereum&currencies=usd,gbp"
+    ```
+*   **Success Response (200 OK):**
+    ```json
+    {
+      "bitcoin": {
+        "usd": 68000.50,
+        "gbp": 54000.20
+      },
+      "ethereum": {
+        "usd": 3400.75,
+        "gbp": 2700.60
+      }
+    }
+    ```
+
+### 2. Get Historical Cryptocurrency Data
+
+*   **URL:** Your deployed worker URL + `/api/crypto/historical`
+*   **Method:** `GET`
+*   **Query Parameters:**
+    *   `coin`: A single coin ID (e.g., `bitcoin`).
+    *   `date`: The date for historical data in `dd-mm-yyyy` format (e.g., `15-10-2023`).
+        *   Note: The CoinGecko Public API (free tier) limits historical data to the last 365 days.
+*   **Example Request (using curl):**
+    ```bash
+    curl "https://your-worker-url.workers.dev/api/crypto/historical?coin=bitcoin&date=15-10-2023"
+    ```
+*   **Success Response (200 OK):**
+    ```json
+    {
+      "id": "bitcoin",
+      "symbol": "btc",
+      "name": "Bitcoin",
+      "localization": { /* ... */ },
+      "image": { /* ... */ },
+      "market_data": {
+        "current_price": {
+          "usd": 26873.00
+          // ... other currencies if available on that date
+        },
+        "market_cap": {
+          "usd": 523853000000.00
+          // ...
+        },
+        "total_volume": {
+          "usd": 6758000000.00
+          // ...
+        }
+      },
+      "community_data": { /* ... */ },
+      "developer_data": { /* ... */ },
+      "public_interest_stats": { /* ... */ }
+    }
+    ```
+
+### 3. Get Full Coin List (Utility)
+
+*   **URL:** Your deployed worker URL + `/api/crypto/coinslist`
+*   **Method:** `GET`
+*   **Purpose:** Retrieves a list of all coins supported by CoinGecko, along with their IDs, symbols, and names. Useful for finding the correct `id` to use in other API calls.
+*   **Example Request (using curl):**
+    ```bash
+    curl "https://your-worker-url.workers.dev/api/crypto/coinslist"
+    ```
+*   **Success Response (200 OK):**
+    ```json
+    [
+      {
+        "id": "01coin",
+        "symbol": "zoc",
+        "name": "01coin"
+      },
+      {
+        "id": "bitcoin",
+        "symbol": "btc",
+        "name": "Bitcoin"
+      }
+      // ... many more coins
+    ]
     ```
 
 ## Customization
