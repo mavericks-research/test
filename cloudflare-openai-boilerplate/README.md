@@ -1,6 +1,6 @@
-# Full-Stack Boilerplate: React + Vite Frontend, Cloudflare Worker Backend, OpenAI Integration
+# Full-Stack Boilerplate: React + Vite Frontend, Cloudflare Worker Backend with Etherscan & OpenAI Integration
 
-This project provides a boilerplate for a full-stack application with a React + Vite frontend and a Cloudflare Worker backend that integrates with the OpenAI API.
+This project provides a boilerplate for a full-stack application with a React + Vite frontend and a Cloudflare Worker backend. The backend fetches Ethereum wallet transaction data from Etherscan, normalizes it, and then uses the OpenAI API to generate a human-readable summary of the wallet's activity.
 
 ## Project Structure
 
@@ -23,7 +23,8 @@ cloudflare-openai-boilerplate/
 
 *   **Node.js and npm:** Make sure you have Node.js (v20 or later recommended, v18 minimum) and npm installed. You can download them from [nodejs.org](https://nodejs.org/). (Note: The backend worker initialization requires Node v20+ for current Wrangler versions).
 *   **Cloudflare Account:** You'll need a Cloudflare account. If you don't have one, sign up at [cloudflare.com](https://www.cloudflare.com/).
-*   **OpenAI API Key:** Obtain an API key from [OpenAI](https://platform.openai.com/account/api-keys).
+*   **OpenAI API Key:** Obtain an API key from [OpenAI](https://platform.openai.com/account/api-keys). This is required for summarizing wallet activity.
+*   **Etherscan API Key:** Obtain an API key from [Etherscan](https://etherscan.io/myapikey). This is required for fetching transaction data. A free plan is usually sufficient for development purposes.
 *   **Wrangler CLI:** Install the Cloudflare Wrangler CLI globally: `npm install -g wrangler` (or use `npx wrangler` for commands).
 
 ## Setup and Deployment
@@ -43,12 +44,21 @@ This will open a browser window to authenticate with your Cloudflare account.
 npx wrangler login
 ```
 
-**c. Configure OpenAI API Key Secret:**
-Replace `your-openai-api-key-here` with your actual OpenAI API key. This command securely stores your API key as an environment variable for your worker.
+**c. Configure API Key Secrets:**
+Store your API keys securely using Wrangler secrets. You'll be prompted to enter each key.
 ```bash
+# For OpenAI
 npx wrangler secret put OPENAI_API_KEY
+
+# For Etherscan
+npx wrangler secret put ETHERSCAN_API_KEY
 ```
-Enter your API key when prompted.
+Alternatively, for local development with `wrangler dev`, you can create a `.dev.vars` file in the `backend/worker-backend` directory with the following content:
+```
+OPENAI_API_KEY="your-openai-api-key-here"
+ETHERSCAN_API_KEY="your-etherscan-api-key-here"
+```
+**Note:** The `wrangler.toml` file has placeholders for these keys in its `[vars]` section. For production, always use secrets. For local development, `.dev.vars` is convenient.
 
 **d. Deploy the Worker:**
 This command will build and deploy your worker to your Cloudflare account.
@@ -188,15 +198,76 @@ You can deploy the static frontend (the contents of `frontend/frontend-app/dist`
 
 ## How it Works
 
-1.  The React frontend makes a POST request to the Cloudflare Worker endpoint (`WORKER_URL`).
-2.  The Cloudflare Worker receives the request, extracts the prompt, and securely forwards it to the OpenAI API, including your `OPENAI_API_KEY` (which is stored as a secret in Cloudflare, not exposed to the frontend).
-3.  The OpenAI API processes the prompt and returns a completion.
-4.  The Cloudflare Worker sends this response back to the React frontend.
-5.  The frontend displays the received text.
+1.  The React frontend makes a POST request to the Cloudflare Worker endpoint (`WORKER_URL`) with a JSON body containing the `walletAddress`.
+2.  The Cloudflare Worker receives the request and extracts the `walletAddress`.
+3.  It calls the Etherscan API (using your `ETHERSCAN_API_KEY` secret) to fetch the list of normal transactions for the given address.
+4.  The fetched transaction data is then normalized:
+    *   **Token Names:** Known token contract addresses are mapped to their symbols (e.g., USDC, USDT).
+    *   **USD Values (Placeholder):** A `valueUSD` field is added. Currently, this is a placeholder and directly copies the transaction's `value` (in Wei for ETH). True USD conversion would require price feeds.
+    *   **Timestamps:** Unix timestamps are converted to ISO 8601 format.
+5.  A detailed prompt is constructed using the normalized transaction summary (number of transactions, total value, tokens involved, date range).
+6.  This prompt is sent to the OpenAI API (using your `OPENAI_API_KEY` secret) to generate a human-readable summary of the wallet's activity.
+7.  The Cloudflare Worker sends OpenAI's summary (along with the normalized transaction data) back to the React frontend.
+8.  The frontend displays the received summary and can optionally display the transaction data.
+
+## API Usage (Backend Worker)
+
+The backend worker expects a POST request with a JSON body.
+
+**Request:**
+*   **URL:** Your deployed worker URL (e.g., `https://worker-backend.<your-cloudflare-subdomain>.workers.dev`)
+*   **Method:** `POST`
+*   **Headers:** `Content-Type: application/json`
+*   **Body:**
+    ```json
+    {
+      "walletAddress": "0xYourEthereumWalletAddressHere"
+    }
+    ```
+
+**Response (Success):**
+*   **Status Code:** `200 OK`
+*   **Body:**
+    ```json
+    {
+      "message": "AI summary generated successfully", // Or a message indicating no transactions, etc.
+      "summary": "This is a human-readable summary generated by OpenAI based on the wallet's transaction history...",
+      "transactionData": [
+        // Array of normalized transaction objects
+        {
+          "hash": "0x...",
+          "from": "0x...",
+          "to": "0x...",
+          "value": "1000000000000000000", // Value in Wei
+          "timeStamp": "1672531200",
+          // Added by normalizer.js:
+          "tokenInvolved": "USDC", // If applicable
+          "valueUSD": "1000000000000000000", // Placeholder, currently same as value
+          "dateTime": "2023-01-01T00:00:00.000Z"
+        },
+        // ... other transactions
+      ]
+    }
+    ```
+
+**Response (Error):**
+*   **Status Code:** Varies (e.g., 400 for bad request, 500 for server errors).
+*   **Body:** Plain text or JSON describing the error. For example:
+    ```json
+    "Missing \"walletAddress\" in request body"
+    ```
+    or
+    ```json
+    "OPENAI_API_KEY not configured. Please set it in wrangler.toml or as a secret."
+    ```
 
 ## Customization
 
-*   **OpenAI Model:** The default model is `gpt-3.5-turbo-instruct`. You can change the `model` parameter in `backend/worker-backend/src/index.js` to use different OpenAI models (e.g., other models compatible with the `/v1/completions` endpoint, or switch to `/v1/chat/completions` for models like `gpt-4` which would require changing the API endpoint and request/response structure).
-*   **Frontend UI:** Modify the React components in `frontend/frontend-app/src/` to change the appearance and functionality.
-*   **Worker Logic:** Extend the Cloudflare Worker in `backend/worker-backend/src/index.js` for more complex backend tasks.
+*   **OpenAI Model:** The default model is `gpt-3.5-turbo-instruct`. You can change the `model` parameter in `backend/worker-backend/src/index.js` to use different OpenAI models. For chat models like `gpt-4` or `gpt-3.5-turbo`, you would need to change the API endpoint to `/v1/chat/completions` and adjust the request/response structure accordingly.
+*   **Transaction Normalization:** The logic in `backend/worker-backend/src/normalizer.js` can be expanded:
+    *   Add more token contract addresses to `TOKEN_CONTRACTS`.
+    *   Implement actual USD conversion in `convertToUSD` by fetching price data for ETH and tokens.
+    *   Enhance ERC20 detection in `normalizeTokenNames` by decoding transaction input data if necessary.
+*   **Frontend UI:** Modify the React components in `frontend/frontend-app/src/` to change the appearance and functionality, for example, to better display the transaction list or AI summary.
+*   **Worker Logic:** Extend the Cloudflare Worker in `backend/worker-backend/src/index.js` for more complex backend tasks, such as supporting different types of Etherscan queries (e.g., token transactions, internal transactions) or adding more data sources.
 ```
