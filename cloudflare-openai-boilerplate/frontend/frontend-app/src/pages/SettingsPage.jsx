@@ -1,11 +1,11 @@
 // frontend/frontend-app/src/pages/SettingsPage.jsx
 import React from 'react';
-import NavigationBar from '../components/NavigationBar';
+// Removed NavigationBar import
 
-function SettingsPage({ handleLogout }) {
+function SettingsPage() { // Removed handleLogout from props
   return (
     <div>
-      <NavigationBar handleLogout={handleLogout} />
+      {/* NavigationBar removed from here */}
       <h1>Settings / Profile Page</h1>
       <p>Manage your preferences, currencies, and connected wallets.</p>
     </div>

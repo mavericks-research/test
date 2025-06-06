@@ -9,6 +9,9 @@ import WalletsPage from './pages/WalletsPage';
 import BudgetPlannerPage from './pages/BudgetPlannerPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
+import Header from './components/Header';
+import Footer from './components/Footer';
+import NavigationBar from './components/NavigationBar'; // Import NavigationBar
 import './App.css';
 
 // WalletAnalyzer component (assuming it's still defined or imported if used by DashboardPage)
@@ -99,7 +102,12 @@ function ProtectedRoute({ children, isAuthenticated }) {
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isNavVisible, setIsNavVisible] = useState(true); // State for Nav visibility
   const WORKER_URL = 'http://localhost:8787'; // Default for local worker
+
+  const toggleNav = () => { // Function to toggle Nav visibility
+    setIsNavVisible(prev => !prev);
+  };
 
   const handleLogin = () => {
     setIsAuthenticated(true);
@@ -120,39 +128,71 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div className="App">
-        <Routes>
-          <Route
-            path="/login"
-            element={
-              isAuthenticated ? <Navigate to="/dashboard" /> : <LoginPage onLogin={handleLogin} />
-            }
-          />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute isAuthenticated={isAuthenticated}>
-                <DashboardPage workerUrl={WORKER_URL} handleLogout={handleLogout} />
-              </ProtectedRoute>
-            }
-          />
-          {/* <Route
-            path="/account" // Route removed as per NavigationBar change, SettingsPage takes over
-            element={
-              <ProtectedRoute isAuthenticated={isAuthenticated}>
-                <AccountPage handleLogout={handleLogout} />
-              </ProtectedRoute>
-            }
-          /> */}
-          <Route
-            path="/wallets"
-            element={
-              <ProtectedRoute isAuthenticated={isAuthenticated}>
-                <WalletsPage handleLogout={handleLogout} />
-              </ProtectedRoute>
-            }
-          />
-          <Route
+      <div className="App" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        {/* Pass onToggleNav to Header. Render NavigationBar only if authenticated. */}
+        {isAuthenticated && <Header onToggleNav={toggleNav} />}
+        {isAuthenticated && <NavigationBar isNavVisible={isNavVisible} handleLogout={handleLogout} />}
+        <div style={{ flexGrow: 1, width: '100%', display: 'flex' }}> {/* Content wrapper now also a flex container */}
+          {/* Potential: Add a sidebar div here if NavigationBar is not 'fixed' but part of flow */}
+          {/* Main content area: Added paddingTop if authenticated for sticky header */}
+          <div style={{ flexGrow: 1, overflowY: 'auto', paddingTop: isAuthenticated ? '56px' : '0px' }}>
+            <Routes>
+              <Route
+                path="/login"
+              element={
+                isAuthenticated ? <Navigate to="/dashboard" /> : <LoginPage onLogin={handleLogin} />
+              }
+            />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute isAuthenticated={isAuthenticated}>
+                  {/* Remove handleLogout from page props if Nav handles it */}
+                  <DashboardPage workerUrl={WORKER_URL} />
+                </ProtectedRoute>
+              }
+            />
+            {/* <Route
+              path="/account" // Route removed as per NavigationBar change, SettingsPage takes over
+              element={
+                <ProtectedRoute isAuthenticated={isAuthenticated}>
+                  <AccountPage />
+                </ProtectedRoute>
+              }
+            /> */}
+            <Route
+              path="/wallets"
+              element={
+                <ProtectedRoute isAuthenticated={isAuthenticated}>
+                  <WalletsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/planner"
+              element={
+                <ProtectedRoute isAuthenticated={isAuthenticated}>
+                  <BudgetPlannerPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <ProtectedRoute isAuthenticated={isAuthenticated}>
+                  <ReportsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute isAuthenticated={isAuthenticated}>
+                  <SettingsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
             path="/planner"
             element={
               <ProtectedRoute isAuthenticated={isAuthenticated}>
@@ -177,13 +217,16 @@ function App() {
             }
           />
           <Route
-            path="/"
-            element={
-              isAuthenticated ? <Navigate to="/dashboard" /> : <SplashScreen />
-            }
-          />
-          <Route path="*" element={<Navigate to="/" />} /> {/* Catch-all redirects to home */}
-        </Routes>
+              path="/"
+              element={
+                isAuthenticated ? <Navigate to="/dashboard" /> : <SplashScreen />
+              }
+            />
+            <Route path="*" element={<Navigate to="/" />} /> {/* Catch-all redirects to home */}
+            </Routes>
+          </div>
+        </div>
+        {isAuthenticated && <Footer />} {/* Render Footer only if authenticated */}
       </div>
     </BrowserRouter>
   );

@@ -1,6 +1,6 @@
 // frontend/frontend-app/src/pages/DashboardPage.jsx
 import React, { useState } from 'react'; // Added useState for WalletAnalyzer
-import NavigationBar from '../components/NavigationBar';
+// Removed NavigationBar import
 
 // Re-define or import WalletAnalyzer here. For simplicity, defining it again.
 // In a larger app, WalletAnalyzer would be its own component.
@@ -81,10 +81,10 @@ function WalletAnalyzer({ workerUrl }) {
 }
 
 
-function DashboardPage({ workerUrl, handleLogout }) { // Accept workerUrl and handleLogout as props
+function DashboardPage({ workerUrl }) { // Removed handleLogout from props
   return (
     <div>
-      <NavigationBar handleLogout={handleLogout} />
+      {/* NavigationBar removed from here */}
       <h1>Dashboard</h1>
       <p>Welcome to your dashboard.</p>
       <hr />

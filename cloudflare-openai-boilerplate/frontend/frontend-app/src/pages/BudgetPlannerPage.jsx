@@ -1,11 +1,11 @@
 // frontend/frontend-app/src/pages/BudgetPlannerPage.jsx
 import React from 'react';
-import NavigationBar from '../components/NavigationBar';
+// Removed NavigationBar import
 
-function BudgetPlannerPage({ handleLogout }) {
+function BudgetPlannerPage() { // Removed handleLogout from props
   return (
     <div>
-      <NavigationBar handleLogout={handleLogout} />
+      {/* NavigationBar removed from here */}
       <h1>Budgeting Planner Page</h1>
       <p>Plan your crypto spending and saving goals here.</p>
     </div>

@@ -8,11 +8,13 @@ body {
 }
 
 .App {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+  /* max-width: 1200px; Removed to allow full width */
+  /* margin: 0 auto; Removed as it's for centering fixed-width */
+  padding: 20px; /* Kept for now, provides default spacing */
   background-color: #fff;
   min-height: 100vh;
+  width: 100%; /* Ensure it tries to take full width */
+  box-sizing: border-box; /* To include padding in the 100% width calculation */
 }
 
 h1, h2, h3 {

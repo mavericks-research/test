@@ -1,15 +1,11 @@
 // frontend/frontend-app/src/components/NavigationBar.jsx
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom'; // Added useNavigate for logout
+import React from 'react'; // Removed useState
+import { Link, useNavigate } from 'react-router-dom';
 
-// Assuming handleLogout is passed as a prop from App.jsx if we implement actual logout
-function NavigationBar({ handleLogout }) {
+// Accept isNavVisible and handleLogout as props
+function NavigationBar({ isNavVisible, handleLogout }) {
   const navigate = useNavigate();
-  const [isNavVisible, setIsNavVisible] = useState(true);
-
-  const toggleNav = () => {
-    setIsNavVisible(!isNavVisible);
-  };
+  // Removed internal state and toggleNav function
 
   const navStyle = {
     background: '#333', // Darker background for the nav
@@ -36,6 +32,7 @@ function NavigationBar({ handleLogout }) {
     alignSelf: 'center', // Center button in collapsed nav
     textAlign: 'center', // Center text within the button
   };
+  // Removed toggleButtonStyle as the button is removed
 
   const ulStyle = {
     listStyleType: 'none',
@@ -78,11 +75,12 @@ function NavigationBar({ handleLogout }) {
   };
 
   return (
+    // Render nav container only if isNavVisible is true, or always render and control visibility via CSS
+    // For this iteration, let's keep the nav structure and rely on width to "hide" it.
+    // Content (ul) will only be shown if isNavVisible is true (which also means width is '250px')
     <nav style={navStyle}>
-      <button onClick={toggleNav} style={toggleButtonStyle}>
-        {isNavVisible ? 'Hide' : 'Menu'}
-      </button>
-      {isNavVisible && (
+      {/* Removed toggle button */}
+      {isNavVisible && navStyle.width === '250px' && ( // Show links only when fully visible and expanded
         <ul style={ulStyle}>
           <li style={liStyle}>
             <Link to="/dashboard" style={linkStyle}>Dashboard</Link>
