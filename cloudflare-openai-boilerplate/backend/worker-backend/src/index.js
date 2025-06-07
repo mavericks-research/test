@@ -1,5 +1,5 @@
-import { normalizeTokenNames, convertToUSD, normalizeTimestamps } from './normalizer.js';
-import { getCurrentPrices, getHistoricalData, getCoinList } from './cryptoApi.js'; // Added getCoinList for potential future use or testing
+import { normalizeTokenNames, normalizeTimestamps, normalizeBlockCypherTransactions } from './normalizer.js';
+import { getCurrentPrices, getHistoricalData, getCoinList, getTransactionHistory } from './cryptoApi.js';
 
 // Define CORS headers - Added GET
 const corsHeaders = {
@@ -535,28 +535,144 @@ No transactions were found for this wallet according to Etherscan (${etherscanDa
         }
         // End of existing POST logic
       } else {
+      // --- Transaction Analysis Route (New) ---
+      } else if (url.pathname === '/api/crypto/transaction-analysis' && request.method === 'GET') {
+        const coinSymbol = url.searchParams.get('coinSymbol');
+        const walletAddress = url.searchParams.get('walletAddress');
+        const blockcypherToken = env.BLOCKCYPHER_API_TOKEN || null;
+        const openaiApiKey = env.OPENAI_API_KEY;
+        // Use a chat model, default to gpt-3.5-turbo if OPENAI_MODEL is not set or is an older model
+        const openaiModel = (env.OPENAI_MODEL && env.OPENAI_MODEL.startsWith('gpt-')) ? env.OPENAI_MODEL : 'gpt-3.5-turbo';
+
+
+        if (!coinSymbol || !['btc', 'eth', 'ltc'].includes(coinSymbol.toLowerCase())) {
+          return new Response(JSON.stringify({ error: 'Missing or invalid "coinSymbol" query parameter. Supported: btc, eth, ltc.' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        if (!walletAddress) {
+          return new Response(JSON.stringify({ error: 'Missing "walletAddress" query parameter.' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        if (!openaiApiKey) {
+            console.error('OPENAI_API_KEY not configured');
+            return new Response(JSON.stringify({ error: 'OpenAI API key is not configured for the server.' }), {
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+        }
+
+        try {
+          const rawTransactions = await getTransactionHistory(coinSymbol, walletAddress, blockcypherToken);
+          if (!rawTransactions || rawTransactions.length === 0) {
+            return new Response(JSON.stringify({ analysis: "No transactions found for this address.", transactions: [] }), {
+              status: 200,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          const normalizedTransactions = normalizeBlockCypherTransactions(rawTransactions, coinSymbol, walletAddress);
+
+          // Construct OpenAI Prompt
+          // For very long transaction lists, summarize or select a sample.
+          let transactionSummaryForPrompt = JSON.stringify(normalizedTransactions.slice(0, 10), null, 2); // First 10 transactions
+          if (normalizedTransactions.length > 10) {
+            transactionSummaryForPrompt += `\n... and ${normalizedTransactions.length - 10} more transactions.`;
+          }
+          if (normalizedTransactions.length === 0) {
+            transactionSummaryForPrompt = "No transactions found.";
+          }
+
+
+          const openAIPrompt = `
+Analyze the following cryptocurrency transactions for address ${walletAddress} on the ${coinSymbol.toUpperCase()} network.
+Focus on:
+- Overall summary: Is it an active address? Predominantly sending or receiving?
+- Total value: Approximate total value sent and received in ${coinSymbol.toUpperCase()} (if discernible from the data).
+- Transaction volume: General observations on activity frequency. If timestamps allow, mention if activity is recent or spread out.
+- Common counterparties: Any addresses that appear frequently as senders or receivers? (Be mindful of not overstating for change addresses).
+- Notable patterns: Any large transactions, regular small transactions, or other observable patterns?
+
+Transaction Data:
+${transactionSummaryForPrompt}
+
+Provide a concise, human-readable analysis.
+          `;
+
+          const openaiPayload = {
+            model: openaiModel,
+            messages: [{ role: "user", content: openAIPrompt }],
+            max_tokens: 500, // Increased for a more detailed analysis
+          };
+
+          const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${openaiApiKey}`,
+            },
+            body: JSON.stringify(openaiPayload),
+          });
+
+          if (!openaiResponse.ok) {
+            const errorText = await openaiResponse.text();
+            console.error('OpenAI API Error:', errorText);
+            return new Response(JSON.stringify({ error: `OpenAI API request failed: ${openaiResponse.status} ${errorText}` }), {
+              status: openaiResponse.status,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          const openaiData = await openaiResponse.json();
+          const aiAnalysis = openaiData.choices && openaiData.choices[0] && openaiData.choices[0].message
+                             ? openaiData.choices[0].message.content.trim()
+                             : 'No analysis received from AI.';
+
+          return new Response(JSON.stringify({
+            analysis: aiAnalysis,
+            normalizedTransactions: normalizedTransactions, // Optionally return normalized data
+          }), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+
+        } catch (error) {
+          console.error(`Error in /api/crypto/transaction-analysis for ${coinSymbol} address ${walletAddress}:`, error);
+          const errorMessage = error.message || 'An unexpected error occurred during transaction analysis.';
+          let errorStatus = 500;
+          if (error.message.includes("BlockCypher API request failed")) {
+            errorStatus = 502; // Bad Gateway for upstream API errors
+          }
+          return new Response(JSON.stringify({ error: errorMessage }), {
+            status: errorStatus,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      // --- End of Transaction Analysis Route ---
+      } else {
         // Fallback for unhandled paths or methods
-        let supportedEndpoints = 'GET /api/crypto/current, GET /api/crypto/historical, GET /api/crypto/coinslist, GET /api/crypto/enriched-historical-data, POST / (for Etherscan/OpenAI)';
+        let supportedEndpoints = 'GET /api/crypto/current, GET /api/crypto/historical, GET /api/crypto/coinslist, GET /api/crypto/enriched-historical-data, GET /api/crypto/transaction-analysis, POST / (for Etherscan/OpenAI)';
         supportedEndpoints += ', POST /api/budgets, GET /api/budgets, GET /api/budgets/:id, PUT /api/budgets/:id, DELETE /api/budgets/:id';
         return new Response(`Not Found. Supported endpoints: ${supportedEndpoints}`, { status: 404, headers: corsHeaders });
       }
     } catch (error) {
       console.error('Error processing request in worker:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
+      let status = 500; // Default to Internal Server Error
 
-      if (errorMessage.includes("CoinGecko API request failed")) {
-        // Specific error for CoinGecko failures - return 502 Bad Gateway
-        return new Response(JSON.stringify({ error: `Upstream API error: ${errorMessage}` }), {
-          status: 502, // Bad Gateway
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      } else {
-        // Generic internal server error - return 500
-        return new Response(JSON.stringify({ error: `Error processing your request: ${errorMessage}` }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+      if (errorMessage.includes("CoinGecko API request failed") || errorMessage.includes("BlockCypher API request failed")) {
+        // Specific error for upstream API failures - return 502 Bad Gateway
+        status = 502;
       }
+      // For other errors, 500 is appropriate.
+
+      return new Response(JSON.stringify({ error: `Error processing your request: ${errorMessage}` }), {
+        status: status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
   },
 };
