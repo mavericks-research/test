@@ -1,0 +1,243 @@
+/* frontend/frontend-app/src/pages/BudgetPlannerPage.css */
+
+.budget-planner-page {
+  max-width: 900px;
+  margin: 20px auto;
+  padding: 20px;
+  font-family: sans-serif;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.budget-planner-page h1,
+.budget-planner-page h2,
+.budget-planner-page h3,
+.budget-planner-page h4 {
+  color: #333;
+}
+
+.budget-planner-page h1 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.budget-planner-page h2 {
+  margin-top: 30px;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 5px;
+}
+
+/* Form Styling */
+.plan-form {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
+  margin-top: 20px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #555;
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"] {
+  width: calc(100% - 20px);
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+/* Categories Section in Form */
+.categories-section {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+}
+
+.category-item {
+  background-color: #fdfdfd;
+  border: 1px solid #e0e0e0;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 6px;
+}
+
+.category-item .form-group {
+  margin-bottom: 10px;
+}
+
+/* Budget Plan List Display */
+.budget-plans-list {
+  list-style: none;
+  padding: 0;
+}
+
+.budget-plan-item {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  padding: 15px 20px;
+  margin-bottom: 15px;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.budget-plan-item h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #007bff;
+}
+
+.budget-plan-item h4 {
+  margin-top: 10px;
+  margin-bottom: 5px;
+  font-size: 1.1em;
+}
+
+.budget-plan-item ul {
+  list-style: disc;
+  padding-left: 20px;
+  margin-bottom: 15px;
+}
+.budget-plan-item ul li {
+  margin-bottom: 5px;
+  color: #444;
+}
+
+/* Buttons */
+.btn {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1em;
+  margin-right: 10px;
+  transition: background-color 0.2s ease-in-out, opacity 0.2s ease-in-out;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: #007bff;
+  color: white;
+}
+.btn-primary:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+.btn-secondary:hover:not(:disabled) {
+  background-color: #545b62;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  color: white;
+}
+.btn-danger:hover:not(:disabled) {
+  background-color: #c82333;
+}
+
+.btn-edit { /* Specific for edit to stand out if needed, or use btn-secondary */
+  background-color: #ffc107;
+  color: #212529;
+}
+.btn-edit:hover:not(:disabled) {
+  background-color: #e0a800;
+}
+
+
+.btn-add-category {
+  background-color: #28a745;
+  color: white;
+  margin-top: 10px;
+}
+.btn-add-category:hover:not(:disabled) {
+  background-color: #1e7e34;
+}
+
+.category-item .btn-danger { /* Remove category button */
+  background-color: #ef5350; /* Lighter red */
+  padding: 8px 12px;
+  font-size: 0.9em;
+}
+.category-item .btn-danger:hover:not(:disabled) {
+  background-color: #d32f2f;
+}
+
+
+.actions-group { /* For save/cancel buttons container */
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.plan-actions { /* For Edit/Delete buttons on list item */
+    margin-top: 15px;
+}
+
+
+/* Error Messages */
+.error-message {
+  color: #dc3545;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  padding: 10px;
+  margin-bottom: 15px;
+  border-radius: 4px;
+  text-align: center;
+}
+
+/* Loading Indicators */
+.loading-indicator {
+  text-align: center;
+  padding: 15px;
+  font-size: 1.1em;
+  color: #555;
+}
+
+/* Responsive (Basic Example) */
+@media (max-width: 600px) {
+  .budget-planner-page {
+    margin: 10px;
+    padding: 15px;
+  }
+
+  .form-group input[type="text"],
+  .form-group input[type="number"] {
+    width: 100%; /* Full width on small screens */
+  }
+
+  .actions-group {
+    flex-direction: column;
+  }
+  .btn {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+  .btn:last-child {
+    margin-bottom: 0;
+  }
+  .plan-actions .btn {
+    width: auto; /* Revert for inline buttons */
+    margin-bottom: 0;
+  }
+}
