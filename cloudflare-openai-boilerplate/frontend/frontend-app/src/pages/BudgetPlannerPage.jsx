@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './BudgetPlannerPage.css'; // Import the CSS file
 
-const WORKER_URL = 'http://localhost:8787'; // Define WORKER_URL locally
+const WORKER_URL = 'https://worker-backend.lumexai.workers.dev'; // Define WORKER_URL locally
 
 const defaultPlanState = {
   id: null,
