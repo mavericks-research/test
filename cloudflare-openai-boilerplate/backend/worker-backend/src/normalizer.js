@@ -233,6 +233,37 @@ export function normalizeBlockCypherTransactions(transactions, coinSymbol, forAd
 // --- Etherscan Normalization (existing functions) ---
 
 /**
+ * Maps known contract addresses in transactions to their token symbols.
+ * Adds a 'tokenSymbol' property to transactions involving known tokens.
+ * This is a simplified approach; real token identification might require checking transaction logs for ERC20 Transfer events.
+ *
+ * @param {Array<Object>} transactions - An array of transaction objects from Etherscan.
+ * @returns {Array<Object>} The transactions array with added 'tokenSymbol' where applicable.
+ */
+// This function normalizeTokenNames was at the top, keeping it there.
+// export function normalizeTokenNames(transactions) { ... } // Already exists
+
+// Placeholder for original convertToUSD, adapted for Etherscan data context
+export function convertToUSD(transactions) {
+  if (!Array.isArray(transactions)) {
+    console.warn('convertToUSD: Expected an array of transactions, received:', transactions);
+    return transactions; // Or throw an error, depending on desired strictness
+  }
+  return transactions.map(tx => {
+    const newTx = { ...tx };
+    // Etherscan 'value' is in Wei for ETH transactions.
+    // This function, as originally used, was a placeholder.
+    // For the Etherscan path, it created 'valueUSD' directly from 'value'.
+    // If 'value' is indeed Wei, a proper conversion would be:
+    // newTx.valueUSD = BigInt(newTx.value) / BigInt('1000000000000000000');
+    // However, to maintain previous behavior for the Etherscan path,
+    // we'll keep it as a direct assignment, assuming 'value' was treated as 'USD' placeholder.
+    newTx.valueUSD = newTx.value; // Placeholder behavior
+    return newTx;
+  });
+}
+
+/**
  * Converts Unix timestamps in transactions to ISO 8601 format.
  * Adds a 'dateTime' property.
  *

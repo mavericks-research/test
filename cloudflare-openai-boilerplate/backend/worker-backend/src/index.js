@@ -1,4 +1,4 @@
-import { normalizeTokenNames, normalizeTimestamps, normalizeBlockCypherTransactions } from './normalizer.js';
+import { normalizeTokenNames, normalizeTimestamps, normalizeBlockCypherTransactions, convertToUSD } from './normalizer.js';
 import { getCurrentPrices, getHistoricalData, getCoinList, getTransactionHistory } from './cryptoApi.js';
 
 // Define CORS headers - Added GET
@@ -534,7 +534,6 @@ No transactions were found for this wallet according to Etherscan (${etherscanDa
           return new Response('Unexpected response from Etherscan API', { status: 500, headers: corsHeaders });
         }
         // End of existing POST logic
-      } else {
       // --- Transaction Analysis Route (New) ---
       } else if (url.pathname === '/api/crypto/transaction-analysis' && request.method === 'GET') {
         const coinSymbol = url.searchParams.get('coinSymbol');
@@ -652,8 +651,9 @@ Provide a concise, human-readable analysis.
           });
         }
       // --- End of Transaction Analysis Route ---
-      } else {
-        // Fallback for unhandled paths or methods
+      }
+      // Fallback for unhandled paths or methods must be the FINAL else in the chain
+      else {
         let supportedEndpoints = 'GET /api/crypto/current, GET /api/crypto/historical, GET /api/crypto/coinslist, GET /api/crypto/enriched-historical-data, GET /api/crypto/transaction-analysis, POST / (for Etherscan/OpenAI)';
         supportedEndpoints += ', POST /api/budgets, GET /api/budgets, GET /api/budgets/:id, PUT /api/budgets/:id, DELETE /api/budgets/:id';
         return new Response(`Not Found. Supported endpoints: ${supportedEndpoints}`, { status: 404, headers: corsHeaders });
