@@ -90,6 +90,8 @@ function DashboardPage({ workerUrl }) { // Removed handleLogout from props
       <hr />
       {/* Embed the WalletAnalyzer functionality here */}
       <WalletAnalyzer workerUrl={workerUrl} />
+      <hr /> {/* Added a separator */}
+      <CryptoDisplay /> {/* Added the new component */}
     </div>
   );
 }
