@@ -1,5 +1,6 @@
 // frontend/frontend-app/src/pages/DashboardPage.jsx
 import React, { useState } from 'react'; // Added useState for WalletAnalyzer
+import CryptoDisplay from '../components/CryptoDisplay'; // Import CryptoDisplay
 // Removed NavigationBar import
 
 // Re-define or import WalletAnalyzer here. For simplicity, defining it again.
@@ -90,6 +91,8 @@ function DashboardPage({ workerUrl }) { // Removed handleLogout from props
       <hr />
       {/* Embed the WalletAnalyzer functionality here */}
       <WalletAnalyzer workerUrl={workerUrl} />
+      <hr /> {/* Added a separator */}
+      <CryptoDisplay /> {/* Added the new component */}
     </div>
   );
 }

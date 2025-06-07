@@ -430,10 +430,21 @@ No transactions were found for this wallet according to Etherscan (${etherscanDa
       }
     } catch (error) {
       console.error('Error processing request in worker:', error);
-      // Ensure error.message is a string.
       const errorMessage = error instanceof Error ? error.message : String(error);
-      // Ensure generic errors also return JSON with CORS
-      return new Response(JSON.stringify({ error: `Error processing your request: ${errorMessage}` }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
+      if (errorMessage.includes("CoinGecko API request failed")) {
+        // Specific error for CoinGecko failures - return 502 Bad Gateway
+        return new Response(JSON.stringify({ error: `Upstream API error: ${errorMessage}` }), {
+          status: 502, // Bad Gateway
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      } else {
+        // Generic internal server error - return 500
+        return new Response(JSON.stringify({ error: `Error processing your request: ${errorMessage}` }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
     }
   },
 };
