@@ -30,3 +30,8 @@ compatibility_date = "2023-10-30" # Use a recent compatibility date
 # --- Example Non-Sensitive Configuration Variable ---
 # This defines a default model that can be overridden by `.dev.vars` or a production environment variable.
 # OPENAI_MODEL = "gpt-3.5-turbo-instruct"
+
+[[kv_namespaces]]
+binding = "BUDGET_PLANS_KV"
+id = "your-kv-namespace-id-here" # Developer will need to replace this
+preview_id = "your-preview-kv-namespace-id-here" # Developer will need to replace this
