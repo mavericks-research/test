@@ -1,5 +1,6 @@
 // frontend/frontend-app/src/pages/DashboardPage.jsx
 import React, { useState } from 'react'; // Added useState for WalletAnalyzer
+import CryptoDisplay from '../components/CryptoDisplay'; // Import CryptoDisplay
 // Removed NavigationBar import
 
 // Re-define or import WalletAnalyzer here. For simplicity, defining it again.
