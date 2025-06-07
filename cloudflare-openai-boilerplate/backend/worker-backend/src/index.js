@@ -12,15 +12,10 @@ const corsHeaders = {
 
 // Handler for OPTIONS requests (remains the same, but uses updated corsHeaders)
 function handleOptions(request) {
-  if (
-    request.headers.get('Origin') !== null &&
-    request.headers.get('Access-Control-Request-Method') !== null &&
-    request.headers.get('Access-Control-Request-Headers') !== null
-  ) {
-    return new Response(null, { headers: corsHeaders });
-  } else {
-    return new Response(null, { headers: { Allow: 'GET, POST, PUT, DELETE, OPTIONS' } }); // Added GET
-  }
+  // Always respond to OPTIONS requests with the full CORS headers.
+  // This handles preflight requests for all methods (GET, POST, PUT, DELETE, etc.)
+  // and ensures 'Access-Control-Allow-Origin' is always present.
+  return new Response(null, { headers: corsHeaders });
 }
 
 // --- Budget Plan CRUD Helper Functions ---
@@ -188,7 +183,16 @@ export default {
       } else if (url.pathname === '/api/budgets' && request.method === 'GET') {
         try {
           const plans = await getAllBudgetPlans(env);
-          return new Response(JSON.stringify(plans), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          return new Response(JSON.stringify(plans), {
+            status: 200,
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0',
+            },
+          });
         } catch (e) {
           console.error('Error getting all budget plans:', e);
           return new Response(JSON.stringify({ error: e.message || 'Error retrieving budget plans.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
