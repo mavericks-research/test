@@ -6,7 +6,7 @@ const corsHeaders = {
   // IMPORTANT FOR PRODUCTION: Replace 'YOUR_FRONTEND_DOMAIN_HERE' with your actual frontend application's domain.
   // For local development, '*' can be used, but it's insecure for production.
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', // Added GET
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS', // Added GET
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
@@ -19,7 +19,7 @@ function handleOptions(request) {
   ) {
     return new Response(null, { headers: corsHeaders });
   } else {
-    return new Response(null, { headers: { Allow: 'GET, POST, OPTIONS' } }); // Added GET
+    return new Response(null, { headers: { Allow: 'GET, POST, PUT, DELETE, OPTIONS' } }); // Added GET
   }
 }
 
@@ -188,7 +188,16 @@ export default {
       } else if (url.pathname === '/api/budgets' && request.method === 'GET') {
         try {
           const plans = await getAllBudgetPlans(env);
-          return new Response(JSON.stringify(plans), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          return new Response(JSON.stringify(plans), {
+            status: 200,
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0',
+            },
+          });
         } catch (e) {
           console.error('Error getting all budget plans:', e);
           return new Response(JSON.stringify({ error: e.message || 'Error retrieving budget plans.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
