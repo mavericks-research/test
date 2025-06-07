@@ -12,15 +12,10 @@ const corsHeaders = {
 
 // Handler for OPTIONS requests (remains the same, but uses updated corsHeaders)
 function handleOptions(request) {
-  if (
-    request.headers.get('Origin') !== null &&
-    request.headers.get('Access-Control-Request-Method') !== null &&
-    request.headers.get('Access-Control-Request-Headers') !== null
-  ) {
-    return new Response(null, { headers: corsHeaders });
-  } else {
-    return new Response(null, { headers: { Allow: 'GET, POST, PUT, DELETE, OPTIONS' } }); // Added GET
-  }
+  // Always respond to OPTIONS requests with the full CORS headers.
+  // This handles preflight requests for all methods (GET, POST, PUT, DELETE, etc.)
+  // and ensures 'Access-Control-Allow-Origin' is always present.
+  return new Response(null, { headers: corsHeaders });
 }
 
 // --- Budget Plan CRUD Helper Functions ---
