@@ -13,7 +13,7 @@ const CryptoDisplay = () => {
     { value: 'dogecoin', label: 'Dogecoin' },
   ];
 
-  const API_BASE_URL = 'https://api.coingecko.com/api/v3';
+  // Removed API_BASE_URL as we are using relative paths for backend proxy
 
   useEffect(() => {
     const fetchCurrentPrice = async () => {
@@ -21,7 +21,8 @@ const CryptoDisplay = () => {
       setCurrentPrice(null); // Reset while fetching
       setPercentageChange(null); // Reset
       try {
-        const response = await fetch(`${API_BASE_URL}/simple/price?ids=${selectedCoin}&vs_currencies=usd`);
+        // Use relative path to our backend proxy
+        const response = await fetch(`/api/crypto/current?coins=${selectedCoin}&currencies=usd`);
         if (!response.ok) {
           throw new Error(`Error fetching current price: ${response.statusText}`);
         }
@@ -49,10 +50,11 @@ const CryptoDisplay = () => {
 
       // Format date from YYYY-MM-DD to DD-MM-YYYY
       const [year, month, day] = selectedDate.split('-');
-      const formattedDate = `${day}-${month}-${year}`;
+      const formattedDate = `${day}-${month}-${year}`; // This is for the backend API parameter
 
       try {
-        const response = await fetch(`${API_BASE_URL}/coins/${selectedCoin}/history?date=${formattedDate}&localization=false`);
+        // Use relative path to our backend proxy
+        const response = await fetch(`/api/crypto/historical?coin=${selectedCoin}&date=${formattedDate}`);
         if (!response.ok) {
           throw new Error(`Error fetching historical price: ${response.statusText}`);
         }
