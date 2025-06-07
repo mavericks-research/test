@@ -1,10 +1,7 @@
-// frontend/frontend-app/src/pages/DashboardPage.jsx
 import React, { useState } from 'react'; // Added useState for WalletAnalyzer
 import CryptoDisplay from '../components/CryptoDisplay'; // Import CryptoDisplay
 // Removed NavigationBar import
 
-// Re-define or import WalletAnalyzer here. For simplicity, defining it again.
-// In a larger app, WalletAnalyzer would be its own component.
 function WalletAnalyzer({ workerUrl }) {
   const [walletAddress, setWalletAddress] = useState('');
   const [summary, setSummary] = useState('');
@@ -24,7 +21,7 @@ function WalletAnalyzer({ workerUrl }) {
     setTransactions([]);
 
     try {
-      const response = await fetch(workerUrl, { // Use the passed workerUrl
+      const response = await fetch(workerUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ walletAddress }),
@@ -81,16 +78,24 @@ function WalletAnalyzer({ workerUrl }) {
   );
 }
 
+function DashboardPage({ workerUrl }) {
+  const containerStyle = {
+    border: '2px solid #26cc66',  // bright green border
+    borderRadius: '8px',
+    padding: '20px',
+    margin: '20px auto',
+    maxWidth: '900px',
+    backgroundColor: '#121212', // matching dark background
+    color: '#d0ffd0',           // matching light green text
+    boxSizing: 'border-box',
+  };
 
-function DashboardPage({ workerUrl }) { // Removed handleLogout from props
   return (
-    <div>
-      {/* NavigationBar removed from here */}
+    <div style={containerStyle}>
       <p>Welcome to your dashboard.</p>
-      <hr /> {/* Added a separator */}
-      <CryptoDisplay /> {/* Added the new component */}
       <hr />
-      {/* Embed the WalletAnalyzer functionality here */}
+      <CryptoDisplay />
+      <hr />
       <WalletAnalyzer workerUrl={workerUrl} />
     </div>
   );
