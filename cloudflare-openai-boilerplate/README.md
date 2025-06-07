@@ -65,6 +65,38 @@ COINGECKO_API_KEY="your-coingecko-demo-api-key-here" # Add this line
 ```
 **Note:** The `wrangler.toml` file has placeholders for these keys in its `[vars]` section. For production, always use secrets. For local development, `.dev.vars` is convenient.
 
+**c.1. Configure Cloudflare KV for Budget Planner:**
+The Budget Planner feature uses Cloudflare KV to store budget plan data. You need to create KV namespaces and link them to your worker.
+
+*   **Step 1: Create KV Namespaces in Cloudflare Dashboard**
+    1.  Navigate to your Cloudflare Dashboard.
+    2.  Go to **Workers & Pages** > **KV**.
+    3.  Click **Create a namespace**.
+    4.  Enter a name for your production namespace (e.g., `BUDGET_PLANS_KV`) and click **Add**. Note the **ID** that is generated for this namespace.
+    5.  It's highly recommended to create a separate namespace for local development and testing. Click **Create a namespace** again.
+    6.  Enter a name for your preview/development namespace (e.g., `BUDGET_PLANS_KV_PREVIEW`) and click **Add**. Note its **ID**.
+
+*   **Step 2: Update `wrangler.toml`**
+    Open the `backend/worker-backend/wrangler.toml` file. Add or ensure the following configuration block is present, replacing the placeholder IDs with the actual IDs you obtained in Step 1:
+
+    ```toml
+    [[kv_namespaces]]
+    binding = "BUDGET_PLANS_KV"
+    id = "your_production_kv_namespace_id_here" # Replace with ID from step 1.4
+    preview_id = "your_preview_kv_namespace_id_here" # Replace with ID from step 1.6
+    ```
+    *   The `binding` value (`BUDGET_PLANS_KV`) is how you'll access the KV store in your worker code (e.g., `env.BUDGET_PLANS_KV`).
+    *   `id` is used when your worker is deployed (`npx wrangler deploy`).
+    *   `preview_id` is used when you run your worker locally with `npx wrangler dev`.
+    *   **Note:** If you only created one KV namespace (e.g., for a quick test), you can use its ID for both `id` and `preview_id`. However, be cautious if this is your production namespace, as local development would then directly affect production data.
+
+*   **Step 3: Redeploy Worker (if already deployed)**
+    If you have previously deployed your worker, you need to redeploy it for the KV binding changes in `wrangler.toml` to take effect:
+    ```bash
+    npx wrangler deploy
+    ```
+    If you are running `npx wrangler dev`, restart the development server to pick up the changes.
+
 **d. Deploy the Worker:**
 This command will build and deploy your worker to your Cloudflare account.
 ```bash
