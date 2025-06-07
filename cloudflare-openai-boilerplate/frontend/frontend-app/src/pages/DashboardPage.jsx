@@ -86,13 +86,12 @@ function DashboardPage({ workerUrl }) { // Removed handleLogout from props
   return (
     <div>
       {/* NavigationBar removed from here */}
-      <h1>Dashboard</h1>
       <p>Welcome to your dashboard.</p>
+      <hr /> {/* Added a separator */}
+      <CryptoDisplay /> {/* Added the new component */}
       <hr />
       {/* Embed the WalletAnalyzer functionality here */}
       <WalletAnalyzer workerUrl={workerUrl} />
-      <hr /> {/* Added a separator */}
-      <CryptoDisplay /> {/* Added the new component */}
     </div>
   );
 }

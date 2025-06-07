@@ -6,7 +6,6 @@ function WalletsPage() { // Removed handleLogout from props
   return (
     <div>
       {/* NavigationBar removed from here */}
-      <h1>Wallets Page</h1>
       <p>Connect, view, and manage your wallets here.</p>
       <div>
         <label htmlFor="newWalletName">Add New Wallet Name: </label>

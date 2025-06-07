@@ -3,13 +3,13 @@ import React from 'react';
 function Footer() {
   const footerStyle = {
     width: '100%',
-    backgroundColor: '#0d0d0d', // darker black background
+    backgroundColor: '#0f0f0f', // obsidian black background
     padding: '10px 20px',
-    color: '#26cc66', // vibrant green text
+    color: '#1ac0ff', // laser blue text
     textAlign: 'center',
     boxSizing: 'border-box',
     marginTop: 'auto',
-    borderTop: '2px solid #26cc66', // subtle green border on top
+    borderTop: '2px solid #1ac0ff', // laser blue border on top
     fontWeight: '600',
   };
 

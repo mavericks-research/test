@@ -6,7 +6,7 @@ function NavigationBar({ isNavVisible, handleLogout, onToggleNav, isLoggedIn }) 
   const navigate = useNavigate();
 
   const navStyle = {
-    background: '#0d0d0d', // Black background
+    background: '#0f0f0f', // Obsidian background
     padding: '10px',
     position: 'fixed',
     right: 0,
@@ -18,12 +18,12 @@ function NavigationBar({ isNavVisible, handleLogout, onToggleNav, isLoggedIn }) 
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    borderLeft: '2px solid #26cc66', // subtle green accent border
+    borderLeft: '2px solid #1ac0ff', // Laser blue accent border
   };
 
   const toggleButtonStyle = {
-    background: '#26cc66',
-    color: '#0d0d0d',
+    background: '#1ac0ff',
+    color: '#0f0f0f',
     border: 'none',
     padding: '8px',
     margin: '10px 0',
@@ -52,7 +52,7 @@ function NavigationBar({ isNavVisible, handleLogout, onToggleNav, isLoggedIn }) 
 
   const linkStyle = {
     textDecoration: 'none',
-    color: '#38ff88',
+    color: '#80eaff', // Laser blue link
     fontWeight: 'bold',
     fontSize: '1.1em',
     paddingLeft: '10px',
@@ -64,7 +64,7 @@ function NavigationBar({ isNavVisible, handleLogout, onToggleNav, isLoggedIn }) 
     background: 'none',
     border: 'none',
     cursor: 'pointer',
-    color: '#ff4f81',
+    color: '#ff6b81', // Soft pinkish red for logout (for visibility)
     width: '100%',
     textAlign: 'left',
   };

@@ -4,8 +4,8 @@ body {
   font-family: sans-serif;
   margin: 0;
   padding: 0;
-  background-color: #000000; /* Black background */
-  color: #d0ffd0;            /* Light greenish text */
+  background-color: #acacac; /* Obsidian background */
+  color: #d0f9ff;            /* Laser blue text */
   width: 100%;
   height: 100%;
   overflow-x: hidden;
@@ -22,12 +22,12 @@ html, body, #root {
   flex-direction: column;
   min-height: 100vh;
   width: 100%;
-  background-color: #121212; /* Darker background */
+  background-color: #202020;
   box-sizing: border-box;
 }
 
 h1, h2, h3 {
-  color: #90ee90; /* Light green */
+  color: #1ac0ff; /* Laser blue heading */
 }
 
 /* ========== Login Page ========== */
@@ -44,7 +44,7 @@ h1, h2, h3 {
   flex-direction: column;
   gap: 15px;
   padding: 20px;
-  border: 1px solid #333;
+  border: 1px solid #2c3e50;
   border-radius: 5px;
   background-color: #1a1a1a;
   width: 300px;
@@ -52,23 +52,23 @@ h1, h2, h3 {
 
 .login-page-container label {
   font-weight: bold;
-  color: #a0f0a0;
+  color: #80eaff;
 }
 
 .login-page-container input[type="text"],
 .login-page-container input[type="password"] {
   padding: 10px;
-  border: 1px solid #555;
+  border: 1px solid #3a5f7f;
   border-radius: 4px;
   width: calc(100% - 22px);
   background-color: #222;
-  color: #d0ffd0;
+  color: #d0f9ff;
 }
 
 .login-page-container button[type="submit"] {
   padding: 10px 15px;
-  background-color: #28a745;
-  color: white;
+  background-color: #1ac0ff;
+  color: #0f0f0f;
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -76,24 +76,25 @@ h1, h2, h3 {
 }
 
 .login-page-container button[type="submit"]:hover {
-  background-color: #218838;
+  background-color: #1094bf;
 }
 
 /* ========== Navigation Bar ========== */
 nav a {
   text-decoration: none;
-  color: #00ff88;
+  color: #1ac0ff;
   font-weight: bold;
 }
 
 nav a:hover {
   text-decoration: underline;
+  color: #1094bf;
 }
 
 /* ========== Page Content ========== */
 .page-content {
   padding: 20px;
-  color: #d0ffd0;
+  color: #d0f9ff;
 }
 
 /* ========== Wallet Analyzer ========== */
@@ -105,8 +106,8 @@ nav a:hover {
   border-radius: 4px;
   max-height: 400px;
   overflow-y: auto;
-  border: 1px solid #444;
-  color: #c0ffc0;
+  border: 1px solid #3a5f7f;
+  color: #a0ecff;
 }
 
 /* ========== Splash Screen ========== */
@@ -119,23 +120,23 @@ nav a:hover {
   text-align: center;
   padding: 20px;
   box-sizing: border-box;
-  color: #d0ffd0;
+  color: #d0f9ff;
 }
 
 .splash-screen-container img {
-  box-shadow: 0 4px 8px rgba(0, 255, 128, 0.2);
+  box-shadow: 0 4px 8px rgba(26, 192, 255, 0.2);
 }
 
 .splash-screen-container h1 {
   font-size: 2.5em;
-  color: #80ff80;
+  color: #1ac0ff;
   margin-top: 20px;
   margin-bottom: 30px;
 }
 
 .splash-screen-container button {
-  background-color: #28a745;
-  color: white;
+  background-color: #1ac0ff;
+  color: #0f0f0f;
   padding: 12px 25px;
   font-size: 1.2em;
   border: none;
@@ -145,18 +146,18 @@ nav a:hover {
 }
 
 .splash-screen-container button:hover {
-  background-color: #218838;
+  background-color: #1094bf;
 }
 
 /* ========== Hero Banner ========== */
 .hero-banner {
-  background: linear-gradient(to right, #006400, #00aa55);
+  background: linear-gradient(to right, #0d4d66, #1ac0ff);
   color: white;
   padding: 60px 20px;
   text-align: center;
   border-radius: 8px;
   margin-bottom: 40px;
-  box-shadow: 0 8px 16px rgba(0,255,128,0.1);
+  box-shadow: 0 8px 16px rgba(26,192,255,0.1);
 }
 
 .hero-banner h1 {
@@ -175,10 +176,10 @@ nav a:hover {
   bottom: 20px;
   right: 20px;
   background-color: #2d2d2d;
-  color: #a0f0a0;
+  color: #a0ecff;
   padding: 15px 20px;
   border-radius: 6px;
-  box-shadow: 0 4px 6px rgba(0,255,128,0.3);
+  box-shadow: 0 4px 6px rgba(26, 192, 255, 0.3);
   z-index: 1000;
 }
 
@@ -188,9 +189,9 @@ nav a:hover {
   padding: 20px;
   margin: 15px 0;
   border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0, 255, 128, 0.05);
+  box-shadow: 0 2px 6px rgba(26, 192, 255, 0.05);
   transition: transform 0.2s;
-  color: #d0ffd0;
+  color: #d0f9ff;
 }
 
 .card:hover {
@@ -199,8 +200,8 @@ nav a:hover {
 
 /* ========== Button Variants ========== */
 .button-secondary {
-  background-color: #444;
-  color: #a0f0a0;
+  background-color: #2c3e50;
+  color: #a0ecff;
   padding: 10px 20px;
   border-radius: 5px;
   border: none;
@@ -208,7 +209,7 @@ nav a:hover {
 }
 
 .button-secondary:hover {
-  background-color: #555;
+  background-color: #1c2b3a;
 }
 
 /* ========== Global Animations ========== */

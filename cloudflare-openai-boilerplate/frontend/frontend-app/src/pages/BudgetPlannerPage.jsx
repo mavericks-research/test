@@ -158,7 +158,6 @@ function BudgetPlannerPage() {
 
   return (
     <div className="budget-planner-page">
-      <h1>Budgeting Planner Page</h1>
       {error && <p className="error-message">Error: {typeof error === 'string' ? error : JSON.stringify(error)}</p>}
 
       {!showForm && (

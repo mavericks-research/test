@@ -4,18 +4,18 @@
   max-width: 900px;
   margin: 20px auto;
   padding: 20px;
-  font-family: sans-serif;
-  background-color: #121212; /* Dark background */
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0, 255, 0, 0.1); /* subtle green glow */
-  color: #e0e0e0; /* Light text */
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #0B1F3A; /* Deep navy */
+  border-radius: 10px;
+  box-shadow: 0 0 15px rgba(0, 255, 198, 0.07); /* Subtle neon glow */
+  color: #e0e0e0;
 }
 
 .budget-planner-page h1,
 .budget-planner-page h2,
 .budget-planner-page h3,
 .budget-planner-page h4 {
-  color: #28a745; /* Green headers */
+  color: #00ffc6; /* Neon teal */
 }
 
 .budget-planner-page h1 {
@@ -26,16 +26,16 @@
 .budget-planner-page h2 {
   margin-top: 30px;
   margin-bottom: 15px;
-  border-bottom: 1px solid #1e1e1e;
+  border-bottom: 1px solid #112233;
   padding-bottom: 5px;
 }
 
 /* Form Styling */
 .plan-form {
-  background-color: #1e1e1e;
+  background-color: #111926; /* Charcoal */
   padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 0 8px rgba(0, 255, 0, 0.05);
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 255, 198, 0.03);
   margin-top: 20px;
 }
 
@@ -47,64 +47,65 @@
   display: block;
   margin-bottom: 5px;
   font-weight: bold;
-  color: #b5ffb2;
+  color: #aef8f0;
 }
 
 .form-group input[type="text"],
 .form-group input[type="number"] {
-  width: calc(100% - 20px);
+  width: 100%;
   padding: 10px;
-  background-color: #2a2a2a;
+  background-color: #1a2533;
   color: #e0e0e0;
-  border: 1px solid #444;
-  border-radius: 4px;
+  border: 1px solid #334455;
+  border-radius: 6px;
   box-sizing: border-box;
 }
 
-/* Categories Section in Form */
+/* Categories Section */
 .categories-section {
   margin-top: 20px;
   padding-top: 15px;
-  border-top: 1px solid #1e1e1e;
+  border-top: 1px solid #112233;
 }
 
 .category-item {
-  background-color: #1a1a1a;
-  border: 1px solid #333;
+  background-color: #121c2b;
+  border: 1px solid #1f2f3f;
   padding: 15px;
   margin-bottom: 15px;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 .category-item .form-group {
   margin-bottom: 10px;
 }
 
-/* Budget Plan List Display */
+/* Budget Plan List */
 .budget-plans-list {
   list-style: none;
   padding: 0;
 }
 
 .budget-plan-item {
-  background-color: #1f1f1f;
-  border: 1px solid #333;
+  background-color: #142030;
+  border: 1px solid #2a3c4f;
   padding: 15px 20px;
   margin-bottom: 15px;
-  border-radius: 6px;
-  box-shadow: 0 2px 4px rgba(0,255,0,0.05);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 255, 198, 0.05);
 }
 
 .budget-plan-item h3 {
   margin-top: 0;
   margin-bottom: 10px;
-  color: #28a745;
+  color: #00ffc6;
 }
 
 .budget-plan-item h4 {
   margin-top: 10px;
   margin-bottom: 5px;
   font-size: 1.1em;
+  color: #68d8ff; /* Soft royal blue */
 }
 
 .budget-plan-item ul {
@@ -114,14 +115,14 @@
 }
 .budget-plan-item ul li {
   margin-bottom: 5px;
-  color: #ccc;
+  color: #c4c4c4;
 }
 
 /* Buttons */
 .btn {
   padding: 10px 15px;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   font-size: 1em;
   margin-right: 10px;
@@ -134,59 +135,59 @@
 }
 
 .btn-primary {
-  background-color: #28a745;
+  background-color: #2ecc71; /* Emerald green */
   color: black;
 }
 .btn-primary:hover:not(:disabled) {
-  background-color: #1e7e34;
+  background-color: #27ae60;
 }
 
 .btn-secondary {
-  background-color: #444;
-  color: #eee;
+  background-color: #2f3c4f;
+  color: #f0f0f0;
 }
 .btn-secondary:hover:not(:disabled) {
-  background-color: #555;
+  background-color: #3f4f6f;
 }
 
 .btn-danger {
-  background-color: #d32f2f;
+  background-color: #e74c3c;
   color: white;
 }
 .btn-danger:hover:not(:disabled) {
-  background-color: #b71c1c;
+  background-color: #c0392b;
 }
 
 .btn-edit {
-  background-color: #ffc107;
-  color: #212529;
+  background-color: #3498db; /* Bright royal blue */
+  color: #fff;
 }
 .btn-edit:hover:not(:disabled) {
-  background-color: #e0a800;
+  background-color: #217dbb;
 }
 
 .btn-add-category {
-  background-color: #28a745;
+  background-color: #2ecc71;
   color: black;
   margin-top: 10px;
 }
 .btn-add-category:hover:not(:disabled) {
-  background-color: #1e7e34;
+  background-color: #27ae60;
 }
 
 .category-item .btn-danger {
-  background-color: #ef5350;
+  background-color: #e74c3c;
   padding: 8px 12px;
   font-size: 0.9em;
 }
 .category-item .btn-danger:hover:not(:disabled) {
-  background-color: #c62828;
+  background-color: #b71c1c;
 }
 
 .actions-group {
   margin-top: 20px;
   padding-top: 15px;
-  border-top: 1px solid #1e1e1e;
+  border-top: 1px solid #112233;
   display: flex;
   justify-content: flex-start;
 }
@@ -211,7 +212,7 @@
   text-align: center;
   padding: 15px;
   font-size: 1.1em;
-  color: #a0ffa0;
+  color: #00ffc6;
 }
 
 /* Responsive */

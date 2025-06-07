@@ -4,8 +4,8 @@ function Header({ onToggleNav, isLoggedIn }) {
 
   const headerStyle = {
     width: '100%',
-    backgroundColor: '#0d0d0d', // darker black
-    color: '#26cc66', // vibrant green
+    backgroundColor: '#0f0f0f', // Obsidian black
+    color: '#1ac0ff',           // Laser blue
     padding: '10px 20px',
     display: 'flex',
     justifyContent: 'space-between',
@@ -14,7 +14,7 @@ function Header({ onToggleNav, isLoggedIn }) {
     position: 'sticky',
     top: 0,
     zIndex: 1010,
-    borderBottom: '2px solid #26cc66',
+    borderBottom: '2px solid #1ac0ff', // Accent bottom border
   };
 
   const titleStyle = {
@@ -27,8 +27,8 @@ function Header({ onToggleNav, isLoggedIn }) {
     padding: '8px 15px',
     fontSize: '0.9em',
     cursor: 'pointer',
-    backgroundColor: '#26cc66',
-    color: '#0d0d0d',
+    backgroundColor: '#1ac0ff', // Laser blue
+    color: '#0f0f0f',           // Contrast text
     border: 'none',
     borderRadius: '4px',
     fontWeight: '600',
@@ -48,4 +48,3 @@ function Header({ onToggleNav, isLoggedIn }) {
 }
 
 export default Header;
-
