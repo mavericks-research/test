@@ -5,16 +5,17 @@
   margin: 20px auto;
   padding: 20px;
   font-family: sans-serif;
-  background-color: #f9f9f9;
+  background-color: #121212; /* Dark background */
   border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.1); /* subtle green glow */
+  color: #e0e0e0; /* Light text */
 }
 
 .budget-planner-page h1,
 .budget-planner-page h2,
 .budget-planner-page h3,
 .budget-planner-page h4 {
-  color: #333;
+  color: #28a745; /* Green headers */
 }
 
 .budget-planner-page h1 {
@@ -25,16 +26,16 @@
 .budget-planner-page h2 {
   margin-top: 30px;
   margin-bottom: 15px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #1e1e1e;
   padding-bottom: 5px;
 }
 
 /* Form Styling */
 .plan-form {
-  background-color: #fff;
+  background-color: #1e1e1e;
   padding: 20px;
   border-radius: 8px;
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 0 8px rgba(0, 255, 0, 0.05);
   margin-top: 20px;
 }
 
@@ -46,14 +47,16 @@
   display: block;
   margin-bottom: 5px;
   font-weight: bold;
-  color: #555;
+  color: #b5ffb2;
 }
 
 .form-group input[type="text"],
 .form-group input[type="number"] {
   width: calc(100% - 20px);
   padding: 10px;
-  border: 1px solid #ddd;
+  background-color: #2a2a2a;
+  color: #e0e0e0;
+  border: 1px solid #444;
   border-radius: 4px;
   box-sizing: border-box;
 }
@@ -62,12 +65,12 @@
 .categories-section {
   margin-top: 20px;
   padding-top: 15px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid #1e1e1e;
 }
 
 .category-item {
-  background-color: #fdfdfd;
-  border: 1px solid #e0e0e0;
+  background-color: #1a1a1a;
+  border: 1px solid #333;
   padding: 15px;
   margin-bottom: 15px;
   border-radius: 6px;
@@ -84,18 +87,18 @@
 }
 
 .budget-plan-item {
-  background-color: #fff;
-  border: 1px solid #ddd;
+  background-color: #1f1f1f;
+  border: 1px solid #333;
   padding: 15px 20px;
   margin-bottom: 15px;
   border-radius: 6px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px rgba(0,255,0,0.05);
 }
 
 .budget-plan-item h3 {
   margin-top: 0;
   margin-bottom: 10px;
-  color: #007bff;
+  color: #28a745;
 }
 
 .budget-plan-item h4 {
@@ -111,7 +114,7 @@
 }
 .budget-plan-item ul li {
   margin-bottom: 5px;
-  color: #444;
+  color: #ccc;
 }
 
 /* Buttons */
@@ -131,30 +134,30 @@
 }
 
 .btn-primary {
-  background-color: #007bff;
-  color: white;
+  background-color: #28a745;
+  color: black;
 }
 .btn-primary:hover:not(:disabled) {
-  background-color: #0056b3;
+  background-color: #1e7e34;
 }
 
 .btn-secondary {
-  background-color: #6c757d;
-  color: white;
+  background-color: #444;
+  color: #eee;
 }
 .btn-secondary:hover:not(:disabled) {
-  background-color: #545b62;
+  background-color: #555;
 }
 
 .btn-danger {
-  background-color: #dc3545;
+  background-color: #d32f2f;
   color: white;
 }
 .btn-danger:hover:not(:disabled) {
-  background-color: #c82333;
+  background-color: #b71c1c;
 }
 
-.btn-edit { /* Specific for edit to stand out if needed, or use btn-secondary */
+.btn-edit {
   background-color: #ffc107;
   color: #212529;
 }
@@ -162,44 +165,41 @@
   background-color: #e0a800;
 }
 
-
 .btn-add-category {
   background-color: #28a745;
-  color: white;
+  color: black;
   margin-top: 10px;
 }
 .btn-add-category:hover:not(:disabled) {
   background-color: #1e7e34;
 }
 
-.category-item .btn-danger { /* Remove category button */
-  background-color: #ef5350; /* Lighter red */
+.category-item .btn-danger {
+  background-color: #ef5350;
   padding: 8px 12px;
   font-size: 0.9em;
 }
 .category-item .btn-danger:hover:not(:disabled) {
-  background-color: #d32f2f;
+  background-color: #c62828;
 }
 
-
-.actions-group { /* For save/cancel buttons container */
+.actions-group {
   margin-top: 20px;
   padding-top: 15px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid #1e1e1e;
   display: flex;
   justify-content: flex-start;
 }
 
-.plan-actions { /* For Edit/Delete buttons on list item */
-    margin-top: 15px;
+.plan-actions {
+  margin-top: 15px;
 }
-
 
 /* Error Messages */
 .error-message {
-  color: #dc3545;
-  background-color: #f8d7da;
-  border: 1px solid #f5c6cb;
+  color: #ff6b6b;
+  background-color: #3a1c1c;
+  border: 1px solid #a94442;
   padding: 10px;
   margin-bottom: 15px;
   border-radius: 4px;
@@ -211,10 +211,10 @@
   text-align: center;
   padding: 15px;
   font-size: 1.1em;
-  color: #555;
+  color: #a0ffa0;
 }
 
-/* Responsive (Basic Example) */
+/* Responsive */
 @media (max-width: 600px) {
   .budget-planner-page {
     margin: 10px;
@@ -223,21 +223,24 @@
 
   .form-group input[type="text"],
   .form-group input[type="number"] {
-    width: 100%; /* Full width on small screens */
+    width: 100%;
   }
 
   .actions-group {
     flex-direction: column;
   }
+
   .btn {
     width: 100%;
     margin-bottom: 10px;
   }
+
   .btn:last-child {
     margin-bottom: 0;
   }
+
   .plan-actions .btn {
-    width: auto; /* Revert for inline buttons */
+    width: auto;
     margin-bottom: 0;
   }
 }
