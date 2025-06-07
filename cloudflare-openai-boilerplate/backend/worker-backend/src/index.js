@@ -5,7 +5,7 @@ import { getCurrentPrices, getHistoricalData, getCoinList } from './cryptoApi.js
 const corsHeaders = {
   // IMPORTANT FOR PRODUCTION: Replace 'YOUR_FRONTEND_DOMAIN_HERE' with your actual frontend application's domain.
   // For local development, '*' can be used, but it's insecure for production.
-  'Access-Control-Allow-Origin': 'https://lumexai.netlify.app/',
+  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', // Added GET
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
