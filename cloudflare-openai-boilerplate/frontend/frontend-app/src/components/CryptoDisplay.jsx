@@ -7,13 +7,15 @@ const CryptoDisplay = () => {
   const [historicalPrice, setHistoricalPrice] = useState(null);
   const [percentageChange, setPercentageChange] = useState(null);
 
+  // Define API_BASE_URL using Vite's import.meta.env
+  // Fallback to empty string for local dev (uses Vite proxy with relative paths)
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+
   const coinOptions = [
     { value: 'bitcoin', label: 'Bitcoin' },
     { value: 'ethereum', label: 'Ethereum' },
     { value: 'dogecoin', label: 'Dogecoin' },
   ];
-
-  // Removed API_BASE_URL as we are using relative paths for backend proxy
 
   useEffect(() => {
     const fetchCurrentPrice = async () => {
@@ -21,8 +23,7 @@ const CryptoDisplay = () => {
       setCurrentPrice(null); // Reset while fetching
       setPercentageChange(null); // Reset
       try {
-        // Use relative path to our backend proxy
-        const response = await fetch(`/api/crypto/current?coins=${selectedCoin}&currencies=usd`);
+        const response = await fetch(`${API_BASE_URL}/api/crypto/current?coins=${selectedCoin}&currencies=usd`);
         if (!response.ok) {
           throw new Error(`Error fetching current price: ${response.statusText}`);
         }
@@ -53,8 +54,7 @@ const CryptoDisplay = () => {
       const formattedDate = `${day}-${month}-${year}`; // This is for the backend API parameter
 
       try {
-        // Use relative path to our backend proxy
-        const response = await fetch(`/api/crypto/historical?coin=${selectedCoin}&date=${formattedDate}`);
+        const response = await fetch(`${API_BASE_URL}/api/crypto/historical?coin=${selectedCoin}&date=${formattedDate}`);
         if (!response.ok) {
           throw new Error(`Error fetching historical price: ${response.statusText}`);
         }
