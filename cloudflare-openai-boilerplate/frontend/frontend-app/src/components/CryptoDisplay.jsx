@@ -6,6 +6,8 @@ const CryptoDisplay = () => {
   const [currentPrice, setCurrentPrice] = useState(null);
   const [historicalPrice, setHistoricalPrice] = useState(null);
   const [percentageChange, setPercentageChange] = useState(null);
+  const [openAiInsights, setOpenAiInsights] = useState(null);
+  const [isLoadingEnrichedData, setIsLoadingEnrichedData] = useState(false);
 
   // Define API_BASE_URL using Vite's import.meta.env
   // Fallback to empty string for local dev (uses Vite proxy with relative paths)
@@ -44,34 +46,49 @@ const CryptoDisplay = () => {
   }, [selectedCoin]);
 
   useEffect(() => {
-    const fetchHistoricalPrice = async () => {
+    const fetchEnrichedHistoricalData = async () => {
       if (!selectedCoin || !selectedDate) return;
-      setHistoricalPrice(null); // Reset while fetching
-      setPercentageChange(null); // Reset
 
-      // Format date from YYYY-MM-DD to DD-MM-YYYY
+      setIsLoadingEnrichedData(true);
+      setHistoricalPrice(null);
+      setOpenAiInsights(null);
+      setPercentageChange(null);
+
       const [year, month, day] = selectedDate.split('-');
-      const formattedDate = `${day}-${month}-${year}`; // This is for the backend API parameter
+      const formattedDate = `${day}-${month}-${year}`; // For the backend API parameter
 
       try {
-        const response = await fetch(`${API_BASE_URL}/api/crypto/historical?coin=${selectedCoin}&date=${formattedDate}`);
+        // Corrected query parameter names: coinId instead of coin
+        const response = await fetch(`${API_BASE_URL}/api/crypto/enriched-historical-data?coinId=${selectedCoin}&date=${formattedDate}`);
         if (!response.ok) {
-          throw new Error(`Error fetching historical price: ${response.statusText}`);
+          const errorData = await response.json().catch(() => ({ error: response.statusText }));
+          throw new Error(`Error fetching enriched historical data: ${errorData.error || response.statusText}`);
         }
         const data = await response.json();
-        if (data.market_data && data.market_data.current_price && data.market_data.current_price.usd) {
-          setHistoricalPrice(data.market_data.current_price.usd);
+
+        if (data.coinGeckoData && data.coinGeckoData.market_data && data.coinGeckoData.market_data.current_price && data.coinGeckoData.market_data.current_price.usd) {
+          setHistoricalPrice(data.coinGeckoData.market_data.current_price.usd);
         } else {
-          console.error('Historical price data not found in response:', data);
+          console.error('Historical price data not found in API response:', data);
           setHistoricalPrice(null);
         }
+
+        if (data.openAiInsights) {
+          setOpenAiInsights(data.openAiInsights);
+        } else {
+          console.error('OpenAI insights not found in API response:', data);
+          setOpenAiInsights('No insights available.');
+        }
       } catch (error) {
-        console.error("Failed to fetch historical price:", error);
+        console.error("Failed to fetch enriched historical data:", error);
         setHistoricalPrice(null);
+        setOpenAiInsights('Failed to load insights.');
+      } finally {
+        setIsLoadingEnrichedData(false);
       }
     };
 
-    fetchHistoricalPrice();
+    fetchEnrichedHistoricalData();
   }, [selectedCoin, selectedDate]);
 
   useEffect(() => {
@@ -124,14 +141,29 @@ const CryptoDisplay = () => {
           <h3>Price on {selectedDate} ({coinOptions.find(c => c.value === selectedCoin)?.label}):</h3>
           <p>${historicalPrice.toLocaleString()}</p>
         </div>
-      ) : <p>Loading historical price for {selectedDate} or data not available...</p>}
+      ) : isLoadingEnrichedData ? (
+        <p>Loading historical price for {selectedDate}...</p>
+      ) : (
+        <p>Historical price data not available for {selectedDate}.</p>
+      )}
 
       {percentageChange !== null ? (
         <div>
           <h3>Percentage Change:</h3>
           <p>{percentageChange}%</p>
         </div>
-      ) : (currentPrice !== null && historicalPrice !== null && <p>Calculating percentage change...</p>)}
+      ) : (currentPrice !== null && historicalPrice !== null && !isLoadingEnrichedData && <p>Calculating percentage change...</p>)}
+
+      <div>
+        <h3>AI Insights:</h3>
+        {isLoadingEnrichedData ? (
+          <p>Loading AI insights...</p>
+        ) : openAiInsights ? (
+          <p>{openAiInsights}</p>
+        ) : (
+          <p>No AI insights available for the selected date or an error occurred.</p>
+        )}
+      </div>
 
       {!selectedCoin && <p>Please select a coin.</p>}
     </div>

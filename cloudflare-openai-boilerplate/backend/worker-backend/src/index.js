@@ -304,6 +304,118 @@ export default {
         const data = await getCoinList(COINGECKO_API_KEY);
         return new Response(JSON.stringify(data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
+      } else if (url.pathname === '/api/crypto/enriched-historical-data' && request.method === 'GET') {
+        const coinId = url.searchParams.get('coinId');
+        const date = url.searchParams.get('date');
+
+        if (!coinId || !date) {
+          return new Response(JSON.stringify({ error: 'Missing "coinId" or "date" query parameters.' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        try {
+          // 1. Call getHistoricalData
+          const historicalData = await getHistoricalData(coinId, date, COINGECKO_API_KEY);
+
+          // Basic check to see if data is what we expect
+          if (!historicalData || !historicalData.market_data) {
+            // Log the unexpected structure for debugging
+            console.error('Unexpected historicalData structure:', historicalData);
+            return new Response(JSON.stringify({ error: 'Failed to retrieve or parse valid market data from CoinGecko.' }), {
+              status: 502, // Bad Gateway, as it's an upstream issue
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          // 2. Extract relevant market data (price, market cap, volume in USD)
+          const price = historicalData.market_data.current_price && historicalData.market_data.current_price.usd;
+          const marketCap = historicalData.market_data.market_cap && historicalData.market_data.market_cap.usd;
+          const volume = historicalData.market_data.total_volume && historicalData.market_data.total_volume.usd;
+
+          if (price === undefined || marketCap === undefined || volume === undefined) {
+            console.error('Missing USD market data fields in historicalData:', historicalData.market_data);
+            return new Response(JSON.stringify({ error: 'Required USD market data (price, market_cap, total_volume) not found in CoinGecko response.' }), {
+              status: 502,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          // 3. Check for OPENAI_API_KEY
+          const OPENAI_API_KEY = env.OPENAI_API_KEY;
+          if (!OPENAI_API_KEY) {
+            console.error('OPENAI_API_KEY not configured');
+            return new Response(JSON.stringify({ error: 'OpenAI API key is not configured.' }), {
+              status: 500, // Internal Server Error
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          // 4. Construct OpenAI Prompt
+          const openAIPrompt = `
+For the cryptocurrency ${coinId} on ${date}:
+Market Price (USD): ${price}
+Market Cap (USD): ${marketCap}
+Total Volume (USD): ${volume}
+
+Provide a brief summary of any significant news, events, or general sentiment regarding ${coinId} around ${date}.
+Briefly comment on how this news/sentiment might relate to the provided market data.
+Keep the entire response concise.
+          `;
+
+          // 5. Make POST request to OpenAI
+          const openaiResponse = await fetch('https://api.openai.com/v1/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${OPENAI_API_KEY}`,
+            },
+            body: JSON.stringify({
+              model: OPENAI_MODEL, // Already defined in outer scope
+              prompt: openAIPrompt,
+              max_tokens: 250, // Adjusted for a potentially more detailed summary
+            }),
+          });
+
+          if (!openaiResponse.ok) {
+            const errorText = await openaiResponse.text();
+            console.error('OpenAI API Error:', errorText);
+            return new Response(JSON.stringify({ error: `OpenAI API request failed: ${openaiResponse.status} ${errorText}` }), {
+              status: openaiResponse.status,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          const openaiData = await openaiResponse.json();
+          const aiSummary = openaiData.choices && openaiData.choices[0] ? openaiData.choices[0].text.trim() : 'No summary received from AI.';
+
+          // 6. Combine and return
+          return new Response(JSON.stringify({
+            coinGeckoData: historicalData, // Send the whole original object back
+            openAiInsights: aiSummary,
+          }), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+
+        } catch (error) {
+          console.error(`Error processing /api/crypto/enriched-historical-data for ${coinId} on ${date}:`, error);
+          // Check if the error is from getHistoricalData itself (e.g., CoinGecko API down or invalid coin/date)
+          // The getHistoricalData function in cryptoApi.js already throws an error that includes "CoinGecko API request failed"
+          if (error.message && error.message.includes("CoinGecko API request failed")) {
+            return new Response(JSON.stringify({ error: error.message }), {
+              status: 502, // Bad Gateway, as it's an upstream API issue
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+          // Generic error for other issues
+          return new Response(JSON.stringify({ error: `An unexpected error occurred: ${error.message}` }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
       } else if (request.method === 'POST' && url.pathname === '/') { // Existing Etherscan/OpenAI functionality - ensure it's for the root path
         // Ensure the request has a JSON body for POST requests
         let requestBody;
@@ -424,7 +536,7 @@ No transactions were found for this wallet according to Etherscan (${etherscanDa
         // End of existing POST logic
       } else {
         // Fallback for unhandled paths or methods
-        let supportedEndpoints = 'GET /api/crypto/current, GET /api/crypto/historical, POST / (for Etherscan/OpenAI)';
+        let supportedEndpoints = 'GET /api/crypto/current, GET /api/crypto/historical, GET /api/crypto/coinslist, GET /api/crypto/enriched-historical-data, POST / (for Etherscan/OpenAI)';
         supportedEndpoints += ', POST /api/budgets, GET /api/budgets, GET /api/budgets/:id, PUT /api/budgets/:id, DELETE /api/budgets/:id';
         return new Response(`Not Found. Supported endpoints: ${supportedEndpoints}`, { status: 404, headers: corsHeaders });
       }
