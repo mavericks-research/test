@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8787', // Default port for 'wrangler dev'
+        target: 'https://worker-backend.lumexai.workers.dev', // Default port for 'wrangler dev'
         changeOrigin: true,
         // No rewrite needed as the worker expects /api prefix
       }

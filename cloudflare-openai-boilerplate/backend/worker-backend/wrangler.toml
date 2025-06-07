@@ -35,3 +35,9 @@ compatibility_date = "2023-10-30" # Use a recent compatibility date
 binding = "BUDGET_PLANS_KV"
 id = "65b3b1d8b4444ca0a17b06df2cc64d37" # Developer will need to replace this
 preview_id = "0525e189950040fdadfe48dd7760d5da" # Developer will need to replace this
+
+
+# wrangler.toml (wrangler v3.88.0^)
+[observability.logs]
+enabled = true
+
