@@ -1,19 +1,26 @@
 // cloudflare-openai-boilerplate/backend/worker-backend/test/cryptoApi.test.js
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getCoinList, getCurrentPrices, getHistoricalData } from '../src/cryptoApi';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { getCoinList, getCurrentPrices, getHistoricalData, getTransactionHistory } from '../src/cryptoApi';
 
-// Mock the global fetch function used by fetchFromCoinGecko
-// Or, if fetchFromCoinGecko is easily mockable itself, that could be an alternative.
-// For this example, we'll assume fetchFromCoinGecko internally uses global fetch.
+// Mock the global fetch function
 global.fetch = vi.fn();
 
 describe('Crypto API Tests (cryptoApi.js)', () => {
   beforeEach(() => {
     // Reset mocks before each test
-    global.fetch.mockClear();
+    global.fetch.mockReset(); // Use mockReset to clear implementation and calls
   });
 
-  describe('getCoinList', () => {
+  // It's good practice to restore original implementations if they were globally mocked
+  // though for global.fetch in a test environment, just resetting might be enough.
+  // For more complex scenarios, consider vi.spyOn(global, 'fetch') and mockImplementation.
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('CoinGecko Functions', () => {
+    // --- Existing CoinGecko Tests ---
+    describe('getCoinList', () => {
     it('should fetch and return the coin list', async () => {
       const mockCoinList = [{ id: 'bitcoin', symbol: 'btc', name: 'Bitcoin' }];
       global.fetch.mockResolvedValueOnce({
@@ -103,6 +110,115 @@ describe('Crypto API Tests (cryptoApi.js)', () => {
 
     it('should throw error if date format is invalid', async () => {
       await expect(getHistoricalData('bitcoin', '2023-12-30')).rejects.toThrow('Date must be in dd-mm-yyyy format.');
+    });
+  });
+  // --- End of Existing CoinGecko Tests ---
+  });
+
+
+  describe('BlockCypher Functions (getTransactionHistory)', () => {
+    const BLOCKCYPHER_API_BASE_URL = 'https://api.blockcypher.com/v1';
+
+    it('should construct the correct API URL and fetch transaction history for BTC', async () => {
+      const mockBtcTransactions = { txs: [{ hash: 'btc_tx_1' }] };
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockBtcTransactions,
+      });
+
+      const coinSymbol = 'btc';
+      const address = 'someBtcAddress';
+      const result = await getTransactionHistory(coinSymbol, address);
+
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(global.fetch).toHaveBeenCalledWith(
+        `${BLOCKCYPHER_API_BASE_URL}/btc/main/addrs/${address}/full`,
+        expect.objectContaining({ method: 'GET' })
+      );
+      expect(result).toEqual(mockBtcTransactions.txs);
+    });
+
+    it('should construct the correct API URL and fetch transaction history for ETH with token', async () => {
+      const mockEthTransactions = { txs: [{ hash: 'eth_tx_1' }] };
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockEthTransactions,
+      });
+
+      const coinSymbol = 'eth';
+      const address = 'someEthAddress';
+      const token = 'testToken123';
+      const result = await getTransactionHistory(coinSymbol, address, token);
+
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(global.fetch).toHaveBeenCalledWith(
+        `${BLOCKCYPHER_API_BASE_URL}/eth/main/addrs/${address}/full?token=${token}`,
+        expect.objectContaining({ method: 'GET' })
+      );
+      expect(result).toEqual(mockEthTransactions.txs);
+    });
+
+    it('should construct the correct API URL for LTC (lowercase)', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ txs: [] }),
+      });
+      await getTransactionHistory('LTC', 'someLtcAddress');
+      expect(global.fetch).toHaveBeenCalledWith(
+        `${BLOCKCYPHER_API_BASE_URL}/ltc/main/addrs/someLtcAddress/full`,
+        expect.anything()
+      );
+    });
+
+    it('should return an empty array if API response has no txs field', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({}), // No 'txs' field
+      });
+      const result = await getTransactionHistory('btc', 'anotherAddress');
+      expect(result).toEqual([]);
+    });
+
+    it('should return an empty array if API response txs field is null', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ txs: null }),
+      });
+      const result = await getTransactionHistory('btc', 'anotherAddress');
+      expect(result).toEqual([]);
+    });
+
+    it('should throw an error if coinSymbol is missing', async () => {
+      await expect(getTransactionHistory(null, 'someAddress')).rejects.toThrow('coinSymbol and address must be provided.');
+    });
+
+    it('should throw an error if address is missing', async () => {
+      await expect(getTransactionHistory('btc', null)).rejects.toThrow('coinSymbol and address must be provided.');
+    });
+
+    it('should throw an error if BlockCypher API call fails (e.g., 404)', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        statusText: 'Not Found',
+        text: async () => 'Address not found or similar error.',
+      });
+      await expect(getTransactionHistory('btc', 'nonExistentAddress')).rejects.toThrow('BlockCypher API request failed: 404 Not Found - Address not found or similar error.');
+    });
+
+    it('should throw an error if BlockCypher API call fails (e.g., 500)', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: 'Server Error',
+        text: async () => 'Internal Server Error',
+      });
+      await expect(getTransactionHistory('eth', 'someEthAddress')).rejects.toThrow('BlockCypher API request failed: 500 Server Error - Internal Server Error');
+    });
+
+    it('should handle network errors during fetch', async () => {
+      global.fetch.mockRejectedValueOnce(new Error('Network failure'));
+      await expect(getTransactionHistory('ltc', 'someLtcAddress')).rejects.toThrow('Network failure');
     });
   });
 });

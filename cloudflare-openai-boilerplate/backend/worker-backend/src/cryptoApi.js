@@ -129,9 +129,74 @@ async function getHistoricalData(coinId, date, apiKey = null) {
     }
 }
 
+// --- BlockCypher API ---
+const BLOCKCYPHER_API_BASE_URL = 'https://api.blockcypher.com/v1';
+
+/**
+ * Fetches data from the BlockCypher API.
+ * @param {string} endpoint The API endpoint to call (e.g., '/btc/main/addrs/someaddress').
+ * @param {string|null} apiKeyToken Optional BlockCypher API key token.
+ * @returns {Promise<object>} The JSON response from the API.
+ */
+async function fetchFromBlockCypher(endpoint, apiKeyToken = null) {
+    const url = new URL(`${BLOCKCYPHER_API_BASE_URL}${endpoint}`);
+
+    // Add API key token if available
+    if (apiKeyToken) {
+        url.searchParams.append('token', apiKeyToken);
+    }
+
+    // console.log(`Fetching from BlockCypher URL: ${url.toString()}`); // For debugging
+
+    const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+        }
+    });
+
+    if (!response.ok) {
+        const errorBody = await response.text();
+        console.error(`BlockCypher API Error: ${response.status} ${response.statusText}`, errorBody);
+        throw new Error(`BlockCypher API request failed: ${response.status} ${response.statusText} - ${errorBody}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Fetches the transaction history for a given cryptocurrency address.
+ * Uses BlockCypher's "Address Full Endpoint".
+ * @param {string} coinSymbol - The symbol of the cryptocurrency (e.g., 'btc', 'eth', 'ltc').
+ * @param {string} address - The wallet address to fetch history for.
+ * @param {string|null} apiKeyToken - Optional BlockCypher API key token.
+ * @returns {Promise<Array<object>>} An array of transaction objects.
+ */
+async function getTransactionHistory(coinSymbol, address, apiKeyToken = null) {
+    if (!coinSymbol || !address) {
+        throw new Error('coinSymbol and address must be provided.');
+    }
+
+    // Assuming 'main' network for now. This could be parameterized later.
+    const network = 'main';
+    const endpoint = `/${coinSymbol.toLowerCase()}/${network}/addrs/${address}/full`;
+
+    try {
+        const data = await fetchFromBlockCypher(endpoint, apiKeyToken);
+        // The Address Full endpoint returns an object that includes a 'txs' array.
+        return data.txs || []; // Return an empty array if no transactions are found
+    } catch (error) {
+        console.error(`Error fetching transaction history for ${coinSymbol} address ${address}:`, error);
+        // Depending on how you want to handle errors, you might re-throw or return a default
+        throw error;
+    }
+}
+
+
 // Export functions as they are implemented
 export {
     getCoinList,
     getCurrentPrices,
     getHistoricalData,
+    getTransactionHistory,
 };
