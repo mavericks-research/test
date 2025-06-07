@@ -21,7 +21,7 @@ function ProtectedRoute({ children, isAuthenticated }) {
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isNavVisible, setIsNavVisible] = useState(false);
-  const WORKER_URL = 'http://localhost:8787';
+  const WORKER_URL = 'https://worker-backend.lumexai.workers.dev';
 
   const toggleNav = () => setIsNavVisible(prev => !prev);
 
