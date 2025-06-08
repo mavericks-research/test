@@ -1,5 +1,5 @@
 import { normalizeTokenNames, normalizeTimestamps, normalizeBlockCypherTransactions, convertToUSD } from './normalizer.js';
-import { getCurrentPrices, getHistoricalData, getCoinList, getTransactionHistory, getCoinsByBlockchain } from './cryptoApi.js';
+import { getCurrentPrices, getHistoricalData, getCoinList, getTransactionHistory, getCoinsByBlockchain, getMarketChartData } from './cryptoApi.js'; // Added getMarketChartData
 
 // Define CORS headers - Added GET
 const corsHeaders = {
@@ -709,6 +709,56 @@ Provide a concise, human-readable analysis.
       }
       // --- End of New Route ---
 
+      // --- New Route for Crypto Market Chart ---
+      else if (url.pathname.startsWith('/api/crypto/market-chart/') && request.method === 'GET') {
+        const parts = url.pathname.split('/');
+        const coinId = parts[4]; // Assuming path like /api/crypto/market-chart/bitcoin
+        const days = url.searchParams.get('days') || '30'; // Default to 30 days if not specified
+
+        if (!coinId) {
+          return new Response(JSON.stringify({ error: 'Coin ID missing in path. Expected /api/crypto/market-chart/:coinId' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const COINGECKO_API_KEY = env.COINGECKO_API_KEY || null;
+
+        try {
+          // IMPORTANT: We are assuming getMarketChartData will be created in cryptoApi.js in a subsequent step.
+          const rawChartData = await getMarketChartData(coinId, days, COINGECKO_API_KEY);
+
+          // CoinGecko's market_chart endpoint returns { prices: [[timestamp, price], ...], market_caps: ..., total_volumes: ... }
+          if (rawChartData && Array.isArray(rawChartData.prices)) {
+            const formattedPrices = rawChartData.prices.map(p => ({
+              date: new Date(p[0]).toISOString().split('T')[0], // Convert timestamp to YYYY-MM-DD
+              price: p[1],
+            }));
+            return new Response(JSON.stringify(formattedPrices), {
+              status: 200,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          } else {
+            console.error(`No price data or unexpected format from getMarketChartData for ${coinId}, days ${days}:`, rawChartData);
+            return new Response(JSON.stringify({ error: 'No chart data found or unexpected format from upstream API.' }), {
+              status: 404,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+        } catch (error) {
+          console.error(`Error fetching market chart for ${coinId}, days ${days}:`, error);
+          let errorStatus = 500;
+          if (error.message && error.message.includes("CoinGecko API request failed")) {
+            errorStatus = 502;
+          }
+          return new Response(JSON.stringify({ error: error.message || 'Error retrieving market chart data.' }), {
+            status: errorStatus,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+      // --- End of New Crypto Market Chart Route ---
+
       // --- Stock Market API Routes ---
       else if (url.pathname.startsWith('/api/stocks/profile/') && request.method === 'GET') {
         const symbol = url.pathname.split('/')[4];
@@ -856,7 +906,7 @@ Provide a concise, human-readable analysis.
 
       // Fallback for unhandled paths or methods must be the FINAL else in the chain
       else {
-        let supportedEndpoints = 'GET /api/crypto/current, GET /api/crypto/historical, GET /api/crypto/coinslist, GET /api/crypto/enriched-historical-data, GET /api/crypto/transaction-analysis, POST / (for Etherscan/OpenAI), GET /api/crypto/coins-by-blockchain';
+        let supportedEndpoints = 'GET /api/crypto/current, GET /api/crypto/historical, GET /api/crypto/coinslist, GET /api/crypto/enriched-historical-data, GET /api/crypto/transaction-analysis, POST / (for Etherscan/OpenAI), GET /api/crypto/coins-by-blockchain, GET /api/crypto/market-chart/:coinId?days=:days';
         supportedEndpoints += ', POST /api/budgets, GET /api/budgets, GET /api/budgets/:id, PUT /api/budgets/:id, DELETE /api/budgets/:id';
         supportedEndpoints += ', GET /api/stocks/profile/:symbol, GET /api/stocks/quote/:symbol, GET /api/stocks/historical/:symbol';
         return new Response(`Not Found. Supported endpoints: ${supportedEndpoints}`, { status: 404, headers: corsHeaders });
