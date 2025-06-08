@@ -234,7 +234,7 @@ const CryptoDisplay = () => {
           onChange={(e) => setSelectedDate(e.target.value)}
         />
       </div>
-
+      )} {/* Correctly closing the parenthesis for the date picker conditional */}
 
       {/* Display for single selected coin */}
       {selectedCoin && (
