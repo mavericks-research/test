@@ -98,71 +98,50 @@ const CryptoDisplay = () => {
         case 'Solana':
           platformApiName = 'solana';
           break;
-        case 'Polygon':
+        case "Polygon":
           platformApiName = 'polygon-pos';
           break;
-        case 'Avalanche':
+        case "Avalanche":
           platformApiName = 'avalanche';
           break;
-        case 'Arbitrum':
+        case "Arbitrum":
           platformApiName = 'arbitrum-one';
           break;
-        case 'Optimism':
+        case "Optimism":
           platformApiName = 'optimistic-ethereum';
           break;
-        case 'Fantom':
+        case "Fantom":
           platformApiName = 'fantom';
           break;
-        case 'Base':
-          platformApiName = 'base';
-          break;
-        case 'Cronos':
-          platformApiName = 'cronos';
-          break;
-        case 'Tron':
+        case "Tron":
           platformApiName = 'tron';
           break;
-        case 'Cardano':
+        case "Cardano":
           platformApiName = 'cardano';
           break;
-        case 'Polkadot':
+        case "Polkadot":
           platformApiName = 'polkadot';
           break;
-        case 'Near':
+        case "Near":
           platformApiName = 'near-protocol';
           break;
-        case 'Algorand':
+        case "Algorand":
           platformApiName = 'algorand';
           break;
-        case 'Hedera':
-          platformApiName = 'hedera-hashgraph';
-          break;
-        case 'Kava':
-          platformApiName = 'kava';
-          break;
-        case 'Zilliqa':
-          platformApiName = 'zilliqa';
-          break;
-        case 'Celo':
+        case "Celo":
           platformApiName = 'celo';
           break;
-        case 'Cosmos':
+        case "Cosmos":
           platformApiName = 'cosmos';
           break;
-        case 'Harmony':
-          platformApiName = 'harmony-shard-0';
-          break;
-        case 'Tezos':
+        case "Tezos":
           platformApiName = 'tezos';
           break;
-        case 'Stellar':
+        case "Stellar":
           platformApiName = 'stellar';
           break;
-        case 'VeChain':
+        case "VeChain":
           platformApiName = 'vechain';
-          break;
-        case 'Thorchain':
-          platformApiName = 'thorchain';
           break;
         default:
           setIsLoadingBlockchainTokens(false);
@@ -291,23 +270,16 @@ const CryptoDisplay = () => {
           <option value="Arbitrum">Arbitrum</option>
           <option value="Optimism">Optimism</option>
           <option value="Fantom">Fantom</option>
-          <option value="Base">Base</option>
-          <option value="Cronos">Cronos</option>
           <option value="Tron">Tron</option>
           <option value="Cardano">Cardano</option>
           <option value="Polkadot">Polkadot</option>
           <option value="Near">Near</option>
           <option value="Algorand">Algorand</option>
-          <option value="Hedera">Hedera</option>
-          <option value="Kava">Kava</option>
-          <option value="Zilliqa">Zilliqa</option>
           <option value="Celo">Celo</option>
           <option value="Cosmos">Cosmos</option>
-          <option value="Harmony">Harmony</option>
           <option value="Tezos">Tezos</option>
           <option value="Stellar">Stellar</option>
           <option value="VeChain">VeChain</option>
-          <option value="Thorchain">Thorchain</option>
         </select>
       </div>
 

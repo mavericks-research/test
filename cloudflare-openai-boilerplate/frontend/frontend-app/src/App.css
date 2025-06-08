@@ -93,7 +93,7 @@ nav a:hover {
 
 /* ========== Page Content ========== */
 .page-content {
-  padding: 40px;
+  padding: 20px;
   color: var(--color-text); /* Changed from #d0f9ff */
 }
 
