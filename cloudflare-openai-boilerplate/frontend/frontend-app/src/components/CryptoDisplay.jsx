@@ -282,7 +282,7 @@ const CryptoDisplay = () => {
 
       {/* Display for Blockchain Tokens */}
       {selectedBlockchain && (
-        <div>
+        <div style={{ fontSize: '0.9em' }}>
           <h3>Tokens on {selectedBlockchain}</h3>
           {isLoadingBlockchainTokens ? (
             <p>Loading tokens for {selectedBlockchain}...</p>
@@ -290,7 +290,6 @@ const CryptoDisplay = () => {
             <table>
               <thead>
                 <tr>
-                  <th>Name</th>
                   <th>Symbol</th>
                   <th>Price (USD)</th>
                   <th>Market Cap (USD)</th>
@@ -301,7 +300,6 @@ const CryptoDisplay = () => {
               <tbody>
                 {blockchainTokens.map(token => (
                   <tr key={token.id}>
-                    <td>{token.name}</td>
                     <td>{token.symbol.toUpperCase()}</td>
                     <td>${token.current_price ? token.current_price.toLocaleString() : 'N/A'}</td>
                     <td>${token.market_cap ? token.market_cap.toLocaleString() : 'N/A'}</td>

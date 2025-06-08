@@ -311,7 +311,7 @@ describe('CryptoDisplay Component', () => {
 
     await waitFor(() => {
       // Check for table headers
-      expect(screen.getByRole('columnheader', { name: 'Name' })).toBeInTheDocument();
+      expect(screen.queryByRole('columnheader', { name: 'Name' })).not.toBeInTheDocument(); // Name header should be gone
       expect(screen.getByRole('columnheader', { name: 'Symbol' })).toBeInTheDocument();
       expect(screen.getByRole('columnheader', { name: /Price \(USD\)/i })).toBeInTheDocument();
       expect(screen.getByRole('columnheader', { name: /Market Cap \(USD\)/i })).toBeInTheDocument();
@@ -319,14 +319,14 @@ describe('CryptoDisplay Component', () => {
       expect(screen.getByRole('columnheader', { name: /Change \(24h\)/i })).toBeInTheDocument();
 
       // Check for token data
-      expect(screen.getByText('Token A')).toBeInTheDocument();
+      expect(screen.queryByText('Token A')).not.toBeInTheDocument(); // Name data should be gone
       expect(screen.getByText('TKA')).toBeInTheDocument();
-      expect(screen.getByText('$120.50')).toBeInTheDocument(); // toLocaleString might add .00
+      expect(screen.getByText('$120.50')).toBeInTheDocument();
       expect(screen.getByText('$12,000,000')).toBeInTheDocument();
       expect(screen.getByText('$500,000')).toBeInTheDocument();
       expect(screen.getByText('3.50%')).toBeInTheDocument();
 
-      expect(screen.getByText('Token B')).toBeInTheDocument();
+      expect(screen.queryByText('Token B')).not.toBeInTheDocument(); // Name data should be gone
       expect(screen.getByText('TKB')).toBeInTheDocument();
       expect(screen.getByText('$0.99')).toBeInTheDocument();
       expect(screen.getByText('$990,000')).toBeInTheDocument();
