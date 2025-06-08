@@ -14,6 +14,7 @@ const CryptoDisplay = () => {
   const [selectedBlockchain, setSelectedBlockchain] = useState('');
   const [blockchainTokens, setBlockchainTokens] = useState([]);
   const [isLoadingBlockchainTokens, setIsLoadingBlockchainTokens] = useState(false);
+  const [showTokenName, setShowTokenName] = useState(false); // <-- New state variable
 
   // Define API_BASE_URL using Vite's import.meta.env
   // Fallback to empty string for local dev (uses Vite proxy with relative paths)
@@ -21,7 +22,13 @@ const CryptoDisplay = () => {
 
   const commonCellStyle = { overflowWrap: 'break-word' };
   const blockchainSectionStyle = { fontSize: '0.9em', overflowX: 'auto' };
-  const blockchainTableStyle = { minWidth: '600px', width: '100%' };
+  // blockchainTableStyle is now dependent on showTokenName, so it's defined within the return or just before it.
+  // For simplicity here, we'll construct it right where it's used, or ensure this const is re-evaluated.
+  // Let's adjust its definition to be dynamic based on showTokenName.
+  const blockchainTableStyle = {
+    minWidth: showTokenName ? '750px' : '600px', // Dynamic min-width
+    width: '100%'
+  };
 
   const coinOptions = [
     { value: 'bitcoin', label: 'Bitcoin' },
@@ -288,22 +295,39 @@ const CryptoDisplay = () => {
       {selectedBlockchain && (
         <div style={blockchainSectionStyle}>
           <h3>Tokens on {selectedBlockchain}</h3>
+
+          {/* Toggle for showing token name */}
+          <div style={{ margin: '10px 0' }}>
+            <label htmlFor="showNameToggle" style={{ marginRight: '8px', cursor: 'pointer' }}>
+              Show Full Name:
+            </label>
+            <input
+              type="checkbox"
+              id="showNameToggle"
+              checked={showTokenName}
+              onChange={(e) => setShowTokenName(e.target.checked)}
+              style={{ cursor: 'pointer' }}
+            />
+          </div>
+
           {isLoadingBlockchainTokens ? (
             <p>Loading tokens for {selectedBlockchain}...</p>
           ) : blockchainTokens.length > 0 ? (
             <table style={blockchainTableStyle}>
               <thead>
                 <tr>
-                  <th>Symbol</th>
-                  <th>Price (USD)</th>
-                  <th>Market Cap (USD)</th>
-                  <th>Volume (24h)</th>
-                  <th>Change (24h)</th>
+                  {showTokenName && <th style={commonCellStyle}>Name</th>}
+                  <th style={commonCellStyle}>Symbol</th>
+                  <th style={commonCellStyle}>Price (USD)</th>
+                  <th style={commonCellStyle}>Market Cap (USD)</th>
+                  <th style={commonCellStyle}>Volume (24h)</th>
+                  <th style={commonCellStyle}>Change (24h)</th>
                 </tr>
               </thead>
               <tbody>
                 {blockchainTokens.map(token => (
                   <tr key={token.id}>
+                    {showTokenName && <td style={commonCellStyle}>{token.name}</td>}
                     <td style={commonCellStyle}>{token.symbol.toUpperCase()}</td>
                     <td style={commonCellStyle}>${token.current_price ? token.current_price.toLocaleString() : 'N/A'}</td>
                     <td style={commonCellStyle}>${token.market_cap ? token.market_cap.toLocaleString() : 'N/A'}</td>

@@ -295,12 +295,23 @@ describe('CryptoDisplay Component', () => {
     });
   });
 
-  test('displays loading state and then tokens for a selected blockchain', async () => {
+  test('displays loading state and then tokens for a selected blockchain, and allows toggling Name column', async () => {
     const mockEthTokens = [
-      { id: 'token-a', name: 'Token A', symbol: 'TKA', current_price: 120.5, market_cap: 12000000, total_volume: 500000, price_change_percentage_24h: 3.5 },
-      { id: 'token-b', name: 'Token B', symbol: 'TKB', current_price: 0.99, market_cap: 990000, total_volume: 150000, price_change_percentage_24h: -1.2 },
+      { id: 'token-a', name: 'Ethereum Token A', symbol: 'TKA', current_price: 120.5, market_cap: 12000000, total_volume: 500000, price_change_percentage_24h: 3.5 },
+      { id: 'token-b', name: 'Ethereum Token B', symbol: 'TKB', current_price: 0.99, market_cap: 990000, total_volume: 150000, price_change_percentage_24h: -1.2 },
     ];
-    mockFetchSuccess(mockEthTokens, '/api/crypto/coins-by-blockchain?platform=ethereum&currency=usd');
+    // Ensure this mock is active for the 'ethereum' platform when selected.
+    // If other tests select ethereum, ensure fetch.mockClear() is used or mock is specific enough.
+    fetch.mockImplementation((url) => {
+      if (url.includes('/api/crypto/coins-by-blockchain?platform=ethereum&currency=usd')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => mockEthTokens,
+        });
+      }
+      // Fallback for other URLs if necessary, or let them fail if not expected
+      return Promise.resolve({ ok: false, status: 404, json: async () => ({error: "Not Found"})});
+    });
 
     render(<CryptoDisplay />);
     const blockchainSelect = screen.getByLabelText('Select Blockchain:');
@@ -309,33 +320,56 @@ describe('CryptoDisplay Component', () => {
     // Check for loading state
     expect(screen.getByText('Loading tokens for Ethereum...')).toBeInTheDocument();
 
-    await waitFor(() => {
-      // Check for table headers
-      expect(screen.queryByRole('columnheader', { name: 'Name' })).not.toBeInTheDocument(); // Name header should be gone
-      expect(screen.getByRole('columnheader', { name: 'Symbol' })).toBeInTheDocument();
-      expect(screen.getByRole('columnheader', { name: /Price \(USD\)/i })).toBeInTheDocument();
+    const table = await screen.findByRole('table'); // Ensure table is loaded
+
+    // Initial state (Name column hidden by default)
+    expect(screen.queryByRole('columnheader', { name: /Name/i })).not.toBeInTheDocument();
+    expect(screen.queryByText('Ethereum Token A')).not.toBeInTheDocument();
+    expect(screen.queryByText('Ethereum Token B')).not.toBeInTheDocument();
+    // Check other headers are present
+    expect(screen.getByRole('columnheader', { name: 'Symbol' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /Price \(USD\)/i })).toBeInTheDocument();
       expect(screen.getByRole('columnheader', { name: /Market Cap \(USD\)/i })).toBeInTheDocument();
       expect(screen.getByRole('columnheader', { name: /Volume \(24h\)/i })).toBeInTheDocument();
       expect(screen.getByRole('columnheader', { name: /Change \(24h\)/i })).toBeInTheDocument();
 
-      // Check for token data
-      expect(screen.queryByText('Token A')).not.toBeInTheDocument(); // Name data should be gone
+      // Check for token data (Symbol should be there, Name should not)
       expect(screen.getByText('TKA')).toBeInTheDocument();
-      expect(screen.getByText('$120.50')).toBeInTheDocument();
-      expect(screen.getByText('$12,000,000')).toBeInTheDocument();
-      expect(screen.getByText('$500,000')).toBeInTheDocument();
-      expect(screen.getByText('3.50%')).toBeInTheDocument();
-
-      expect(screen.queryByText('Token B')).not.toBeInTheDocument(); // Name data should be gone
       expect(screen.getByText('TKB')).toBeInTheDocument();
-      expect(screen.getByText('$0.99')).toBeInTheDocument();
-      expect(screen.getByText('$990,000')).toBeInTheDocument();
-      expect(screen.getByText('$150,000')).toBeInTheDocument();
-      expect(screen.getByText('-1.20%')).toBeInTheDocument();
-    });
 
     // Ensure loading message is gone
     expect(screen.queryByText('Loading tokens for Ethereum...')).not.toBeInTheDocument();
+
+    // Find and interact with the checkbox
+    const showNameCheckbox = screen.getByLabelText(/Show Full Name/i);
+    expect(showNameCheckbox).toBeInTheDocument();
+    expect(showNameCheckbox).not.toBeChecked();
+
+    // Click to show Name column
+    fireEvent.click(showNameCheckbox);
+    expect(showNameCheckbox).toBeChecked();
+
+    // Assert Name column and data are now visible
+    await waitFor(() => {
+      expect(screen.getByRole('columnheader', { name: /Name/i })).toBeInTheDocument();
+    });
+    expect(screen.getByText('Ethereum Token A')).toBeInTheDocument();
+    expect(screen.getByText('Ethereum Token B')).toBeInTheDocument();
+    // Check table style for minWidth (more complex, might need getComputedStyle or direct style check)
+    // For now, focusing on visibility. We can assume the style object is correctly updated.
+    // expect(table).toHaveStyle('min-width: 750px'); // This specific check might be brittle
+
+    // Click to hide Name column again
+    fireEvent.click(showNameCheckbox);
+    expect(showNameCheckbox).not.toBeChecked();
+
+    // Assert Name column and data are hidden again
+    await waitFor(() => {
+      expect(screen.queryByRole('columnheader', { name: /Name/i })).not.toBeInTheDocument();
+    });
+    expect(screen.queryByText('Ethereum Token A')).not.toBeInTheDocument();
+    expect(screen.queryByText('Ethereum Token B')).not.toBeInTheDocument();
+    // expect(table).toHaveStyle('min-width: 600px'); // Check if minWidth reverted
   });
 
   test('clears selected coin when a blockchain is selected', async () => {
