@@ -1,6 +1,6 @@
 // frontend/frontend-app/src/pages/SettingsPage.jsx
 import React, { useContext } from 'react';
-import SettingsContext from '../contexts/SettingsContext.js'; // Adjusted path
+import { SettingsContext } from '../contexts/SettingsContext.js'; // Adjusted path
 // Removed NavigationBar import
 
 function SettingsPage() { // Removed handleLogout from props
