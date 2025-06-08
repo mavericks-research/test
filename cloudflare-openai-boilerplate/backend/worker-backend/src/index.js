@@ -709,10 +709,156 @@ Provide a concise, human-readable analysis.
       }
       // --- End of New Route ---
 
+      // --- Stock Market API Routes ---
+      else if (url.pathname.startsWith('/api/stocks/profile/') && request.method === 'GET') {
+        const symbol = url.pathname.split('/')[4];
+        const apiKey = env.FMP_API_KEY;
+
+        if (!apiKey) {
+          console.error('FMP_API_KEY not configured');
+          return new Response(JSON.stringify({ error: 'Financial Modeling Prep API key not configured.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+        if (!symbol) {
+          return new Response(JSON.stringify({ error: 'Stock symbol missing in path.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+
+        const fmpUrl = `https://financialmodelingprep.com/api/v3/profile/${symbol}?apikey=${apiKey}`;
+        try {
+          const fmpResponse = await fetch(fmpUrl);
+          if (!fmpResponse.ok) {
+            console.error(`FMP API error for profile ${symbol}: ${fmpResponse.status} ${fmpResponse.statusText}`);
+            return new Response(JSON.stringify({ error: `Failed to fetch company profile from FMP: ${fmpResponse.status}` }), { status: fmpResponse.status === 404 ? 404 : 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+          const data = await fmpResponse.json();
+          if (Array.isArray(data) && data.length > 0) {
+            const profile = data[0];
+            return new Response(JSON.stringify({
+              symbol: profile.symbol,
+              companyName: profile.companyName,
+              image: profile.image,
+              description: profile.description,
+              industry: profile.industry,
+              sector: profile.sector,
+              marketCap: profile.mktCap, // Note: FMP uses mktCap
+              exchangeShortName: profile.exchangeShortName,
+              currency: profile.currency,
+              website: profile.website,
+            }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          } else {
+            return new Response(JSON.stringify({ error: 'No profile data found for symbol or unexpected format.' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+        } catch (err) {
+          console.error(`Error fetching/processing FMP profile for ${symbol}:`, err);
+          return new Response(JSON.stringify({ error: 'Internal server error while fetching company profile.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+      }
+      else if (url.pathname.startsWith('/api/stocks/quote/') && request.method === 'GET') {
+        const symbol = url.pathname.split('/')[4];
+        const apiKey = env.FMP_API_KEY;
+
+        if (!apiKey) {
+          console.error('FMP_API_KEY not configured');
+          return new Response(JSON.stringify({ error: 'Financial Modeling Prep API key not configured.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+        if (!symbol) {
+          return new Response(JSON.stringify({ error: 'Stock symbol missing in path.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+
+        const fmpUrl = `https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=${apiKey}`;
+        try {
+          const fmpResponse = await fetch(fmpUrl);
+          if (!fmpResponse.ok) {
+            console.error(`FMP API error for quote ${symbol}: ${fmpResponse.status} ${fmpResponse.statusText}`);
+            return new Response(JSON.stringify({ error: `Failed to fetch stock quote from FMP: ${fmpResponse.status}` }), { status: fmpResponse.status === 404 ? 404 : 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+          const data = await fmpResponse.json();
+          if (Array.isArray(data) && data.length > 0) {
+            const quote = data[0];
+            return new Response(JSON.stringify({
+              symbol: quote.symbol,
+              name: quote.name,
+              price: quote.price,
+              changesPercentage: quote.changesPercentage,
+              change: quote.change,
+              dayLow: quote.dayLow,
+              dayHigh: quote.dayHigh,
+              yearHigh: quote.yearHigh,
+              yearLow: quote.yearLow,
+              marketCap: quote.marketCap,
+              volume: quote.volume,
+              avgVolume: quote.avgVolume,
+              open: quote.open,
+              previousClose: quote.previousClose,
+              exchange: quote.exchange,
+            }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          } else {
+            return new Response(JSON.stringify({ error: 'No quote data found for symbol or unexpected format.' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+        } catch (err) {
+          console.error(`Error fetching/processing FMP quote for ${symbol}:`, err);
+          return new Response(JSON.stringify({ error: 'Internal server error while fetching stock quote.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+      }
+      else if (url.pathname.startsWith('/api/stocks/historical/') && request.method === 'GET') {
+        const symbol = url.pathname.split('/')[4];
+        const apiKey = env.FMP_API_KEY;
+
+        if (!apiKey) {
+          console.error('FMP_API_KEY not configured');
+          return new Response(JSON.stringify({ error: 'Financial Modeling Prep API key not configured.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+        if (!symbol) {
+          return new Response(JSON.stringify({ error: 'Stock symbol missing in path.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+
+        // Optional: Add &timeseries=365 for 1 year, or other values. Default is often 5 years.
+        const fmpUrl = `https://financialmodelingprep.com/api/v3/historical-price-full/${symbol}?apikey=${apiKey}`;
+        try {
+          const fmpResponse = await fetch(fmpUrl);
+          if (!fmpResponse.ok) {
+            console.error(`FMP API error for historical data ${symbol}: ${fmpResponse.status} ${fmpResponse.statusText}`);
+            return new Response(JSON.stringify({ error: `Failed to fetch historical data from FMP: ${fmpResponse.status}` }), { status: fmpResponse.status === 404 ? 404 : 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+          const data = await fmpResponse.json();
+          // FMP historical data is usually an object like { symbol: "AAPL", historical: [...] }
+          if (data && Array.isArray(data.historical) && data.historical.length > 0) {
+            const historicalData = data.historical.map(item => ({
+              date: item.date,
+              close: item.close,
+              volume: item.volume,
+              // Add other fields if needed: open: item.open, high: item.high, low: item.low, change: item.change, changePercent: item.changePercent
+            }));
+            return new Response(JSON.stringify(historicalData), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          } else if (Array.isArray(data) && data.length > 0 && data[0] && data[0].historical ) { // some symbols might return [{historical: []}]
+             const historicalData = data[0].historical.map(item => ({
+                date: item.date,
+                close: item.close,
+                volume: item.volume,
+             }));
+            return new Response(JSON.stringify(historicalData), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
+          }
+          else {
+            // Handle cases where FMP might return an empty object for a symbol it doesn't have full historical data for,
+            // or if `data.historical` is empty.
+            if (data && data.historical && data.historical.length === 0) {
+                 return new Response(JSON.stringify([]), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }); // Return empty array
+            }
+            console.warn(`No historical data array found for symbol ${symbol} or unexpected FMP format:`, data);
+            return new Response(JSON.stringify({ error: 'No historical data found for symbol or unexpected format.' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+        } catch (err) {
+          console.error(`Error fetching/processing FMP historical for ${symbol}:`, err);
+          return new Response(JSON.stringify({ error: 'Internal server error while fetching historical stock data.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+      }
+      // --- End of Stock Market API Routes ---
+
       // Fallback for unhandled paths or methods must be the FINAL else in the chain
       else {
         let supportedEndpoints = 'GET /api/crypto/current, GET /api/crypto/historical, GET /api/crypto/coinslist, GET /api/crypto/enriched-historical-data, GET /api/crypto/transaction-analysis, POST / (for Etherscan/OpenAI), GET /api/crypto/coins-by-blockchain';
         supportedEndpoints += ', POST /api/budgets, GET /api/budgets, GET /api/budgets/:id, PUT /api/budgets/:id, DELETE /api/budgets/:id';
+        supportedEndpoints += ', GET /api/stocks/profile/:symbol, GET /api/stocks/quote/:symbol, GET /api/stocks/historical/:symbol';
         return new Response(`Not Found. Supported endpoints: ${supportedEndpoints}`, { status: 404, headers: corsHeaders });
       }
     } catch (error) {

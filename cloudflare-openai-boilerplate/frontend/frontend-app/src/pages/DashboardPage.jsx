@@ -1,5 +1,9 @@
-import React, { useState } from 'react'; // Added useState for WalletAnalyzer
+import React, { useState, useEffect } from 'react'; // Added useState for WalletAnalyzer, useEffect for stock data
 import CryptoDisplay from '../components/CryptoDisplay'; // Import CryptoDisplay
+import StockSelector from '../components/StockSelector';
+import StockQuoteDisplay from '../components/StockQuoteDisplay';
+import StockHistoricalChart from '../components/StockHistoricalChart';
+import { getStockProfile, getStockQuote, getStockHistoricalData } from '../services/stockService';
 // Removed NavigationBar import
 
 function WalletAnalyzer({ workerUrl }) {
@@ -79,6 +83,45 @@ function WalletAnalyzer({ workerUrl }) {
 }
 
 function DashboardPage({ workerUrl }) {
+  // Stock Market Data States
+  const [selectedStockSymbol, setSelectedStockSymbol] = useState('');
+  const [stockProfileData, setStockProfileData] = useState(null);
+  const [stockQuoteData, setStockQuoteData] = useState(null);
+  const [stockHistoricalData, setStockHistoricalData] = useState(null);
+  const [isStockLoading, setIsStockLoading] = useState(false);
+  const [stockError, setStockError] = useState(null);
+
+  const handleSymbolSubmit = async (symbol) => {
+    setIsStockLoading(true);
+    setStockError(null);
+    setSelectedStockSymbol(symbol);
+    // Clear previous data
+    setStockProfileData(null);
+    setStockQuoteData(null);
+    setStockHistoricalData(null);
+
+    try {
+      // Using Promise.all to fetch in parallel
+      // Note: FMP API often returns arrays for profile/quote even for single symbol. Service functions should handle this if needed,
+      // or it can be handled here. For now, assuming service functions return the expected object/array.
+      const [profile, quote, historical] = await Promise.all([
+        getStockProfile(symbol),
+        getStockQuote(symbol),
+        getStockHistoricalData(symbol)
+      ]);
+
+      setStockProfileData(profile); // Assumes getStockProfile returns the first element if FMP returns array
+      setStockQuoteData(quote);     // Assumes getStockQuote returns the first element if FMP returns array
+      setStockHistoricalData(historical); // historical is expected to be an array
+
+    } catch (error) {
+      console.error("Failed to fetch stock data:", error);
+      setStockError(error.message || 'Failed to fetch stock data. Please check the symbol or try again.');
+    } finally {
+      setIsStockLoading(false);
+    }
+  };
+
   const containerStyle = {
     border: '2px solid var(--color-accent)',  // Was #26cc66
     borderRadius: '8px',
@@ -98,6 +141,33 @@ function DashboardPage({ workerUrl }) {
       <CryptoDisplay />
       <hr />
       <WalletAnalyzer workerUrl={workerUrl} />
+      <hr style={{ margin: '30px 0', borderColor: 'var(--color-border)' }}/>
+
+      <div style={{ marginTop: '20px' }}>
+        <h2>Stock Market Data</h2>
+        <StockSelector onSymbolSubmit={handleSymbolSubmit} />
+
+        {isStockLoading && <p>Loading stock data...</p>}
+        {stockError && <p style={{ color: 'red' }}>Error: {stockError}</p>}
+
+        {!isStockLoading && !stockError && selectedStockSymbol && (
+          <div style={{ marginTop: '20px' }}>
+            {stockQuoteData && <StockQuoteDisplay quoteData={stockQuoteData} profileData={stockProfileData} />}
+            {stockHistoricalData && stockHistoricalData.length > 0 && (
+              <StockHistoricalChart
+                historicalData={stockHistoricalData}
+                stockName={stockQuoteData?.name || selectedStockSymbol}
+              />
+            )}
+            {stockHistoricalData && stockHistoricalData.length === 0 && (
+              <p>No historical data points found for {stockQuoteData?.name || selectedStockSymbol}.</p>
+            )}
+          </div>
+        )}
+         {!isStockLoading && !stockError && !selectedStockSymbol && (
+          <p>Enter a stock symbol above to view its data.</p>
+        )}
+      </div>
     </div>
   );
 }
