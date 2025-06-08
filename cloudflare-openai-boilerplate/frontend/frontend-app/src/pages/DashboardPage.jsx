@@ -74,7 +74,7 @@ function WalletAnalyzer({ workerUrl }) {
       {transactions.length > 0 && (
         <div>
           <h3>Transactions:</h3>
-          <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', background: '#f4f4f4', padding: '10px', maxHeight: '300px', overflowY: 'auto' }}>
+          <pre style={{ whiteSpace: 'pre', background: '#f4f4f4', padding: '10px', maxHeight: '300px', overflowY: 'auto' }}>
             {JSON.stringify(transactions, null, 2)}
           </pre>
         </div>
@@ -124,14 +124,15 @@ function DashboardPage({ workerUrl }) {
   };
 
   const containerStyle = {
-    border: '2px solid var(--color-accent)',  // Was #26cc66
+    border: '2px solid var(--color-accent)',
     borderRadius: '8px',
     padding: '20px',
     margin: '20px auto',
-    maxWidth: '900px',
-    minWidth: '750px',
-    backgroundColor: 'var(--color-surface)', // Was #121212
-    color: 'var(--color-text)',           // Was #d0ffd0
+    maxWidth: '100%', // Changed from 900px
+    overflowX: 'auto', // Added this line
+    // minWidth: '750px', // Removed this line
+    backgroundColor: 'var(--color-surface)',
+    color: 'var(--color-text)',
     boxSizing: 'border-box',
   };
 
