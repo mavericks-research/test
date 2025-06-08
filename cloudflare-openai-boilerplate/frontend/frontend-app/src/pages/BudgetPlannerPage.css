@@ -5,17 +5,17 @@
   margin: 20px auto;
   padding: 20px;
   font-family: 'Segoe UI', sans-serif;
-  background-color: #0B1F3A; /* Deep navy */
+  background-color: var(--color-surface); /* Changed from #0B1F3A */
   border-radius: 10px;
-  box-shadow: 0 0 15px rgba(0, 255, 198, 0.07); /* Subtle neon glow */
-  color: #e0e0e0;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.05); /* Changed from rgba(0, 255, 198, 0.07) */
+  color: var(--color-text); /* Changed from #e0e0e0 */
 }
 
 .budget-planner-page h1,
 .budget-planner-page h2,
 .budget-planner-page h3,
 .budget-planner-page h4 {
-  color: #00ffc6; /* Neon teal */
+  color: var(--color-heading); /* Changed from #00ffc6 */
 }
 
 .budget-planner-page h1 {
@@ -26,16 +26,16 @@
 .budget-planner-page h2 {
   margin-top: 30px;
   margin-bottom: 15px;
-  border-bottom: 1px solid #112233;
+  border-bottom: 1px solid var(--color-border); /* Changed from #112233 */
   padding-bottom: 5px;
 }
 
 /* Form Styling */
 .plan-form {
-  background-color: #111926; /* Charcoal */
+  background-color: var(--color-surface); /* Changed from #111926 */
   padding: 20px;
   border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0, 255, 198, 0.03);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.03); /* Changed from rgba(0, 255, 198, 0.03) */
   margin-top: 20px;
 }
 
@@ -47,16 +47,16 @@
   display: block;
   margin-bottom: 5px;
   font-weight: bold;
-  color: #aef8f0;
+  color: var(--color-text); /* Changed from #aef8f0 */
 }
 
 .form-group input[type="text"],
 .form-group input[type="number"] {
   width: 100%;
   padding: 10px;
-  background-color: #1a2533;
-  color: #e0e0e0;
-  border: 1px solid #334455;
+  background-color: var(--color-surface-hover); /* Changed from #1a2533 */
+  color: var(--color-text); /* Changed from #e0e0e0 */
+  border: 1px solid var(--color-border); /* Changed from #334455 */
   border-radius: 6px;
   box-sizing: border-box;
 }
@@ -65,12 +65,12 @@
 .categories-section {
   margin-top: 20px;
   padding-top: 15px;
-  border-top: 1px solid #112233;
+  border-top: 1px solid var(--color-border); /* Changed from #112233 */
 }
 
 .category-item {
-  background-color: #121c2b;
-  border: 1px solid #1f2f3f;
+  background-color: var(--color-surface); /* Changed from #121c2b */
+  border: 1px solid var(--color-border); /* Changed from #1f2f3f */
   padding: 15px;
   margin-bottom: 15px;
   border-radius: 8px;
@@ -87,25 +87,25 @@
 }
 
 .budget-plan-item {
-  background-color: #142030;
-  border: 1px solid #2a3c4f;
+  background-color: var(--color-card-bg); /* Changed from #142030 */
+  border: 1px solid var(--color-border); /* Changed from #2a3c4f */
   padding: 15px 20px;
   margin-bottom: 15px;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 255, 198, 0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Changed from rgba(0, 255, 198, 0.05) */
 }
 
 .budget-plan-item h3 {
   margin-top: 0;
   margin-bottom: 10px;
-  color: #00ffc6;
+  color: var(--color-heading); /* Changed from #00ffc6 */
 }
 
 .budget-plan-item h4 {
   margin-top: 10px;
   margin-bottom: 5px;
   font-size: 1.1em;
-  color: #68d8ff; /* Soft royal blue */
+  color: var(--color-accent); /* Changed from #68d8ff */
 }
 
 .budget-plan-item ul {
@@ -115,7 +115,7 @@
 }
 .budget-plan-item ul li {
   margin-bottom: 5px;
-  color: #c4c4c4;
+  color: var(--color-text); /* Changed from #c4c4c4 */
 }
 
 /* Buttons */
@@ -135,59 +135,59 @@
 }
 
 .btn-primary {
-  background-color: #2ecc71; /* Emerald green */
-  color: black;
+  background-color: var(--color-accent); /* Changed from #2ecc71 */
+  color: var(--color-bg); /* Changed from black */
 }
 .btn-primary:hover:not(:disabled) {
-  background-color: #27ae60;
+  background-color: var(--color-accent-hover); /* Changed from #27ae60 */
 }
 
 .btn-secondary {
-  background-color: #2f3c4f;
-  color: #f0f0f0;
+  background-color: var(--color-surface-hover); /* Changed from #2f3c4f */
+  color: var(--color-text); /* Changed from #f0f0f0 */
 }
 .btn-secondary:hover:not(:disabled) {
-  background-color: #3f4f6f;
+  background-color: var(--color-border); /* Changed from #3f4f6f */
 }
 
 .btn-danger {
-  background-color: #e74c3c;
-  color: white;
+  background-color: var(--color-error); /* Changed from #e74c3c */
+  color: var(--color-bg); /* Changed from white */
 }
 .btn-danger:hover:not(:disabled) {
-  background-color: #c0392b;
+  background-color: #B8403B; /* Darker shade of --color-error */
 }
 
 .btn-edit {
-  background-color: #3498db; /* Bright royal blue */
-  color: #fff;
+  background-color: var(--color-accent); /* Changed from #3498db */
+  color: var(--color-bg); /* Changed from #fff */
 }
 .btn-edit:hover:not(:disabled) {
-  background-color: #217dbb;
+  background-color: var(--color-accent-hover); /* Changed from #217dbb */
 }
 
 .btn-add-category {
-  background-color: #2ecc71;
-  color: black;
+  background-color: var(--color-accent); /* Changed from #2ecc71 */
+  color: var(--color-bg); /* Changed from black */
   margin-top: 10px;
 }
 .btn-add-category:hover:not(:disabled) {
-  background-color: #27ae60;
+  background-color: var(--color-accent-hover); /* Changed from #27ae60 */
 }
 
 .category-item .btn-danger {
-  background-color: #e74c3c;
+  background-color: var(--color-error); /* Changed from #e74c3c */
   padding: 8px 12px;
   font-size: 0.9em;
 }
 .category-item .btn-danger:hover:not(:disabled) {
-  background-color: #b71c1c;
+  background-color: #B8403B; /* Darker shade of --color-error, consistent with other .btn-danger:hover */
 }
 
 .actions-group {
   margin-top: 20px;
   padding-top: 15px;
-  border-top: 1px solid #112233;
+  border-top: 1px solid var(--color-border); /* Changed from #112233 */
   display: flex;
   justify-content: flex-start;
 }
@@ -198,9 +198,9 @@
 
 /* Error Messages */
 .error-message {
-  color: #ff6b6b;
-  background-color: #3a1c1c;
-  border: 1px solid #a94442;
+  color: var(--color-error); /* Changed from #ff6b6b */
+  background-color: var(--color-surface); /* Changed from #3a1c1c */
+  border: 1px solid var(--color-error); /* Changed from #a94442 */
   padding: 10px;
   margin-bottom: 15px;
   border-radius: 4px;
@@ -212,7 +212,7 @@
   text-align: center;
   padding: 15px;
   font-size: 1.1em;
-  color: #00ffc6;
+  color: var(--color-accent); /* Changed from #00ffc6 */
 }
 
 /* Responsive */

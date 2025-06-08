@@ -150,19 +150,19 @@ section, .card {
 /* Responsive Light Theme */
 @media (prefers-color-scheme: light) {
   :root {
-    --color-bg: #e0faff;
-    --color-surface: #ffffff;
-    --color-surface-hover: #f0f0f0;
-    --color-card-bg: #ffffff;
+    --color-bg: #FFFFFF;
+    --color-surface: #F8F9FA;
+    --color-surface-hover: #E9ECEF;
+    --color-card-bg: #FFFFFF;
 
-    --color-text: #0f0f0f;
-    --color-heading: #0077aa;
-    --color-link: #0077aa;
-    --color-link-hover: #005577;
-    --color-border: #cccccc;
-
-    --color-accent: #1ac0ff;
-    --color-accent-hover: #1094bf;
+    --color-text: #212529;
+    --color-heading: #000000;
+    --color-link: #003366;
+    --color-link-hover: #001F3D;
+    --color-border: #CED4DA;
+    --color-error: #D9534F;
+    --color-accent: #004080;
+    --color-accent-hover: #002A55;
   }
 
   body {
@@ -170,24 +170,60 @@ section, .card {
     color: var(--color-text);
   }
 
+  a {
+    color: var(--color-link); /* Ensure link color is set for light theme */
+  }
+
   a:hover {
     color: var(--color-link-hover);
   }
 
   button {
-    background-color: #c0f5ff;
+    background-color: var(--color-surface);
     color: var(--color-text);
-    border-color: var(--color-link);
+    border-color: var(--color-accent); /* Use accent for button border */
+  }
+
+  button:hover {
+    background-color: var(--color-surface-hover);
+    border-color: var(--color-accent-hover);
+    box-shadow: 0 0 10px var(--color-accent-hover); /* Ensure hover uses new variables */
+  }
+
+  button:focus,
+  button:focus-visible {
+    outline: 3px solid var(--color-accent); /* Ensure focus uses new variables */
+    box-shadow: 0 0 6px var(--color-accent);
   }
 
   input, textarea, select {
-    background-color: #fff;
-    color: #0f0f0f;
-    border-color: #bbb;
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    border-color: var(--color-border);
+  }
+
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--color-accent); /* Use accent for focus border */
+    background-color: var(--color-surface-hover);
   }
 
   .card, section {
-    background-color: #fff;
-    border-color: #ccc;
+    background-color: var(--color-card-bg);
+    border-color: var(--color-border);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.05); /* Adjusted shadow for lighter theme */
+  }
+
+  /* Ensure error messages also use the new variables */
+  .error {
+    background-color: var(--color-surface); /* Light background for error */
+    border: 1px solid var(--color-error);
+    color: var(--color-error);
+  }
+
+  /* Update code block styling for light theme if necessary */
+  code, pre {
+    background-color: var(--color-surface); /* Lighter background for code blocks */
+    color: #003366; /* Darker text for readability */
+    border: 1px solid var(--color-border); /* Add a subtle border */
   }
 }
