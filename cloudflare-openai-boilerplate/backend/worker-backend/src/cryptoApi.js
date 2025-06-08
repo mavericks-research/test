@@ -200,6 +200,7 @@ export {
     getHistoricalData,
     getTransactionHistory,
     getCoinsByBlockchain,
+    getMarketChartData, // <-- Add this
 };
 
 /**
@@ -247,4 +248,37 @@ async function getCoinsByBlockchain(blockchainPlatform, vsCurrency, apiKey = nul
         console.error(`Error fetching coins for blockchain ${blockchainPlatform}:`, error);
         throw error;
     }
+}
+
+/**
+ * Fetches historical market chart data for a specific coin over a number of days.
+ * @param {string} coinId - The ID of the coin (e.g., 'bitcoin').
+ * @param {string|number} days - Number of days of data (e.g., "1", "7", "30").
+ * @param {string|null} apiKey Optional CoinGecko API key.
+ * @returns {Promise<object>} Object containing arrays for prices, market_caps, and total_volumes.
+ *                            E.g., { prices: [[timestamp, price], ...], ... }
+ */
+async function getMarketChartData(coinId, days, apiKey = null) {
+  if (!coinId) {
+    throw new Error('coinId cannot be empty for market chart data.');
+  }
+  if (!days) {
+    throw new Error('Number of days must be provided for market chart data.');
+  }
+
+  const params = {
+    vs_currency: 'usd', // Hardcoded to USD for now
+    days: days.toString(), // Ensure days is a string for the API
+    // interval: 'daily', // Optional: CoinGecko infers based on days. 'daily' for days > 1.
+                           // For 1 day, it might return finer granularity (hourly) by default.
+  };
+
+  try {
+    const data = await fetchFromCoinGecko(`/coins/${coinId}/market_chart`, params, apiKey);
+    // Expected data structure: { prices: [[timestamp, price], ...], market_caps: [[timestamp, value], ...], total_volumes: [[timestamp, value], ...] }
+    return data;
+  } catch (error) {
+    console.error(`Error fetching market chart data for ${coinId} over ${days} days:`, error);
+    throw error; // Re-throw to be caught by the route handler in index.js
+  }
 }
