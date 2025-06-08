@@ -650,6 +650,7 @@ Provide a concise, human-readable analysis.
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
+      } // <<< --- ADDED CLOSING BRACE HERE
       // --- End of Transaction Analysis Route ---
 
       // --- New Route for Coins by Blockchain ---
