@@ -1,5 +1,5 @@
 import { normalizeTokenNames, normalizeTimestamps, normalizeBlockCypherTransactions, convertToUSD } from './normalizer.js';
-import { getCurrentPrices, getHistoricalData, getCoinList, getTransactionHistory } from './cryptoApi.js';
+import { getCurrentPrices, getHistoricalData, getCoinList, getTransactionHistory, getCoinsByBlockchain } from './cryptoApi.js';
 
 // Define CORS headers - Added GET
 const corsHeaders = {
@@ -650,11 +650,68 @@ Provide a concise, human-readable analysis.
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
+      } // <<< --- ADDED CLOSING BRACE HERE
       // --- End of Transaction Analysis Route ---
+
+      // --- New Route for Coins by Blockchain ---
+      else if (url.pathname === '/api/crypto/coins-by-blockchain' && request.method === 'GET') {
+        const platform = url.searchParams.get('platform'); // e.g., 'ethereum', 'bsc', 'solana'
+        const currency = url.searchParams.get('currency'); // e.g., 'usd'
+
+        if (!platform || !currency) {
+          return new Response(JSON.stringify({ error: 'Missing "platform" or "currency" query parameters.' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Map platform parameter to CoinGecko asset_platform_id
+        // Supported platforms: ethereum, binance-smart-chain, solana
+        let assetPlatformId;
+        switch (platform.toLowerCase()) {
+          case 'ethereum':
+            assetPlatformId = 'ethereum';
+            break;
+          case 'bsc':
+          case 'binance-smart-chain':
+            assetPlatformId = 'binance-smart-chain';
+            break;
+          case 'solana':
+            assetPlatformId = 'solana';
+            break;
+          default:
+            return new Response(JSON.stringify({ error: 'Invalid "platform". Supported platforms: ethereum, bsc, solana.' }), {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+        }
+
+        try {
+          const data = await getCoinsByBlockchain(assetPlatformId, currency, COINGECKO_API_KEY);
+          return new Response(JSON.stringify(data), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error) {
+          console.error(`Error fetching coins for platform ${platform}:`, error);
+          // Check if the error is from getCoinsByBlockchain itself (e.g., CoinGecko API down)
+          if (error.message && error.message.includes("CoinGecko API request failed")) {
+            return new Response(JSON.stringify({ error: error.message }), {
+              status: 502, // Bad Gateway for upstream API issues
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+          return new Response(JSON.stringify({ error: `An unexpected error occurred: ${error.message}` }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
       }
+      // --- End of New Route ---
+
       // Fallback for unhandled paths or methods must be the FINAL else in the chain
       else {
-        let supportedEndpoints = 'GET /api/crypto/current, GET /api/crypto/historical, GET /api/crypto/coinslist, GET /api/crypto/enriched-historical-data, GET /api/crypto/transaction-analysis, POST / (for Etherscan/OpenAI)';
+        let supportedEndpoints = 'GET /api/crypto/current, GET /api/crypto/historical, GET /api/crypto/coinslist, GET /api/crypto/enriched-historical-data, GET /api/crypto/transaction-analysis, POST / (for Etherscan/OpenAI), GET /api/crypto/coins-by-blockchain';
         supportedEndpoints += ', POST /api/budgets, GET /api/budgets, GET /api/budgets/:id, PUT /api/budgets/:id, DELETE /api/budgets/:id';
         return new Response(`Not Found. Supported endpoints: ${supportedEndpoints}`, { status: 404, headers: corsHeaders });
       }

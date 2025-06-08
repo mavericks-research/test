@@ -188,4 +188,150 @@ describe('index.js (Worker Integration Tests)', () => {
       expect(responseBody).toBe('Unexpected response from Etherscan API');
     });
   });
+
+  describe('Crypto API Routes', () => {
+    const mockCoinGeckoApiKey = 'mock-cg-key';
+    const mockEnvWithCrypto = { ...mockEnv, COINGECKO_API_KEY: mockCoinGeckoApiKey };
+
+    describe('/api/crypto/current', () => {
+      it('should call CoinGecko with correct params and return current price data including market cap, vol, and change', async () => {
+        const mockApiResponse = {
+          bitcoin: {
+            usd: 60000,
+            usd_market_cap: 1200000000000,
+            usd_24h_vol: 50000000000,
+            usd_24h_change: 2.5,
+          },
+        };
+        global.fetch.mockResolvedValueOnce(new Response(JSON.stringify(mockApiResponse), {
+          headers: { 'Content-Type': 'application/json' },
+        }));
+
+        const request = { // Simplified mock for GET request
+          method: 'GET',
+          url: new URL('http://localhost/api/crypto/current?coins=bitcoin&currencies=usd'),
+          headers: new Headers(),
+        };
+        const response = await worker.fetch(request, mockEnvWithCrypto, {});
+        const responseBody = await response.json();
+
+        expect(response.status).toBe(200);
+        expect(responseBody).toEqual(mockApiResponse);
+
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+        const fetchCall = global.fetch.mock.calls[0][0];
+        const fetchUrl = new URL(fetchCall);
+        expect(fetchUrl.origin).toBe('https://api.coingecko.com');
+        expect(fetchUrl.pathname).toBe('/api/v3/simple/price');
+        expect(fetchUrl.searchParams.get('ids')).toBe('bitcoin');
+        expect(fetchUrl.searchParams.get('vs_currencies')).toBe('usd');
+        expect(fetchUrl.searchParams.get('include_market_cap')).toBe('true');
+        expect(fetchUrl.searchParams.get('include_24hr_vol')).toBe('true');
+        expect(fetchUrl.searchParams.get('include_24hr_change')).toBe('true');
+        // expect(fetchUrl.searchParams.get('x_cg_demo_api_key')).toBe(mockCoinGeckoApiKey); // If API key was passed
+      });
+
+      it('should return 400 if "coins" or "currencies" params are missing', async () => {
+        const request1 = { method: 'GET', url: new URL('http://localhost/api/crypto/current?currencies=usd'), headers: new Headers() };
+        const response1 = await worker.fetch(request1, mockEnvWithCrypto, {});
+        expect(response1.status).toBe(400);
+        expect(await response1.text()).toBe('Missing "coins" or "currencies" query parameters');
+
+        const request2 = { method: 'GET', url: new URL('http://localhost/api/crypto/current?coins=bitcoin'), headers: new Headers() };
+        const response2 = await worker.fetch(request2, mockEnvWithCrypto, {});
+        expect(response2.status).toBe(400);
+        expect(await response2.text()).toBe('Missing "coins" or "currencies" query parameters');
+      });
+    });
+
+    describe('/api/crypto/coins-by-blockchain', () => {
+      const mockCoins = [
+        { id: 'token1', symbol: 'tkn1', name: 'Token 1', current_price: 100, market_cap: 1000000, total_volume: 50000, price_change_percentage_24h: 1.5 },
+        { id: 'token2', symbol: 'tkn2', name: 'Token 2', current_price: 20, market_cap: 200000, total_volume: 10000, price_change_percentage_24h: -0.5 },
+      ];
+
+      it('should call CoinGecko with correct asset_platform_id for Ethereum and return tokens', async () => {
+        global.fetch.mockResolvedValueOnce(new Response(JSON.stringify(mockCoins), {
+          headers: { 'Content-Type': 'application/json' },
+        }));
+
+        const request = {
+          method: 'GET',
+          url: new URL('http://localhost/api/crypto/coins-by-blockchain?platform=ethereum&currency=usd'),
+          headers: new Headers(),
+        };
+        const response = await worker.fetch(request, mockEnvWithCrypto, {});
+        const responseBody = await response.json();
+
+        expect(response.status).toBe(200);
+        expect(responseBody).toEqual(mockCoins); // Backend directly returns CG response for now
+
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+        const fetchCall = global.fetch.mock.calls[0][0];
+        const fetchUrl = new URL(fetchCall);
+        expect(fetchUrl.origin).toBe('https://api.coingecko.com');
+        expect(fetchUrl.pathname).toBe('/api/v3/coins/markets');
+        expect(fetchUrl.searchParams.get('vs_currency')).toBe('usd');
+        expect(fetchUrl.searchParams.get('asset_platform_id')).toBe('ethereum');
+      });
+
+      it('should call CoinGecko with correct asset_platform_id for BSC', async () => {
+        global.fetch.mockResolvedValueOnce(new Response(JSON.stringify(mockCoins)));
+        const request = { method: 'GET', url: new URL('http://localhost/api/crypto/coins-by-blockchain?platform=bsc&currency=usd'), headers: new Headers() };
+        await worker.fetch(request, mockEnvWithCrypto, {});
+
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+        const fetchCall = global.fetch.mock.calls[0][0];
+        const fetchUrl = new URL(fetchCall);
+        expect(fetchUrl.searchParams.get('asset_platform_id')).toBe('binance-smart-chain');
+      });
+
+      it('should call CoinGecko with correct asset_platform_id for Solana', async () => {
+        global.fetch.mockResolvedValueOnce(new Response(JSON.stringify(mockCoins)));
+        const request = { method: 'GET', url: new URL('http://localhost/api/crypto/coins-by-blockchain?platform=solana&currency=usd'), headers: new Headers() };
+        await worker.fetch(request, mockEnvWithCrypto, {});
+
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+        const fetchCall = global.fetch.mock.calls[0][0];
+        const fetchUrl = new URL(fetchCall);
+        expect(fetchUrl.searchParams.get('asset_platform_id')).toBe('solana');
+      });
+
+      it('should return 400 if platform or currency is missing', async () => {
+        const requestPlatformMissing = { method: 'GET', url: new URL('http://localhost/api/crypto/coins-by-blockchain?currency=usd'), headers: new Headers() };
+        const resPlatform = await worker.fetch(requestPlatformMissing, mockEnvWithCrypto, {});
+        expect(resPlatform.status).toBe(400);
+        expect(await resPlatform.json()).toEqual({ error: 'Missing "platform" or "currency" query parameters.' });
+
+        const requestCurrencyMissing = { method: 'GET', url: new URL('http://localhost/api/crypto/coins-by-blockchain?platform=ethereum'), headers: new Headers() };
+        const resCurrency = await worker.fetch(requestCurrencyMissing, mockEnvWithCrypto, {});
+        expect(resCurrency.status).toBe(400);
+        expect(await resCurrency.json()).toEqual({ error: 'Missing "platform" or "currency" query parameters.' });
+      });
+
+      it('should return 400 for invalid platform', async () => {
+        const request = { method: 'GET', url: new URL('http://localhost/api/crypto/coins-by-blockchain?platform=invalidplatform&currency=usd'), headers: new Headers() };
+        const response = await worker.fetch(request, mockEnvWithCrypto, {});
+        expect(response.status).toBe(400);
+        expect(await response.json()).toEqual({ error: 'Invalid "platform". Supported platforms: ethereum, bsc, solana.' });
+      });
+
+      it('should handle CoinGecko API failure gracefully', async () => {
+        global.fetch.mockRejectedValueOnce(new Error("CoinGecko API is down"));
+        // OR: global.fetch.mockResolvedValueOnce(new Response("Server Error", { status: 500 }));
+
+        const request = {
+          method: 'GET',
+          url: new URL('http://localhost/api/crypto/coins-by-blockchain?platform=ethereum&currency=usd'),
+          headers: new Headers(),
+        };
+        const response = await worker.fetch(request, mockEnvWithCrypto, {});
+        expect(response.status).toBe(502); // Or 500 if the error is not specifically a "CoinGecko API request failed"
+        const body = await response.json();
+        expect(body.error).toContain("CoinGecko API request failed");
+        // If mockRejectedValueOnce is used, the actual message might be different, like "Error processing your request: CoinGecko API is down"
+        // For this test to pass with "CoinGecko API request failed", the fetchFromCoinGecko function must catch the error and rethrow a new error with that specific message.
+      });
+    });
+  });
 });

@@ -80,9 +80,9 @@ async function getCurrentPrices(coinIds, vsCurrencies, apiKey = null) {
     const params = {
         ids: coinIds.join(','),
         vs_currencies: vsCurrencies.join(','),
-        include_market_cap: 'false', // Optional: add 'true' if needed
-        include_24hr_vol: 'false',   // Optional: add 'true' if needed
-        include_24hr_change: 'false',// Optional: add 'true' if needed
+        include_market_cap: 'true', // Optional: add 'true' if needed
+        include_24hr_vol: 'true',   // Optional: add 'true' if needed
+        include_24hr_change: 'true',// Optional: add 'true' if needed
         include_last_updated_at: 'false' // Optional: add 'true' if needed
     };
 
@@ -199,4 +199,52 @@ export {
     getCurrentPrices,
     getHistoricalData,
     getTransactionHistory,
+    getCoinsByBlockchain,
 };
+
+/**
+ * Fetches coins/tokens for a specific blockchain platform.
+ * @param {string} blockchainPlatform - The asset platform ID (e.g., 'ethereum', 'binance-smart-chain', 'solana').
+ * @param {string} vsCurrency - The target currency (e.g., 'usd').
+ * @param {string|null} apiKey Optional CoinGecko API key.
+ * @returns {Promise<Array<object>>} A list of coins with their market data.
+ */
+async function getCoinsByBlockchain(blockchainPlatform, vsCurrency, apiKey = null) {
+    if (!blockchainPlatform) {
+        throw new Error('blockchainPlatform cannot be empty.');
+    }
+    if (!vsCurrency) {
+        throw new Error('vsCurrency cannot be empty.');
+    }
+
+    const params = {
+        vs_currency: vsCurrency,
+        asset_platform_id: blockchainPlatform,
+        per_page: 100, // Fetching top 100, can be parameterized if needed
+        page: 1,       // Fetching the first page
+        order: 'market_cap_desc', // Order by market cap
+        sparkline: 'false', // Not fetching sparkline data
+        // include_market_cap, include_24hr_vol, include_24hr_change are implicitly true for /coins/markets
+    };
+
+    try {
+        // Using /coins/markets endpoint which supports filtering by asset_platform_id
+        const data = await fetchFromCoinGecko('/coins/markets', params, apiKey);
+        // The data returned is an array of coin objects, each containing market data.
+        // We can map it to a simpler format if needed, but for now, let's return the full objects.
+        return data.map(coin => ({
+            id: coin.id,
+            symbol: coin.symbol,
+            name: coin.name,
+            image: coin.image,
+            current_price: coin.current_price,
+            market_cap: coin.market_cap,
+            total_volume: coin.total_volume,
+            price_change_percentage_24h: coin.price_change_percentage_24h,
+            // Add any other relevant fields from the 'coin' object
+        }));
+    } catch (error) {
+        console.error(`Error fetching coins for blockchain ${blockchainPlatform}:`, error);
+        throw error;
+    }
+}
