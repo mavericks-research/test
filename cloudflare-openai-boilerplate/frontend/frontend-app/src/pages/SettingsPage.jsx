@@ -4,7 +4,7 @@ import { SettingsContext } from '../contexts/SettingsContext.jsx'; // Adjusted p
 // Removed NavigationBar import
 
 function SettingsPage() { // Removed handleLogout from props
-  const { currency, language, theme, dataRefreshInterval, updateSetting } = useContext(SettingsContext);
+  const { currency, theme, dataRefreshInterval, updateSetting } = useContext(SettingsContext);
 
   return (
     <div>
@@ -21,18 +21,6 @@ function SettingsPage() { // Removed handleLogout from props
           <option value="USD">USD</option>
           <option value="EUR">EUR</option>
           <option value="GBP">GBP</option>
-        </select>
-      </div>
-      <div>
-        <label htmlFor="preferredLanguage">Preferred Language: </label>
-        <select
-          id="preferredLanguage"
-          value={language}
-          onChange={(e) => updateSetting('language', e.target.value)}
-        >
-          <option value="en">English</option>
-          <option value="es">Spanish</option>
-          <option value="fr">French</option>
         </select>
       </div>
       <div>

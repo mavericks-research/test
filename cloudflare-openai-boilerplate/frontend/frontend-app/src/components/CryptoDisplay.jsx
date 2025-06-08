@@ -2,7 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { getCoinMarketChart } from '../services/cryptoService.js'; // Adjusted path
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
-const CryptoDisplay = () => {
+const getCurrencySymbol = (currencyCode) => {
+  switch (currencyCode?.toUpperCase()) {
+    case 'USD':
+      return '$';
+    case 'EUR':
+      return '€';
+    case 'GBP':
+      return '£';
+    default:
+      return currencyCode || ''; // Return the code itself or empty string if undefined
+  }
+};
+
+const CryptoDisplay = ({ currency }) => { // Added currency prop
   const [selectedCoin, setSelectedCoin] = useState('bitcoin');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
   const [currentPrice, setCurrentPrice] = useState(null);
@@ -48,37 +61,42 @@ const CryptoDisplay = () => {
   // Effect for current price (existing)
   useEffect(() => {
     const fetchCurrentPrice = async () => {
-      if (!selectedCoin) return;
+      if (!selectedCoin || !currency) return; // Wait for currency prop
       setCurrentPrice(null);
       setMarketCap(null);
       setVolume24h(null);
       setChange24h(null);
       setPercentageChange(null);
 
+      const currencyKey = currency.toLowerCase();
+
       try {
-        const response = await fetch(`${API_BASE_URL}/api/crypto/current?coins=${selectedCoin}&currencies=usd`);
+        // Note: API endpoint might need adjustment if it doesn't support various currencies.
+        // This change assumes the API can filter by the passed currency.
+        const response = await fetch(`${API_BASE_URL}/api/crypto/current?coins=${selectedCoin}&currencies=${currencyKey}`);
         if (!response.ok) throw new Error(`Error fetching current price data: ${response.statusText}`);
         const data = await response.json();
         const coinData = data[selectedCoin];
         if (coinData) {
-          setCurrentPrice(coinData.usd || null);
-          setMarketCap(coinData.usd_market_cap || null);
-          setVolume24h(coinData.usd_24h_vol || null);
-          setChange24h(coinData.usd_24h_change || null);
-        } else console.error('Current price and market data not found in response:', data);
+          setCurrentPrice(coinData[currencyKey] || null);
+          setMarketCap(coinData[`${currencyKey}_market_cap`] || null);
+          setVolume24h(coinData[`${currencyKey}_24h_vol`] || null);
+          setChange24h(coinData[`${currencyKey}_24h_change`] || null);
+        } else console.error('Current price and market data not found in response for the selected currency:', data);
       } catch (error) {
         console.error("Failed to fetch current price and market data:", error);
         setCurrentPrice(null); setMarketCap(null); setVolume24h(null); setChange24h(null);
       }
     };
-    if (selectedCoin) fetchCurrentPrice();
+    if (selectedCoin && currency) fetchCurrentPrice(); // Ensure currency is available
     else {
       setCurrentPrice(null); setMarketCap(null); setVolume24h(null); setChange24h(null);
       setHistoricalPrice(null); setOpenAiInsights(null); setPercentageChange(null);
     }
-  }, [selectedCoin, API_BASE_URL]);
+  }, [selectedCoin, currency, API_BASE_URL]); // Added currency to dependency array
 
   // Effect for single-date historical price and AI insights (existing)
+  // Historical data remains USD based as per subtask instructions.
   useEffect(() => {
     const fetchEnrichedHistoricalData = async () => {
       if (!selectedCoin || !selectedDate) return;
@@ -190,20 +208,21 @@ const CryptoDisplay = () => {
       {selectedCoin && (
         <>
           <div style={{border: '1px solid #eee', padding: '15px', borderRadius: '5px', marginBottom: '20px'}}>
-            <h3>Current Data for {coinOptions.find(c => c.value === selectedCoin)?.label || selectedCoin}</h3>
+            <h3>Current Data for {coinOptions.find(c => c.value === selectedCoin)?.label || selectedCoin} (in {currency})</h3>
             {currentPrice !== null ? (
               <>
-                <p>Price: ${currentPrice.toLocaleString()}</p>
-                {marketCap !== null && <p>Market Cap: ${marketCap.toLocaleString()}</p>}
-                {volume24h !== null && <p>24h Volume: ${volume24h.toLocaleString()}</p>}
+                <p>Price: {getCurrencySymbol(currency)}{currentPrice.toLocaleString()}</p>
+                {marketCap !== null && <p>Market Cap: {getCurrencySymbol(currency)}{marketCap.toLocaleString()}</p>}
+                {volume24h !== null && <p>24h Volume: {getCurrencySymbol(currency)}{volume24h.toLocaleString()}</p>}
                 {change24h !== null && <p>24h Change: {change24h.toFixed(2)}%</p>}
               </>
             ) : <p>Loading current data...</p>}
           </div>
 
+          {/* Historical data is currently fetched in USD by the backend. Displaying with $ symbol. */}
           <div style={{border: '1px solid #eee', padding: '15px', borderRadius: '5px', marginBottom: '20px'}}>
             <div style={{display: 'flex', alignItems: 'center', marginBottom: '10px'}}>
-                <label htmlFor="date-picker" style={{marginRight: '10px', fontWeight: 'bold'}}>Select Date for Historical Snapshot:</label>
+                <label htmlFor="date-picker" style={{marginRight: '10px', fontWeight: 'bold'}}>Select Date for Historical Snapshot (USD based):</label>
                 <input
                 type="date"
                 id="date-picker"
@@ -217,12 +236,14 @@ const CryptoDisplay = () => {
                     {historicalPrice !== null && (
                         <div>
                         <h3>Price on {selectedDate}:</h3>
+                        {/* Displaying historical price with $ as it's USD based from API */}
                         <p>${historicalPrice.toLocaleString()}</p>
                         </div>
                     )}
                     {percentageChange !== null && currentPrice !== null && historicalPrice !== null && (
                         <div>
-                        <h3>Percentage Change (Current vs {selectedDate}):</h3>
+                        {/* Percentage change is based on current price (potentially non-USD) vs historical (USD). This might be misleading. */}
+                        <h3>Percentage Change (Current {currency} vs {selectedDate} USD):</h3>
                         <p>{percentageChange}%</p>
                         </div>
                     )}
@@ -262,13 +283,14 @@ const CryptoDisplay = () => {
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#ccc"/>
                     <XAxis dataKey="date" stroke="#333" />
+                    {/* Chart data is USD based from the API */}
                     <YAxis
                         domain={['auto', 'auto']}
                         stroke="#333"
                         tickFormatter={(value) => `$${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`}
                     />
                     <Tooltip
-                        formatter={(value) => [`$${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, "Price"]}
+                        formatter={(value) => [`$${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, "Price (USD)"]}
                         labelFormatter={(label) => `Date: ${label}`}
                         contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', borderRadius: '5px', padding: '10px', border: '1px solid #ccc' }}
                     />

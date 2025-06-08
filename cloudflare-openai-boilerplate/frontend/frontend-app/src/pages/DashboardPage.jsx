@@ -153,8 +153,6 @@ function DashboardPage({ workerUrl }) {
     <div style={containerStyle}>
       <div style={themedSectionStyle}>
         <p>Welcome to your dashboard.</p>
-        <p>Current Currency Setting: {settings.currency}</p>
-        <p>Current Language Setting: {settings.language}</p>
         <p>Current Data Refresh Interval: {settings.dataRefreshInterval}</p>
       </div>
       <hr />
@@ -172,7 +170,7 @@ function DashboardPage({ workerUrl }) {
 
         {!isStockLoading && !stockError && selectedStockSymbol && (
           <div style={{ marginTop: '20px' }}>
-            {stockQuoteData && <StockQuoteDisplay quoteData={stockQuoteData} profileData={stockProfileData} />}
+            {stockQuoteData && <StockQuoteDisplay quoteData={stockQuoteData} profileData={stockProfileData} currency={settings.currency} />}
             {stockHistoricalData && stockHistoricalData.length > 0 && (
               <StockHistoricalChart
                 historicalData={stockHistoricalData}
