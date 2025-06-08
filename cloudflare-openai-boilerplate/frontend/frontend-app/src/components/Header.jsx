@@ -1,10 +1,11 @@
 import React from 'react';
+import logo from '../assets/public.svg'
 
 function Header({ onToggleNav, isLoggedIn }) {
 
   const headerStyle = {
     width: '100%',
-    backgroundColor: '#0f0f0f', // Obsidian black
+    backgroundColor: '#ffffff', // Obsidian black
     color: '#1ac0ff',           // Laser blue
     padding: '10px 20px',
     display: 'flex',
@@ -37,7 +38,10 @@ function Header({ onToggleNav, isLoggedIn }) {
 
   return (
     <header style={headerStyle}>
-      <h4 style={titleStyle}>Coincept AI</h4>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <img src={logo} alt="Coincept AI Logo" style={{ height: '40px', borderRadius: '4px' }} />
+        <h4 style={titleStyle}>Coincept AI</h4>
+      </div>
       {isLoggedIn && (
         <button onClick={onToggleNav} style={toggleButtonStyle}>
           L

@@ -85,7 +85,6 @@ function DashboardPage({ workerUrl }) {
     padding: '20px',
     margin: '20px auto',
     maxWidth: '900px',
-    minWidth: '750px',
     backgroundColor: 'var(--color-surface)', // Was #121212
     color: 'var(--color-text)',           // Was #d0ffd0
     boxSizing: 'border-box',
