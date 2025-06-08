@@ -19,6 +19,8 @@ const CryptoDisplay = () => {
   // Fallback to empty string for local dev (uses Vite proxy with relative paths)
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
+  const commonCellStyle = { overflowWrap: 'break-word' };
+
   const coinOptions = [
     { value: 'bitcoin', label: 'Bitcoin' },
     { value: 'ethereum', label: 'Ethereum' },
@@ -300,11 +302,11 @@ const CryptoDisplay = () => {
               <tbody>
                 {blockchainTokens.map(token => (
                   <tr key={token.id}>
-                    <td>{token.symbol.toUpperCase()}</td>
-                    <td>${token.current_price ? token.current_price.toLocaleString() : 'N/A'}</td>
-                    <td>${token.market_cap ? token.market_cap.toLocaleString() : 'N/A'}</td>
-                    <td>${token.total_volume ? token.total_volume.toLocaleString() : 'N/A'}</td>
-                    <td>{token.price_change_percentage_24h ? token.price_change_percentage_24h.toFixed(2) + '%' : 'N/A'}</td>
+                    <td style={commonCellStyle}>{token.symbol.toUpperCase()}</td>
+                    <td style={commonCellStyle}>${token.current_price ? token.current_price.toLocaleString() : 'N/A'}</td>
+                    <td style={commonCellStyle}>${token.market_cap ? token.market_cap.toLocaleString() : 'N/A'}</td>
+                    <td style={commonCellStyle}>${token.total_volume ? token.total_volume.toLocaleString() : 'N/A'}</td>
+                    <td style={commonCellStyle}>{token.price_change_percentage_24h ? token.price_change_percentage_24h.toFixed(2) + '%' : 'N/A'}</td>
                   </tr>
                 ))}
               </tbody>
