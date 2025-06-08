@@ -1,5 +1,5 @@
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 const StockHistoricalChart = ({ historicalData, stockName }) => {
   if (!historicalData || historicalData.length === 0) {
@@ -16,23 +16,27 @@ const StockHistoricalChart = ({ historicalData, stockName }) => {
       padding: '20px',
       borderRadius: '5px',
       marginTop: '20px',
-      backgroundColor: '#f9f9f9' // Light background for the chart area
+      backgroundColor: '#f9f9f9', // Light background for the chart area
+      overflowX: 'auto' // Added this
     }}>
       <h4 style={{ textAlign: 'center', marginBottom: '20px' }}>
         Historical Closing Prices for {stockName || 'Selected Stock'}
       </h4>
-      <ResponsiveContainer width="100%" height={400}>
-        <LineChart
-          data={sortedData}
-          margin={{
-            top: 5,
-            right: 30, // Increased right margin for YAxis labels if they were on the right
-            left: 20,  // Increased left margin for YAxis labels
-            bottom: 5,
-          }}
-        >
-          <CartesianGrid strokeDasharray="3 3" stroke="#ccc" />
-          <XAxis
+      {/* ResponsiveContainer might be removed or adjusted. For fixed width chart,
+          LineChart itself gets the width/height directly. */}
+      <LineChart
+        width={1200} // Example fixed width
+        height={400}
+        data={sortedData}
+        margin={{
+          top: 5,
+          right: 30,
+          left: 20,
+          bottom: 5,
+        }}
+      >
+        <CartesianGrid strokeDasharray="3 3" stroke="#ccc" />
+        <XAxis
             dataKey="date"
             stroke="#333"
             // Optional: tickFormatter to shorten date if necessary
@@ -60,7 +64,6 @@ const StockHistoricalChart = ({ historicalData, stockName }) => {
             dot={false} // Hides dots on the line for a cleaner look, activeDot shows on hover
           />
         </LineChart>
-      </ResponsiveContainer>
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getCoinMarketChart } from '../services/cryptoService.js'; // Adjusted path
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 const CryptoDisplay = () => {
   const [selectedCoin, setSelectedCoin] = useState('bitcoin');
@@ -253,9 +253,13 @@ const CryptoDisplay = () => {
             {isCoinChartLoading && <p>Loading chart data...</p>}
             {coinChartError && <p style={{ color: 'red' }}>Error: {coinChartError}</p>}
             {!isCoinChartLoading && !coinChartError && coinChartData && coinChartData.length > 0 && (
-              <div style={{ width: '100%', height: 350, marginTop: '10px' }}>
-                <ResponsiveContainer>
-                  <LineChart data={coinChartData} margin={{ top: 5, right: 25, left: 25, bottom: 5 }}>
+              <div style={{ width: '100%', height: 350, marginTop: '10px', overflowX: 'auto' }}> {/* Added overflowX */}
+                  <LineChart
+                    width={1200} // Added fixed width
+                    height={350} // Ensured height is set
+                    data={coinChartData}
+                    margin={{ top: 5, right: 25, left: 25, bottom: 5 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke="#ccc"/>
                     <XAxis dataKey="date" stroke="#333" />
                     <YAxis
@@ -279,7 +283,6 @@ const CryptoDisplay = () => {
                         activeDot={{ r: 6, stroke: '#0056b3', fill: '#007bff' }}
                     />
                   </LineChart>
-                </ResponsiveContainer>
               </div>
             )}
             {!isCoinChartLoading && !coinChartError && (!coinChartData || coinChartData.length === 0) && selectedCoin && (
