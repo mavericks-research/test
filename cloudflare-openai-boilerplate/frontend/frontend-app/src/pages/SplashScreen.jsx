@@ -63,7 +63,7 @@ function SplashScreen() {
             marginBottom: '20px'
           }}
         />
-        <h1>See Your Crypto. Plan Your Future.</h1>
+        <h1>Plan Bold. Spend Smart. Stay Ahead.</h1>
         <button onClick={handleGetStarted} style={{ fontSize: '1.2em', padding: '10px 20px' }}>
           Get Started
         </button>
