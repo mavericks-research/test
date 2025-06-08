@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getCoinMarketChart } from '../../services/cryptoService.js'; // Adjusted path
+import { getCoinMarketChart } from '../services/cryptoService.js'; // Adjusted path
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const CryptoDisplay = () => {
