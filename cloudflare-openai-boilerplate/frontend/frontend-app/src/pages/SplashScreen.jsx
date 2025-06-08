@@ -2,6 +2,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
+import logo from '../assets/splash.mp4'
+import logo2 from '../assets/public.avif'
+
 function SplashScreen() {
   const navigate = useNavigate(); // Initialize useNavigate
 
@@ -36,7 +39,7 @@ function SplashScreen() {
         loop
         muted
         playsInline
-        src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
+        src={logo}
         style={{
           position: 'fixed',
           right: '0',
@@ -51,7 +54,7 @@ function SplashScreen() {
       />
       <div style={{ position: 'relative', zIndex: 1 }}>
         <img
-          src={logoUrl}
+          src={logo2}
           alt="App Logo"
           style={{
             width: '150px',
