@@ -1,7 +1,7 @@
 // frontend/frontend-app/src/App.jsx
 import React, { useState, useContext } from 'react'; // Import useContext
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { SettingsContext } from './contexts/SettingsContext.js'; // Import SettingsContext
+import { SettingsContext } from './contexts/SettingsContext.jsx'; // Import SettingsContext
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import SplashScreen from './pages/SplashScreen';
