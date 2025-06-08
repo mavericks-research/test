@@ -304,10 +304,11 @@ const CryptoDisplay = () => {
           {isLoadingBlockchainTokens ? (
             <p>Loading tokens for {selectedBlockchain}...</p>
           ) : blockchainTokens.length > 0 ? (
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
+            <div style={{ overflowX: 'auto', maxWidth: '100%' }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Name</th>
                   <th>Symbol</th>
                   <th>Price (USD)</th>
                   <th>Market Cap (USD)</th>
@@ -328,6 +329,7 @@ const CryptoDisplay = () => {
                 ))}
               </tbody>
             </table>
+            </div>
           ) : (
             <p>No tokens found for {selectedBlockchain} or data is unavailable.</p>
           )}
