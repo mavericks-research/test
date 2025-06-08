@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react'; // Added useState for WalletAnalyzer, useEffect for stock data
+import React, { useState, useEffect, useContext } from 'react'; // Added useState for WalletAnalyzer, useEffect for stock data, useContext for settings
+import SettingsContext from '../contexts/SettingsContext.js'; // Import SettingsContext
 import CryptoDisplay from '../components/CryptoDisplay'; // Import CryptoDisplay
 import StockSelector from '../components/StockSelector';
 import StockQuoteDisplay from '../components/StockQuoteDisplay';
@@ -84,6 +85,10 @@ function WalletAnalyzer({ workerUrl }) {
 }
 
 function DashboardPage({ workerUrl }) {
+  const settings = useContext(SettingsContext);
+  console.log("Dashboard displaying with settings:", settings);
+  console.log("Current currency from context:", settings.currency);
+
   // Stock Market Data States
   const [selectedStockSymbol, setSelectedStockSymbol] = useState('');
   const [stockProfileData, setStockProfileData] = useState(null);
@@ -131,26 +136,39 @@ function DashboardPage({ workerUrl }) {
     maxWidth: '100%', // Changed from 900px
     overflowX: 'auto', // Added this line
     // minWidth: '750px', // Removed this line
-    backgroundColor: 'var(--color-surface)',
-    color: 'var(--color-text)',
+    backgroundColor: settings.theme === 'dark' ? '#333' : '#FFF', // Theme-based background
+    color: settings.theme === 'dark' ? '#FFF' : '#333', // Theme-based text color
     boxSizing: 'border-box',
+  };
+
+  const themedSectionStyle = {
+    backgroundColor: settings.theme === 'dark' ? '#444' : '#EEE', // Slightly different for contrast
+    color: settings.theme === 'dark' ? '#FFF' : '#333',
+    padding: '10px',
+    borderRadius: '4px',
+    margin: '10px 0',
   };
 
   return (
     <div style={containerStyle}>
-      <p>Welcome to your dashboard.</p>
+      <div style={themedSectionStyle}>
+        <p>Welcome to your dashboard.</p>
+        <p>Current Currency Setting: {settings.currency}</p>
+        <p>Current Language Setting: {settings.language}</p>
+        <p>Current Data Refresh Interval: {settings.dataRefreshInterval}</p>
+      </div>
       <hr />
-      <CryptoDisplay />
+      <CryptoDisplay currency={settings.currency} /> {/* Pass currency as a prop */}
       <hr />
       <WalletAnalyzer workerUrl={workerUrl} />
-      <hr style={{ margin: '30px 0', borderColor: 'var(--color-border)' }}/>
+      <hr style={{ margin: '30px 0', borderColor: settings.theme === 'dark' ? '#555' : 'var(--color-border)' }}/>
 
-      <div style={{ marginTop: '20px' }}>
+      <div style={{ marginTop: '20px', ...themedSectionStyle }}> {/* Apply theme to stock section */}
         <h2>Stock Market Data</h2>
         <StockSelector onSymbolSubmit={handleSymbolSubmit} />
 
         {isStockLoading && <p>Loading stock data...</p>}
-        {stockError && <p style={{ color: 'red' }}>Error: {stockError}</p>}
+        {stockError && <p style={{ color: settings.theme === 'dark' ? 'salmon': 'red' }}>Error: {stockError}</p>}
 
         {!isStockLoading && !stockError && selectedStockSymbol && (
           <div style={{ marginTop: '20px' }}>
@@ -171,8 +189,8 @@ function DashboardPage({ workerUrl }) {
         )}
       </div>
 
-      <hr style={{ margin: '30px 0', borderColor: 'var(--color-border)' }}/>
-      <div style={{ marginTop: '20px' }}>
+      <hr style={{ margin: '30px 0', borderColor: settings.theme === 'dark' ? '#555' : 'var(--color-border)' }}/>
+      <div style={{ marginTop: '20px', ...themedSectionStyle }}> {/* Apply theme to blockchain section */}
         <h2>Blockchain Explorer</h2>
         <BlockchainDataViewer />
       </div>

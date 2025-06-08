@@ -26,6 +26,31 @@ html, body, #root {
   box-sizing: border-box;
 }
 
+/* Light Theme (default or explicit) */
+.App.theme-light {
+  background-color: #ffffff;
+  color: #242424;
+}
+
+/* Dark Theme */
+.App.theme-dark {
+  background-color: #242424;
+  color: #ffffff;
+}
+
+/* You might also want to ensure components inherit these colors,
+   or define more specific styles for dark theme as needed.
+   For example, ensure links and other elements are visible
+   on both themes. */
+
+.App.theme-dark a {
+  color: #6495ED; /* Cornflower blue for dark theme links */
+}
+
+.App.theme-light a {
+  color: #0000EE; /* Standard blue for light theme links */
+}
+
 h1, h2, h3 {
   color: var(--color-heading); /* Changed from #1ac0ff */
 }
