@@ -1,9 +1,6 @@
 // frontend/frontend-app/src/pages/SplashScreen.jsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
-import logo from '../assets/public.svg'
-
-
 
 function SplashScreen() {
   const navigate = useNavigate(); // Initialize useNavigate
@@ -18,7 +15,7 @@ function SplashScreen() {
   return (
     <div className="splash-screen-container">
       <img
-        src={logo}
+        src={logoUrl}
         alt="App Logo"
         style={{
           width: '150px',
