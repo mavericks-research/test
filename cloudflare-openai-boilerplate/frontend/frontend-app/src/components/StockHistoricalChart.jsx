@@ -1,37 +1,66 @@
 import React from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const StockHistoricalChart = ({ historicalData, stockName }) => {
   if (!historicalData || historicalData.length === 0) {
-    return <p style={{ marginTop: '10px' }}>No historical data available to display for {stockName || 'the selected stock'}.</p>;
+    return <p style={{ marginTop: '20px', textAlign: 'center' }}>No historical data available to display for {stockName || 'the selected stock'}.</p>;
   }
 
+  // Recharts typically expects data to be in ascending order by the XAxis key (date).
+  // If the data might not be sorted, sort it here. Assuming dates are in "YYYY-MM-DD" format.
+  const sortedData = [...historicalData].sort((a, b) => new Date(a.date) - new Date(b.date));
+
   return (
-    <div style={{ border: '1px solid #eee', padding: '15px', borderRadius: '5px', marginTop: '20px' }}>
-      <h4>Historical Data Preview for {stockName || 'Selected Stock'}</h4>
-      <p>A full chart would typically be displayed here. Below is a preview of the most recent data points:</p>
-      <ul style={{ listStyleType: 'none', paddingLeft: '0' }}>
-        {historicalData.slice(0, 5).map(dataPoint => (
-          <li
-            key={dataPoint.date}
-            style={{
-              padding: '8px 0',
-              borderBottom: '1px solid #f0f0f0',
-              display: 'flex',
-              justifyContent: 'space-between'
-            }}
-          >
-            <span><strong>Date:</strong> {dataPoint.date}</span>
-            <span><strong>Close:</strong> ${dataPoint.close ? dataPoint.close.toLocaleString() : 'N/A'}</span>
-            <span><strong>Volume:</strong> {dataPoint.volume ? dataPoint.volume.toLocaleString() : 'N/A'}</span>
-          </li>
-        ))}
-        {historicalData.length > 5 && (
-          <li style={{paddingTop: '10px', fontStyle: 'italic'}}>And {historicalData.length - 5} more data point(s)...</li>
-        )}
-      </ul>
-      <div style={{ marginTop: '15px', padding: '10px', background: '#f9f9f9', borderRadius: '4px' }}>
-        <p><strong>Note:</strong> Full interactive chart rendering would require a charting library (e.g., Recharts, Chart.js).</p>
-      </div>
+    <div style={{
+      border: '1px solid #eee',
+      padding: '20px',
+      borderRadius: '5px',
+      marginTop: '20px',
+      backgroundColor: '#f9f9f9' // Light background for the chart area
+    }}>
+      <h4 style={{ textAlign: 'center', marginBottom: '20px' }}>
+        Historical Closing Prices for {stockName || 'Selected Stock'}
+      </h4>
+      <ResponsiveContainer width="100%" height={400}>
+        <LineChart
+          data={sortedData}
+          margin={{
+            top: 5,
+            right: 30, // Increased right margin for YAxis labels if they were on the right
+            left: 20,  // Increased left margin for YAxis labels
+            bottom: 5,
+          }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#ccc" />
+          <XAxis
+            dataKey="date"
+            stroke="#333"
+            // Optional: tickFormatter to shorten date if necessary
+            // tickFormatter={(dateStr) => dateStr.substring(5)} // Example: YYYY-MM-DD -> MM-DD
+          />
+          <YAxis
+            stroke="#333"
+            domain={['auto', 'auto']}
+            // Optional: tickFormatter to add currency, e.g., (value) => `$${value.toFixed(2)}`
+            tickFormatter={(value) => `$${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`}
+          />
+          <Tooltip
+            formatter={(value, name, props) => [`$${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, "Close Price"]}
+            labelFormatter={(label) => `Date: ${label}`}
+            contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.8)', borderRadius: '5px', padding: '10px' }}
+          />
+          <Legend wrapperStyle={{ paddingTop: '20px' }} />
+          <Line
+            type="monotone"
+            dataKey="close"
+            stroke="#007bff" // Changed stroke color for better visibility
+            strokeWidth={2}
+            activeDot={{ r: 6, stroke: '#0056b3', fill: '#007bff' }}
+            name="Close Price"
+            dot={false} // Hides dots on the line for a cleaner look, activeDot shows on hover
+          />
+        </LineChart>
+      </ResponsiveContainer>
     </div>
   );
 };
