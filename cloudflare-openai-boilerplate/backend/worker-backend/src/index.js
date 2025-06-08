@@ -1,5 +1,5 @@
 import { normalizeTokenNames, normalizeTimestamps, normalizeBlockCypherTransactions, convertToUSD } from './normalizer.js';
-import { getCurrentPrices, getHistoricalData, getCoinList, getTransactionHistory, getCoinsByBlockchain } from './cryptoApi.js';
+import { getCurrentPrices, getHistoricalData, getCoinList, getTransactionHistory, getCoinsByBlockchain, getAssetsForAddress } from './cryptoApi.js';
 
 // Define CORS headers - Added GET
 const corsHeaders = {
@@ -709,9 +709,78 @@ Provide a concise, human-readable analysis.
       }
       // --- End of New Route ---
 
+      // --- New Wallet Assets Route ---
+      else if (url.pathname === '/api/wallet/assets' && request.method === 'GET') {
+        const walletAddress = url.searchParams.get('address');
+        const chain = url.searchParams.get('chain'); // 'ethereum', 'bsc', 'solana'
+
+        if (!walletAddress || !chain) {
+          return new Response(JSON.stringify({ error: 'Missing "address" or "chain" query parameters.' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const COVALENT_API_KEY = env.COVALENT_API_KEY;
+        if (!COVALENT_API_KEY) {
+          console.error('COVALENT_API_KEY not configured');
+          return new Response(JSON.stringify({ error: 'Service configuration error: Covalent API key missing.' }), {
+            status: 500, // Internal Server Error
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        let covalentChainName;
+        switch (chain.toLowerCase()) {
+          case 'ethereum':
+            covalentChainName = 'eth-mainnet';
+            break;
+          case 'bsc':
+            covalentChainName = 'bsc-mainnet';
+            break;
+          case 'solana':
+            covalentChainName = 'solana-mainnet';
+            break;
+          default:
+            return new Response(JSON.stringify({ error: 'Invalid "chain" parameter. Supported: ethereum, bsc, solana.' }), {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+        }
+
+        try {
+          const assets = await getAssetsForAddress(covalentChainName, walletAddress, COVALENT_API_KEY);
+          return new Response(JSON.stringify(assets), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error) {
+          console.error(`Error fetching assets for ${walletAddress} on ${chain} (Covalent: ${covalentChainName}):`, error);
+          // Check if the error is from Covalent API itself (e.g., Covalent API down or invalid address for Covalent)
+          if (error.message && error.message.includes("Covalent API request failed")) {
+             // Extract status code from Covalent error if possible, default to 502
+            const statusMatch = error.message.match(/Covalent API request failed: (\d{3})/);
+            const upstreamStatus = statusMatch ? parseInt(statusMatch[1], 10) : 502;
+            // For certain client errors from Covalent (like invalid address format for them), 400 might be more appropriate.
+            // Covalent might return 400 for "Invalid address format" or 404 for "Address not found".
+            // We'll return what Covalent gives, or 502 if it's a general upstream failure.
+            return new Response(JSON.stringify({ error: error.message }), {
+              status: (upstreamStatus >= 400 && upstreamStatus < 500) ? upstreamStatus : 502, // Bad Gateway for upstream server issues
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+          // Generic error for other issues (e.g., issues within getAssetsForAddress not related to the direct fetch)
+          return new Response(JSON.stringify({ error: `An unexpected error occurred: ${error.message}` }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+      // --- End of Wallet Assets Route ---
+
       // Fallback for unhandled paths or methods must be the FINAL else in the chain
       else {
-        let supportedEndpoints = 'GET /api/crypto/current, GET /api/crypto/historical, GET /api/crypto/coinslist, GET /api/crypto/enriched-historical-data, GET /api/crypto/transaction-analysis, POST / (for Etherscan/OpenAI), GET /api/crypto/coins-by-blockchain';
+        let supportedEndpoints = 'GET /api/crypto/current, GET /api/crypto/historical, GET /api/crypto/coinslist, GET /api/crypto/enriched-historical-data, GET /api/crypto/transaction-analysis, POST / (for Etherscan/OpenAI), GET /api/crypto/coins-by-blockchain, GET /api/wallet/assets';
         supportedEndpoints += ', POST /api/budgets, GET /api/budgets, GET /api/budgets/:id, PUT /api/budgets/:id, DELETE /api/budgets/:id';
         return new Response(`Not Found. Supported endpoints: ${supportedEndpoints}`, { status: 404, headers: corsHeaders });
       }

@@ -200,7 +200,119 @@ export {
     getHistoricalData,
     getTransactionHistory,
     getCoinsByBlockchain,
+    getAssetsForAddress, // Added new function
 };
+
+// --- Covalent API ---
+const COVALENT_API_BASE_URL = 'https://api.covalenthq.com/v1';
+
+/**
+ * Fetches data from the Covalent API.
+ * @param {string} endpoint The API endpoint to call (e.g., '/{chain_name}/address/{wallet_address}/balances_v2/').
+ *                          Note: Base URL part should not be included here.
+ * @param {string} apiKey Covalent API Key.
+ * @param {object} params Query parameters for the API call (Covalent uses query params for some options).
+ * @returns {Promise<object>} The JSON response from the API.
+ */
+async function fetchFromCovalent(endpoint, apiKey, params = {}) {
+    if (!apiKey) {
+        throw new Error('Covalent API key is required.');
+    }
+    // Construct the full URL. Endpoint should start with a '/' if it's from the root.
+    // Or, ensure endpoint is just the path part like `chain_name/address/...`
+    const fullPath = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const url = new URL(`${COVALENT_API_BASE_URL}${fullPath}`);
+
+    // Add query parameters
+    Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+
+    // Covalent API key is typically passed as a query parameter `key=` or basic auth.
+    // For simplicity with query parameter:
+    url.searchParams.append('key', apiKey);
+
+    // console.log(`Fetching from Covalent URL: ${url.toString()}`); // For debugging
+
+    const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+        }
+    });
+
+    if (!response.ok) {
+        const errorBody = await response.text();
+        let covalentError = errorBody;
+        try {
+            const parsedError = JSON.parse(errorBody);
+            if(parsedError && parsedError.error_message) {
+                covalentError = parsedError.error_message;
+            }
+        } catch(e) { /* ignore parsing error, use raw text */ }
+        console.error(`Covalent API Error: ${response.status} ${response.statusText}`, covalentError);
+        throw new Error(`Covalent API request failed: ${response.status} ${response.statusText} - ${covalentError}`);
+    }
+
+    const data = await response.json();
+    if (data.error) {
+        console.error(`Covalent API returned an error in data: ${data.error_message}`);
+        throw new Error(`Covalent API Error: ${data.error_message || 'Unknown error from Covalent'}`);
+    }
+    return data;
+}
+
+
+/**
+ * Fetches token balances for a given address on a specific chain using Covalent.
+ * @param {string} chainName - Covalent chain name (e.g., 'eth-mainnet', 'bsc-mainnet').
+ * @param {string} walletAddress - The wallet address.
+ * @param {string} apiKey - Covalent API Key.
+ * @returns {Promise<Array<object>>} A list of asset objects.
+ */
+async function getAssetsForAddress(chainName, walletAddress, apiKey) {
+    if (!chainName || !walletAddress || !apiKey) {
+        throw new Error('chainName, walletAddress, and apiKey must be provided.');
+    }
+
+    // Covalent endpoint: /{chain_name}/address/{wallet_address}/balances_v2/
+    // The `nft=false` parameter can be used if we only want token balances, not NFTs.
+    // The `no-spam=true` parameter can be used to filter out spam tokens.
+    // The `no-nft-fetch=true` parameter can be used if we don't want to fetch NFT metadata.
+    const endpoint = `${chainName}/address/${walletAddress}/balances_v2/`;
+    const params = {
+        'nft': 'false', // Exclude NFTs for now
+        'no-spam': 'true', // Attempt to filter common spam tokens
+        // 'quote-currency': 'USD' // Covalent defaults to USD, but can be explicit
+    };
+
+    try {
+        const covalentResponse = await fetchFromCovalent(endpoint, apiKey, params);
+
+        if (!covalentResponse || !covalentResponse.data || !Array.isArray(covalentResponse.data.items)) {
+            console.warn('Covalent response did not contain expected items array:', covalentResponse);
+            return [];
+        }
+
+        const assets = covalentResponse.data.items.map(item => {
+            const balance = parseFloat(item.balance) / (10 ** parseInt(item.contract_decimals, 10));
+            return {
+                name: item.contract_name || 'Unknown Token',
+                symbol: item.contract_ticker_symbol || 'N/A',
+                contractAddress: item.contract_address,
+                balance: balance,
+                price: item.quote_rate !== null ? parseFloat(item.quote_rate) : null, // Price per token in USD
+                value: item.quote !== null ? parseFloat(item.quote) : null, // Total value of tokens in USD
+                // logo_url: item.logo_url // Could be useful
+            };
+        });
+
+        return assets.filter(asset => asset.balance > 0 || asset.value > 0); // Filter out zero balance/value unless explicitly needed
+    } catch (error) {
+        console.error(`Error fetching assets for ${walletAddress} on ${chainName} from Covalent:`, error);
+        // Re-throw or handle as appropriate for the worker
+        throw error;
+    }
+}
+
 
 /**
  * Fetches coins/tokens for a specific blockchain platform.

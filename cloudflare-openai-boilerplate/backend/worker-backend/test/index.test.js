@@ -1,5 +1,19 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import worker from '../src/index'; // Assuming default export from src/index.js
+// Import the functions to be mocked specifically from cryptoApi
+import { getAssetsForAddress } from '../src/cryptoApi.js';
+
+// Mock the cryptoApi module
+vi.mock('../src/cryptoApi.js', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual, // Import and retain other functions from cryptoApi.js that are not being mocked directly in tests
+    getAssetsForAddress: vi.fn(), // Mock specific function for wallet assets
+    // Note: If other cryptoApi functions are called by routes NOT under test here,
+    // they will use their actual implementations unless also vi.fn-ed here or mocked via global.fetch.
+    // For /api/crypto/* routes that call CoinGecko directly, global.fetch mock is still relevant.
+  };
+});
 
 // Helper to create a mock Request object
 const mockRequest = (method, body, headers = { 'Content-Type': 'application/json' }) => ({
@@ -191,7 +205,12 @@ describe('index.js (Worker Integration Tests)', () => {
 
   describe('Crypto API Routes', () => {
     const mockCoinGeckoApiKey = 'mock-cg-key';
-    const mockEnvWithCrypto = { ...mockEnv, COINGECKO_API_KEY: mockCoinGeckoApiKey };
+    const mockCovalentApiKey = 'mock-covalent-key';
+    const mockEnvWithCrypto = {
+      ...mockEnv,
+      COINGECKO_API_KEY: mockCoinGeckoApiKey,
+      COVALENT_API_KEY: mockCovalentApiKey,
+    };
 
     describe('/api/crypto/current', () => {
       it('should call CoinGecko with correct params and return current price data including market cap, vol, and change', async () => {
@@ -331,6 +350,103 @@ describe('index.js (Worker Integration Tests)', () => {
         expect(body.error).toContain("CoinGecko API request failed");
         // If mockRejectedValueOnce is used, the actual message might be different, like "Error processing your request: CoinGecko API is down"
         // For this test to pass with "CoinGecko API request failed", the fetchFromCoinGecko function must catch the error and rethrow a new error with that specific message.
+      });
+    });
+
+    describe('/api/wallet/assets', () => {
+      const sampleAssets = [
+        { name: 'Ethereum', symbol: 'ETH', balance: 1.5, price: 3000, value: 4500 },
+        { name: 'Test Token', symbol: 'TST', balance: 100, price: 1.25, value: 125 },
+      ];
+
+      beforeEach(() => {
+        // Reset mock before each test in this suite
+        getAssetsForAddress.mockReset();
+      });
+
+      it('should fetch Ethereum assets successfully', async () => {
+        getAssetsForAddress.mockResolvedValue(sampleAssets);
+        const request = { method: 'GET', url: new URL('http://localhost/api/wallet/assets?address=0xTestEth&chain=ethereum'), headers: new Headers() };
+        const response = await worker.fetch(request, mockEnvWithCrypto, {});
+        const responseBody = await response.json();
+
+        expect(response.status).toBe(200);
+        expect(responseBody).toEqual(sampleAssets);
+        expect(getAssetsForAddress).toHaveBeenCalledWith('eth-mainnet', '0xTestEth', mockCovalentApiKey);
+      });
+
+      it('should fetch BSC assets successfully', async () => {
+        getAssetsForAddress.mockResolvedValue(sampleAssets);
+        const request = { method: 'GET', url: new URL('http://localhost/api/wallet/assets?address=0xTestBsc&chain=bsc'), headers: new Headers() };
+        await worker.fetch(request, mockEnvWithCrypto, {});
+        expect(getAssetsForAddress).toHaveBeenCalledWith('bsc-mainnet', '0xTestBsc', mockCovalentApiKey);
+      });
+
+      it('should fetch Solana assets successfully', async () => {
+        getAssetsForAddress.mockResolvedValue(sampleAssets);
+        const request = { method: 'GET', url: new URL('http://localhost/api/wallet/assets?address=SoTestSol&chain=solana'), headers: new Headers() };
+        await worker.fetch(request, mockEnvWithCrypto, {});
+        expect(getAssetsForAddress).toHaveBeenCalledWith('solana-mainnet', 'SoTestSol', mockCovalentApiKey);
+      });
+
+      it('should return 400 if address parameter is missing', async () => {
+        const request = { method: 'GET', url: new URL('http://localhost/api/wallet/assets?chain=ethereum'), headers: new Headers() };
+        const response = await worker.fetch(request, mockEnvWithCrypto, {});
+        expect(response.status).toBe(400);
+        const body = await response.json();
+        expect(body.error).toBe('Missing "address" or "chain" query parameters.');
+      });
+
+      it('should return 400 if chain parameter is missing', async () => {
+        const request = { method: 'GET', url: new URL('http://localhost/api/wallet/assets?address=0xTest'), headers: new Headers() };
+        const response = await worker.fetch(request, mockEnvWithCrypto, {});
+        expect(response.status).toBe(400);
+        const body = await response.json();
+        expect(body.error).toBe('Missing "address" or "chain" query parameters.');
+      });
+
+      it('should return 400 for an invalid chain parameter', async () => {
+        const request = { method: 'GET', url: new URL('http://localhost/api/wallet/assets?address=0xTest&chain=invalidchain'), headers: new Headers() };
+        const response = await worker.fetch(request, mockEnvWithCrypto, {});
+        expect(response.status).toBe(400);
+        const body = await response.json();
+        expect(body.error).toBe('Invalid "chain" parameter. Supported: ethereum, bsc, solana.');
+      });
+
+      it('should return 500 if COVALENT_API_KEY is missing', async () => {
+        const envWithoutCovalentKey = { ...mockEnvWithCrypto, COVALENT_API_KEY: undefined };
+        const request = { method: 'GET', url: new URL('http://localhost/api/wallet/assets?address=0xTest&chain=ethereum'), headers: new Headers() };
+        const response = await worker.fetch(request, envWithoutCovalentKey, {});
+        expect(response.status).toBe(500);
+        const body = await response.json();
+        expect(body.error).toBe('Service configuration error: Covalent API key missing.');
+      });
+
+      it('should return 502 if getAssetsForAddress throws a Covalent API error', async () => {
+        getAssetsForAddress.mockRejectedValue(new Error('Covalent API request failed: 500 Internal Server Error'));
+        const request = { method: 'GET', url: new URL('http://localhost/api/wallet/assets?address=0xTest&chain=ethereum'), headers: new Headers() };
+        const response = await worker.fetch(request, mockEnvWithCrypto, {});
+        expect(response.status).toBe(502);
+        const body = await response.json();
+        expect(body.error).toContain('Covalent API request failed');
+      });
+
+      it('should return 400 if getAssetsForAddress throws a Covalent API error for invalid address', async () => {
+        getAssetsForAddress.mockRejectedValue(new Error('Covalent API request failed: 400 Invalid address format'));
+        const request = { method: 'GET', url: new URL('http://localhost/api/wallet/assets?address=invalidAddress&chain=ethereum'), headers: new Headers() };
+        const response = await worker.fetch(request, mockEnvWithCrypto, {});
+        expect(response.status).toBe(400);
+        const body = await response.json();
+        expect(body.error).toContain('Covalent API request failed: 400 Invalid address format');
+      });
+
+      it('should return 500 if getAssetsForAddress throws an unexpected error', async () => {
+        getAssetsForAddress.mockRejectedValue(new Error('Some unexpected error'));
+        const request = { method: 'GET', url: new URL('http://localhost/api/wallet/assets?address=0xTest&chain=ethereum'), headers: new Headers() };
+        const response = await worker.fetch(request, mockEnvWithCrypto, {});
+        expect(response.status).toBe(500);
+        const body = await response.json();
+        expect(body.error).toBe('An unexpected error occurred: Some unexpected error');
       });
     });
   });
