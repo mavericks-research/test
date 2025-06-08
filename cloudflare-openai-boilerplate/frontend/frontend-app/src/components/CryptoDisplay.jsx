@@ -20,6 +20,8 @@ const CryptoDisplay = () => {
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
   const commonCellStyle = { overflowWrap: 'break-word' };
+  const blockchainSectionStyle = { fontSize: '0.9em', overflowX: 'auto' };
+  const blockchainTableStyle = { minWidth: '600px', width: '100%' };
 
   const coinOptions = [
     { value: 'bitcoin', label: 'Bitcoin' },
@@ -284,12 +286,12 @@ const CryptoDisplay = () => {
 
       {/* Display for Blockchain Tokens */}
       {selectedBlockchain && (
-        <div style={{ fontSize: '0.9em' }}>
+        <div style={blockchainSectionStyle}>
           <h3>Tokens on {selectedBlockchain}</h3>
           {isLoadingBlockchainTokens ? (
             <p>Loading tokens for {selectedBlockchain}...</p>
           ) : blockchainTokens.length > 0 ? (
-            <table>
+            <table style={blockchainTableStyle}>
               <thead>
                 <tr>
                   <th>Symbol</th>
