@@ -257,7 +257,7 @@ const CryptoDisplay = ({ currency }) => { // Added currency prop
           </div>
 
           {/* Coin Market Chart Section */}
-          <div style={{border: '1px solid #eee', padding: '15px', borderRadius: '5px', marginTop: '20px'}}>
+          <div style={{border: '1px solid #eee', padding: '15px', borderRadius: '5px', marginTop: '20px', backgroundColor: '#ffffff'}}>
             <h4 style={{marginBottom: '10px'}}>Price Chart ({coinOptions.find(c => c.value === selectedCoin)?.label || selectedCoin})</h4>
             <div style={chartButtonContainerStyle}>
               {[7, 30, 90, 365].map(days => (
