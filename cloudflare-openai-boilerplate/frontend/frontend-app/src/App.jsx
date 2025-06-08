@@ -1,6 +1,7 @@
 // frontend/frontend-app/src/App.jsx
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react'; // Import useContext
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import SettingsContext from './contexts/SettingsContext.js'; // Import SettingsContext
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import SplashScreen from './pages/SplashScreen';
@@ -19,6 +20,7 @@ function ProtectedRoute({ children, isAuthenticated }) {
 }
 
 function App() {
+  const { theme } = useContext(SettingsContext); // Get theme from context
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isNavVisible, setIsNavVisible] = useState(false);
   const WORKER_URL = import.meta.env.VITE_WORKER_URL;
@@ -31,7 +33,7 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div className="App" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <div className={`App theme-${theme}`} style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
 
         {/* Pass toggleNav only to Header */}
         <Header onToggleNav={toggleNav} isLoggedIn={isAuthenticated} />
