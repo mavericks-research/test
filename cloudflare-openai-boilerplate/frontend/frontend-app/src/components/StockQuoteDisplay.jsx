@@ -1,6 +1,20 @@
 import React from 'react';
 
-const StockQuoteDisplay = ({ quoteData, profileData }) => {
+// Helper function to get currency symbol
+const getCurrencySymbol = (currencyCode) => {
+  switch (currencyCode?.toUpperCase()) {
+    case 'USD':
+      return '$';
+    case 'EUR':
+      return '€';
+    case 'GBP':
+      return '£';
+    default:
+      return currencyCode || ''; // Return the code itself or empty string if undefined
+  }
+};
+
+const StockQuoteDisplay = ({ quoteData, profileData, currency }) => { // Added currency prop
   if (!quoteData) {
     return <p>No quote data to display. Enter a symbol and click "Get Stock Data".</p>;
   }
@@ -29,19 +43,20 @@ const StockQuoteDisplay = ({ quoteData, profileData }) => {
       </h2>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
-        <p><strong>Price:</strong> ${formatNumber(quoteData.price)}</p>
+        <p><strong>Price:</strong> {getCurrencySymbol(currency)}{formatNumber(quoteData.price)}</p>
         <p style={{ color: getChangeColor(quoteData.change) }}>
-          <strong>Change:</strong> {formatNumber(quoteData.change)} ({quoteData.changesPercentage ? quoteData.changesPercentage.toFixed(2) : 'N/A'}%)
+          {/* Assuming 'change' value is also in the target currency if price is. If not, symbol might be misleading. */}
+          <strong>Change:</strong> {getCurrencySymbol(currency)}{formatNumber(quoteData.change)} ({quoteData.changesPercentage ? quoteData.changesPercentage.toFixed(2) : 'N/A'}%)
         </p>
-        <p><strong>Day Low:</strong> ${formatNumber(quoteData.dayLow)}</p>
-        <p><strong>Day High:</strong> ${formatNumber(quoteData.dayHigh)}</p>
-        <p><strong>Open:</strong> ${formatNumber(quoteData.open)}</p>
-        <p><strong>Previous Close:</strong> ${formatNumber(quoteData.previousClose)}</p>
-        <p><strong>Market Cap:</strong> ${formatNumber(quoteData.marketCap)}</p>
-        <p><strong>Volume:</strong> {formatNumber(quoteData.volume)}</p>
-        <p><strong>Avg. Volume:</strong> {formatNumber(quoteData.avgVolume)}</p>
-        <p><strong>Year Low:</strong> ${formatNumber(quoteData.yearLow)}</p>
-        <p><strong>Year High:</strong> ${formatNumber(quoteData.yearHigh)}</p>
+        <p><strong>Day Low:</strong> {getCurrencySymbol(currency)}{formatNumber(quoteData.dayLow)}</p>
+        <p><strong>Day High:</strong> {getCurrencySymbol(currency)}{formatNumber(quoteData.dayHigh)}</p>
+        <p><strong>Open:</strong> {getCurrencySymbol(currency)}{formatNumber(quoteData.open)}</p>
+        <p><strong>Previous Close:</strong> {getCurrencySymbol(currency)}{formatNumber(quoteData.previousClose)}</p>
+        <p><strong>Market Cap:</strong> {getCurrencySymbol(currency)}{formatNumber(quoteData.marketCap)}</p>
+        <p><strong>Volume:</strong> {formatNumber(quoteData.volume)}</p> {/* Volume is typically not a currency value */}
+        <p><strong>Avg. Volume:</strong> {formatNumber(quoteData.avgVolume)}</p> {/* Avg. Volume is typically not a currency value */}
+        <p><strong>Year Low:</strong> {getCurrencySymbol(currency)}{formatNumber(quoteData.yearLow)}</p>
+        <p><strong>Year High:</strong> {getCurrencySymbol(currency)}{formatNumber(quoteData.yearHigh)}</p>
         {quoteData.exchange && <p><strong>Exchange:</strong> {quoteData.exchange}</p>}
       </div>
 

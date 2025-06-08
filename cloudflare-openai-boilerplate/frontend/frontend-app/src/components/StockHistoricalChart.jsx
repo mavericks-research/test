@@ -16,7 +16,7 @@ const StockHistoricalChart = ({ historicalData, stockName }) => {
       padding: '20px',
       borderRadius: '5px',
       marginTop: '20px',
-      backgroundColor: '#f9f9f9', // Light background for the chart area
+      backgroundColor: '#ffffff', // Light background for the chart area
       overflowX: 'auto' // Added this
     }}>
       <h4 style={{ textAlign: 'center', marginBottom: '20px' }}>

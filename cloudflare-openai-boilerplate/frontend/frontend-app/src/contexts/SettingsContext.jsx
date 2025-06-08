@@ -7,7 +7,6 @@ const SettingsContext = createContext();
 export const SettingsProvider = ({ children }) => {
   // Initialize state for settings
   const [currency, setCurrency] = useState('USD');
-  const [language, setLanguage] = useState('en');
   const [theme, setTheme] = useState('light');
   const [dataRefreshInterval, setDataRefreshInterval] = useState('manual');
 
@@ -16,9 +15,6 @@ export const SettingsProvider = ({ children }) => {
     switch (key) {
       case 'currency':
         setCurrency(value);
-        break;
-      case 'language':
-        setLanguage(value);
         break;
       case 'theme':
         setTheme(value);
@@ -34,11 +30,10 @@ export const SettingsProvider = ({ children }) => {
   // Memoize the context value
   const contextValue = useMemo(() => ({
     currency,
-    language,
     theme,
     dataRefreshInterval,
     updateSetting,
-  }), [currency, language, theme, dataRefreshInterval]);
+  }), [currency, theme, dataRefreshInterval]);
 
   // Return SettingsContext.Provider with the memoized value
   return (
