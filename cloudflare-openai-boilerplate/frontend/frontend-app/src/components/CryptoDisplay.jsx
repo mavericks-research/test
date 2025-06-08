@@ -98,9 +98,6 @@ const CryptoDisplay = () => {
         case 'Solana':
           platformApiName = 'solana';
           break;
-        case "Polygon":
-          platformApiName = 'polygon-pos';
-          break;
         case "Avalanche":
           platformApiName = 'avalanche';
           break;
@@ -265,7 +262,6 @@ const CryptoDisplay = () => {
           <option value="Ethereum">Ethereum</option>
           <option value="Binance Smart Chain">Binance Smart Chain</option>
           <option value="Solana">Solana</option>
-          <option value="Polygon">Polygon</option>
           <option value="Avalanche">Avalanche</option>
           <option value="Arbitrum">Arbitrum</option>
           <option value="Optimism">Optimism</option>
