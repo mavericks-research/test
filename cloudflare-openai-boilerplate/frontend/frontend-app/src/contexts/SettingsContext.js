@@ -49,4 +49,4 @@ export const SettingsProvider = ({ children }) => {
 };
 
 // Export SettingsContext
-export default SettingsContext;
+export { SettingsContext };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react'; // Added useState for WalletAnalyzer, useEffect for stock data, useContext for settings
-import SettingsContext from '../contexts/SettingsContext.js'; // Import SettingsContext
+import { SettingsContext } from '../contexts/SettingsContext.js'; // Import SettingsContext
 import CryptoDisplay from '../components/CryptoDisplay'; // Import CryptoDisplay
 import StockSelector from '../components/StockSelector';
 import StockQuoteDisplay from '../components/StockQuoteDisplay';
