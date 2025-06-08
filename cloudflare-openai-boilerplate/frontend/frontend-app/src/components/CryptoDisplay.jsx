@@ -11,9 +11,9 @@ const CryptoDisplay = () => {
   const [percentageChange, setPercentageChange] = useState(null);
   const [openAiInsights, setOpenAiInsights] = useState(null);
   const [isLoadingEnrichedData, setIsLoadingEnrichedData] = useState(false);
-  const [selectedBlockchain, setSelectedBlockchain] = useState('');
-  const [blockchainTokens, setBlockchainTokens] = useState([]);
-  const [isLoadingBlockchainTokens, setIsLoadingBlockchainTokens] = useState(false);
+  // const [selectedBlockchain, setSelectedBlockchain] = useState(''); // Removed
+  // const [blockchainTokens, setBlockchainTokens] = useState([]); // Removed
+  // const [isLoadingBlockchainTokens, setIsLoadingBlockchainTokens] = useState(false); // Removed
 
   // Define API_BASE_URL using Vite's import.meta.env
   // Fallback to empty string for local dev (uses Vite proxy with relative paths)
@@ -91,54 +91,7 @@ const CryptoDisplay = () => {
     }
   }, [selectedCoin, API_BASE_URL]);
 
-  // New useEffect for fetching tokens by blockchain
-  useEffect(() => {
-    const fetchTokensByBlockchain = async () => {
-      if (!selectedBlockchain) {
-        setBlockchainTokens([]); // Clear tokens if no blockchain is selected
-        return;
-      }
-
-      setIsLoadingBlockchainTokens(true);
-      setBlockchainTokens([]); // Clear previous results
-      // Also clear single coin data when focusing on blockchain
-      // setSelectedCoin('');
-
-      let platformApiName = '';
-      switch (selectedBlockchain) {
-        case 'Ethereum':
-          platformApiName = 'ethereum';
-          break;
-        case 'Binance Smart Chain':
-          platformApiName = 'binance-smart-chain';
-          break;
-        case 'Solana':
-          platformApiName = 'solana';
-          break;
-        default:
-          setIsLoadingBlockchainTokens(false);
-          return; // Should not happen if select options are controlled
-      }
-
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/crypto/coins-by-blockchain?platform=${platformApiName}&currency=usd`);
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: response.statusText }));
-          throw new Error(`Error fetching tokens for ${selectedBlockchain}: ${errorData.error || response.statusText}`);
-        }
-        const data = await response.json();
-        setBlockchainTokens(data || []); // Ensure data is an array
-      } catch (error) {
-        console.error(`Failed to fetch tokens for ${selectedBlockchain}:`, error);
-        setBlockchainTokens([]); // Clear on error
-        // You might want to set an error message state here to display to the user
-      } finally {
-        setIsLoadingBlockchainTokens(false);
-      }
-    };
-
-    fetchTokensByBlockchain();
-  }, [selectedBlockchain, API_BASE_URL]);
+  // Removed useEffect for fetching tokens by blockchain
 
   useEffect(() => {
     const fetchEnrichedHistoricalData = async () => {
@@ -220,25 +173,7 @@ const CryptoDisplay = () => {
         </select>
       </div>
 
-      {/* Blockchain Selector */}
-      <div>
-        <label htmlFor="blockchain-select">Select Blockchain: </label>
-        <select
-          id="blockchain-select"
-          value={selectedBlockchain}
-          onChange={(e) => {
-            setSelectedBlockchain(e.target.value);
-            if (e.target.value) { // If a blockchain is selected
-              setSelectedCoin(''); // Clear selected coin to avoid confusion
-            }
-          }}
-        >
-          <option value="">Select Blockchain</option>
-          <option value="Ethereum">Ethereum</option>
-          <option value="Binance Smart Chain">Binance Smart Chain</option>
-          <option value="Solana">Solana</option>
-        </select>
-      </div>
+  {/* Blockchain Selector Removed */}
 
       {/* Date picker - only relevant if a single coin is selected */}
       {selectedCoin && (
@@ -297,45 +232,9 @@ const CryptoDisplay = () => {
         </>
       )}
 
-      {/* Display for Blockchain Tokens */}
-      {selectedBlockchain && (
-        <div>
-          <h3>Tokens on {selectedBlockchain}</h3>
-          {isLoadingBlockchainTokens ? (
-            <p>Loading tokens for {selectedBlockchain}...</p>
-          ) : blockchainTokens.length > 0 ? (
-            <div style={{ overflowX: 'auto', maxWidth: '100%' }}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                  <th>Symbol</th>
-                  <th>Price (USD)</th>
-                  <th>Market Cap (USD)</th>
-                  <th>Volume (24h)</th>
-                  <th>Change (24h)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {blockchainTokens.map(token => (
-                  <tr key={token.id}>
-                    <td>{token.name}</td>
-                    <td>{token.symbol.toUpperCase()}</td>
-                    <td>${token.current_price ? token.current_price.toLocaleString() : 'N/A'}</td>
-                    <td>${token.market_cap ? token.market_cap.toLocaleString() : 'N/A'}</td>
-                    <td>${token.total_volume ? token.total_volume.toLocaleString() : 'N/A'}</td>
-                    <td>{token.price_change_percentage_24h ? token.price_change_percentage_24h.toFixed(2) + '%' : 'N/A'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            </div>
-          ) : (
-            <p>No tokens found for {selectedBlockchain} or data is unavailable.</p>
-          )}
-        </div>
-      )}
-      {!selectedCoin && !selectedBlockchain && <p>Please select a coin or a blockchain to view data.</p>}
+  {/* Display for Blockchain Tokens Removed */}
+
+  {!selectedCoin && <p>Please select a coin to view its data.</p>}
     </div>
   );
 };

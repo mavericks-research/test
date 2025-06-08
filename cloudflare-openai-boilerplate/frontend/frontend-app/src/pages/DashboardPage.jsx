@@ -3,6 +3,7 @@ import CryptoDisplay from '../components/CryptoDisplay'; // Import CryptoDisplay
 import StockSelector from '../components/StockSelector';
 import StockQuoteDisplay from '../components/StockQuoteDisplay';
 import StockHistoricalChart from '../components/StockHistoricalChart';
+import BlockchainDataViewer from '../components/BlockchainDataViewer'; // New import
 import { getStockProfile, getStockQuote, getStockHistoricalData } from '../services/stockService';
 // Removed NavigationBar import
 
@@ -167,6 +168,12 @@ function DashboardPage({ workerUrl }) {
          {!isStockLoading && !stockError && !selectedStockSymbol && (
           <p>Enter a stock symbol above to view its data.</p>
         )}
+      </div>
+
+      <hr style={{ margin: '30px 0', borderColor: 'var(--color-border)' }}/>
+      <div style={{ marginTop: '20px' }}>
+        <h2>Blockchain Explorer</h2>
+        <BlockchainDataViewer />
       </div>
     </div>
   );
