@@ -14,6 +14,25 @@ function SplashScreen() {
 
   return (
     <div className="splash-screen-container">
+      {/* TODO: Replace with actual MP4 video path from project assets, e.g., /assets/videos/background.mp4 */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
+        style={{
+          position: 'fixed',
+          right: '0',
+          bottom: '0',
+          minWidth: '100%',
+          minHeight: '100%',
+          width: 'auto',
+          height: 'auto',
+          zIndex: '-1000',
+          objectFit: 'cover',
+        }}
+      />
       <img
         src={logoUrl}
         alt="App Logo"
