@@ -185,4 +185,76 @@ describe('DashboardPage - WalletAnalyzer Component', () => {
     expect(screen.getByPlaceholderText(/Enter Solana Wallet Address/i)).toBeInTheDocument();
   });
 
+  test('toggles visibility of CryptoDisplay component', async () => {
+    // Mock fetch calls made by CryptoDisplay when it mounts
+    // This is important because CryptoDisplay is rendered initially
+    // For current price (bitcoin default)
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        bitcoin: {
+          usd: 50000,
+          usd_market_cap: 1000000000000,
+          usd_24h_vol: 50000000000,
+          usd_24h_change: 1.2
+        }
+      })
+    });
+    // For enriched historical data (bitcoin default, today's date)
+    const today = new Date();
+    const formattedDateForApi = `${String(today.getDate()).padStart(2, '0')}-${String(today.getMonth() + 1).padStart(2, '0')}-${today.getFullYear()}`;
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        coinGeckoData: { market_data: { current_price: { usd: 48000 } } },
+        openAiInsights: 'Mock insight for today.'
+      })
+    });
+
+    render(<DashboardPage />);
+
+    const toggleCheckbox = screen.getByLabelText(/Show Crypto Price Viewer/i);
+    expect(toggleCheckbox).toBeInTheDocument();
+    expect(toggleCheckbox).toBeChecked(); // Default is true (visible)
+
+    // Wait for CryptoDisplay's content to be potentially loaded and visible
+    // Using its main heading as an identifier
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /Crypto Price Viewer/i, level: 2 })).toBeInTheDocument();
+    });
+
+    // Click to hide CryptoDisplay
+    fireEvent.click(toggleCheckbox);
+    expect(toggleCheckbox).not.toBeChecked();
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { name: /Crypto Price Viewer/i, level: 2 })).not.toBeInTheDocument();
+    });
+
+    // Click to show CryptoDisplay again
+    // Need to re-mock fetches if CryptoDisplay re-fetches on show (it does due to useEffect dependencies)
+     fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        bitcoin: {
+          usd: 50000,
+          usd_market_cap: 1000000000000,
+          usd_24h_vol: 50000000000,
+          usd_24h_change: 1.2
+        }
+      })
+    });
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        coinGeckoData: { market_data: { current_price: { usd: 48000 } } },
+        openAiInsights: 'Mock insight for today again.'
+      })
+    });
+
+    fireEvent.click(toggleCheckbox);
+    expect(toggleCheckbox).toBeChecked();
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /Crypto Price Viewer/i, level: 2 })).toBeInTheDocument();
+    });
+  });
 });

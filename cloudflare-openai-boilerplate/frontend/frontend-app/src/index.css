@@ -7,17 +7,23 @@
   --color-surface-hover: #1c1c1c;
   --color-card-bg: #131313;
 
-  --color-text: #d0f9ff;
-  --color-heading: #1ac0ff;
-  --color-link: #1ac0ff;
-  --color-link-hover: #1094bf;
-  --color-border: #2c3e50;
-  --color-error: #ff6b6b;
+  /* Light Theme Defaults (moved from prefers-color-scheme: light) */
+  --color-bg: #e0faff; /* Light cyan background */
+  --color-surface: #ffffff; /* White surface */
+  --color-surface-hover: #f0f0f0; /* Light grey hover */
+  --color-card-bg: #ffffff; /* White card background */
 
-  --color-accent: #1ac0ff;
-  --color-accent-hover: #1094bf;
+  --color-text: #0f0f0f; /* Dark text */
+  --color-heading: #0077aa; /* Dark blue heading */
+  --color-link: #0077aa; /* Dark blue link */
+  --color-link-hover: #005577; /* Darker blue hover */
+  --color-border: #cccccc; /* Grey border */
+  --color-error: #cc0000; /* Darker red for errors */
 
-  color-scheme: dark;
+  --color-accent: #0077aa; /* Using heading color as accent */
+  --color-accent-hover: #005577; /* Darker accent hover */
+
+  color-scheme: light; /* Changed to light */
   font-family: var(--font-primary);
   line-height: 1.5;
   font-weight: 400;
@@ -35,16 +41,16 @@
 body {
   margin: 0;
   display: flex;
-  place-items: center;
+  place-items: center; /* This might be for centering content in a very simple app, might need adjustment for full layout */
   min-width: 320px;
   min-height: 100vh;
-  background-color: var(--color-bg);
-  color: var(--color-text);
+  background-color: var(--color-bg); /* Will use light theme var */
+  color: var(--color-text); /* Will use light theme var */
   font-family: var(--font-primary);
 }
 
 h1, h2, h3, h4, h5, h6 {
-  color: var(--color-heading);
+  color: var(--color-heading); /* Will use light theme var */
   font-weight: 600;
 }
 
@@ -71,26 +77,26 @@ button {
   font-weight: 500;
   font-family: inherit;
   background-color: var(--color-surface);
-  color: var(--color-text);
+  color: var(--color-text); /* Will use light theme var */
   cursor: pointer;
   transition: border-color 0.25s, background-color 0.25s, box-shadow 0.25s;
 }
 button:hover {
-  background-color: var(--color-surface-hover);
-  border-color: var(--color-link-hover);
-  box-shadow: 0 0 10px var(--color-accent-hover);
+  background-color: var(--color-surface-hover); /* Will use light theme var */
+  border-color: var(--color-link-hover); /* Will use light theme var */
+  box-shadow: 0 0 10px var(--color-accent-hover); /* Will use light theme var */
 }
 button:focus,
 button:focus-visible {
-  outline: 3px solid var(--color-link);
-  box-shadow: 0 0 6px var(--color-accent);
+  outline: 3px solid var(--color-link); /* Will use light theme var */
+  box-shadow: 0 0 6px var(--color-accent); /* Will use light theme var */
 }
 
 /* Forms */
 input, textarea, select {
-  background-color: var(--color-surface);
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
+  background-color: var(--color-surface); /* Will use light theme var */
+  color: var(--color-text); /* Will use light theme var */
+  border: 1px solid var(--color-border); /* Will use light theme var */
   padding: 0.6em 1em;
   border-radius: 6px;
   font-family: inherit;
@@ -99,43 +105,44 @@ input, textarea, select {
   transition: border-color 0.2s, background-color 0.2s;
 }
 input:focus, textarea:focus, select:focus {
-  border-color: var(--color-link);
+  border-color: var(--color-link); /* Will use light theme var */
   outline: none;
-  background-color: var(--color-surface-hover);
+  background-color: var(--color-surface-hover); /* Will use light theme var */
 }
 
 /* Utility */
 .neon-glow {
-  color: var(--color-accent);
+  color: var(--color-accent); /* Will use light theme var */
   text-shadow:
     0 0 5px var(--color-accent),
-    0 0 10px var(--color-accent-hover),
-    0 0 20px var(--color-accent-hover);
+    0 0 10px var(--color-accent-hover), /* Will use light theme var */
+    0 0 20px var(--color-accent-hover); /* Will use light theme var */
 }
 
 /* Code blocks */
 code, pre {
   font-family: "Courier New", Courier, monospace;
-  background-color: #1b1b1b;
+  background-color: #f0f0f0; /* Light background for code blocks */
   padding: 0.3em 0.6em;
   border-radius: 6px;
-  color: #80eaff;
+  color: #333333; /* Dark text for code blocks */
+  border: 1px solid #ddd; /* Light border for code blocks */
 }
 
 /* Card Containers */
 section, .card {
-  background-color: var(--color-card-bg);
-  border: 1px solid var(--color-border);
+  background-color: var(--color-card-bg); /* Will use light theme var */
+  border: 1px solid var(--color-border); /* Will use light theme var */
   padding: 1.5em;
   border-radius: 10px;
-  box-shadow: 0 0 10px rgba(26, 192, 255, 0.08);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05); /* Softer shadow for light theme */
 }
 
 /* Error Message */
 .error {
-  background-color: #321d1d;
-  border: 1px solid var(--color-error);
-  color: var(--color-error);
+  background-color: #ffebee; /* Light red background for errors */
+  border: 1px solid var(--color-error); /* Will use light theme var (darker red) */
+  color: var(--color-error); /* Darker red text */
   padding: 10px;
   border-radius: 6px;
   margin-top: 1em;
@@ -148,46 +155,19 @@ section, .card {
 }
 
 /* Responsive Light Theme */
-@media (prefers-color-scheme: light) {
+/* @media (prefers-color-scheme: light) block can be removed or kept if OS-level switching is desired later. */
+/* For now, light is default. If we want to keep dark mode for OS preference, we'd invert the logic: */
+/* define light variables in :root, then dark variables in @media (prefers-color-scheme: dark) */
+/* For this task, we are forcing light, so this block is not strictly needed if light vars are in :root */
+
+/* Example: If you wanted to keep the prefers-color-scheme for dark mode:
+@media (prefers-color-scheme: dark) {
   :root {
-    --color-bg: #e0faff;
-    --color-surface: #ffffff;
-    --color-surface-hover: #f0f0f0;
-    --color-card-bg: #ffffff;
-
-    --color-text: #0f0f0f;
-    --color-heading: #0077aa;
-    --color-link: #0077aa;
-    --color-link-hover: #005577;
-    --color-border: #cccccc;
-
-    --color-accent: #1ac0ff;
-    --color-accent-hover: #1094bf;
+    --color-bg: #0f0f0f;
+    --color-surface: #1a1a1a;
+    // ... all the dark theme variables ...
   }
-
-  body {
-    background-color: var(--color-bg);
-    color: var(--color-text);
-  }
-
-  a:hover {
-    color: var(--color-link-hover);
-  }
-
-  button {
-    background-color: #c0f5ff;
-    color: var(--color-text);
-    border-color: var(--color-link);
-  }
-
-  input, textarea, select {
-    background-color: #fff;
-    color: #0f0f0f;
-    border-color: #bbb;
-  }
-
-  .card, section {
-    background-color: #fff;
-    border-color: #ccc;
-  }
+   body { // and other specific dark overrides }
 }
+*/
+/* Forcing light theme, so removing the specific media query overrides for light as they are now default. */

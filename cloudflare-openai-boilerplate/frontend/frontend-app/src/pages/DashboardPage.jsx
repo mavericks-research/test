@@ -73,22 +73,32 @@ function WalletAnalyzer() { // Removed workerUrl prop
     }
   };
 
-  const tableCellStyle = { padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid #333' };
-  const tableHeaderStyle = { ...tableCellStyle, fontWeight: 'bold', borderBottom: '2px solid #444' };
+  const tableCellStyle = {
+    padding: '8px 12px',
+    textAlign: 'left',
+    borderBottom: '1px solid #dee2e6' // Light theme border
+  };
+  const tableHeaderStyle = {
+    ...tableCellStyle,
+    fontWeight: 'bold',
+    borderBottom: '2px solid #ced4da' // Slightly darker border for header
+  };
 
 
   return (
     <>
+      {/* h2 will inherit color from App.css/index.css which now use light theme vars */}
       <h2>Wallet Asset Viewer</h2>
       <form onSubmit={handleSubmit} style={{ marginBottom: '20px' }}>
         <div style={{ marginBottom: '10px' }}>
+          {/* label will inherit text color */}
           <label htmlFor="chain-select" style={{ marginRight: '10px' }}>Select Chain:</label>
           <select
             id="chain-select"
             value={selectedChain}
             onChange={(e) => setSelectedChain(e.target.value)}
             disabled={isLoading}
-            style={{ padding: '8px', borderRadius: '4px', marginRight: '10px' }}
+            style={{ padding: '8px', borderRadius: '4px', marginRight: '10px' }} // Input/select styles from index.css will apply
           >
             {chainOptions.map(option => (
               <option key={option.value} value={option.value}>
@@ -104,16 +114,19 @@ function WalletAnalyzer() { // Removed workerUrl prop
             onChange={(e) => setWalletAddress(e.target.value)}
             placeholder={getCurrentPlaceholder()}
             disabled={isLoading}
-            style={{ width: 'calc(100% - 120px)', padding: '8px', borderRadius: '4px', marginRight: '10px' }}
+            style={{ width: 'calc(100% - 120px)', padding: '8px', borderRadius: '4px', marginRight: '10px' }} // Input/select styles from index.css
           />
+          {/* Button styles from index.css will apply */}
           <button type="submit" disabled={isLoading} style={{ padding: '8px 15px', borderRadius: '4px' }}>
             {isLoading ? 'Fetching Assets...' : 'Get Assets'}
           </button>
         </div>
       </form>
 
-      {error && <p style={{ color: 'red' }}>Error: {error}</p>}
+      {/* Error text color will be from .error class in index.css or default if not wrapped */}
+      {error && <p className="error" style={{color: 'var(--color-error)'}}>Error: {error}</p>}
 
+      {/* Text color will be inherited */}
       {isLoading && <p>Fetching Assets...</p>}
 
       {!isLoading && !error && hasSubmitted && assets.length === 0 && (
@@ -122,6 +135,7 @@ function WalletAnalyzer() { // Removed workerUrl prop
 
       {!isLoading && assets.length > 0 && (
         <div>
+          {/* h3 will inherit color */}
           <h3>Detected Assets on {chainOptions.find(c => c.value === selectedChain)?.label}:</h3>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9em' }}>
             <thead>
@@ -159,25 +173,49 @@ function WalletAnalyzer() { // Removed workerUrl prop
   );
 }
 
-function DashboardPage() { // Removed workerUrl from props
+function DashboardPage() {
+  const [showCryptoPriceViewer, setShowCryptoPriceViewer] = useState(true); // New state
+
   const containerStyle = {
-    border: '2px solid #26cc66',  // bright green border
+    border: '2px solid #dee2e6',    // Light gray border
     borderRadius: '8px',
     padding: '20px',
     margin: '20px auto',
     maxWidth: '900px',
-    backgroundColor: '#121212', // matching dark background
-    color: '#d0ffd0',           // matching light green text
+    minWidth: '750px', // <-- ADDED THIS LINE
+    backgroundColor: '#ffffff',     // White background
+    color: '#212529',             // Dark text
     boxSizing: 'border-box',
   };
 
   return (
+    // p tag and hr will inherit styles or use browser defaults harmonizing with light theme
     <div style={containerStyle}>
       <p>Welcome to your dashboard.</p>
-      <hr />
-      <CryptoDisplay />
-      <hr />
-      <WalletAnalyzer /> {/* Removed workerUrl prop */}
+
+      {/* New Toggle for CryptoDisplay */}
+      <div style={{ margin: '15px 0', padding: '10px', border: '1px solid #eee', borderRadius: '4px' }}>
+        <label htmlFor="toggleCryptoViewer" style={{ marginRight: '10px', fontWeight: 'bold', cursor: 'pointer' }}>
+          Show Crypto Price Viewer:
+        </label>
+        <input
+          type="checkbox"
+          id="toggleCryptoViewer"
+          checked={showCryptoPriceViewer}
+          onChange={(e) => setShowCryptoPriceViewer(e.target.checked)}
+          style={{ cursor: 'pointer' }}
+        />
+      </div>
+
+      {showCryptoPriceViewer && (
+        <>
+          <hr style={{borderColor: '#e0e0e0'}} /> {/* Lighter hr */}
+          <CryptoDisplay />
+        </>
+      )}
+
+      <hr style={{borderColor: '#e0e0e0'}} /> {/* Lighter hr */}
+      <WalletAnalyzer />
     </div>
   );
 }
