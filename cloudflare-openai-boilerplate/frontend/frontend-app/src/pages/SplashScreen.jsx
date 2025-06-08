@@ -13,7 +13,23 @@ function SplashScreen() {
   const logoUrl = 'https://picsum.photos/seed/applogo/150/150';
 
   return (
-    <div className="splash-screen-container">
+    <div
+      className="splash-screen-container"
+      style={{
+        minHeight: '100vh', // Ensure it takes full viewport height
+        width: '100vw',    // Ensure it takes full viewport width
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        padding: '20px',    // Keep padding for content
+        boxSizing: 'border-box', // Keep box-sizing
+        backgroundColor: 'transparent', // Crucial: make its own background transparent
+        position: 'relative', // Needed for z-index of children if splash container itself is not fixed
+        zIndex: 0 // Ensure it's above the App's original background but below any potential header.
+      }}
+    >
       {/* TODO: Replace with actual MP4 video path from project assets, e.g., /assets/videos/background.mp4 */}
       <video
         autoPlay
@@ -33,20 +49,22 @@ function SplashScreen() {
           objectFit: 'cover',
         }}
       />
-      <img
-        src={logoUrl}
-        alt="App Logo"
-        style={{
-          width: '150px',
-          height: '150px',
-          borderRadius: '10px',
-          marginBottom: '20px'
-        }}
-      />
-      <h1>See Your Crypto. Plan Your Future.</h1>
-      <button onClick={handleGetStarted} style={{ fontSize: '1.2em', padding: '10px 20px' }}>
-        Get Started
-      </button>
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        <img
+          src={logoUrl}
+          alt="App Logo"
+          style={{
+            width: '150px',
+            height: '150px',
+            borderRadius: '10px',
+            marginBottom: '20px'
+          }}
+        />
+        <h1>See Your Crypto. Plan Your Future.</h1>
+        <button onClick={handleGetStarted} style={{ fontSize: '1.2em', padding: '10px 20px' }}>
+          Get Started
+        </button>
+      </div>
     </div>
   );
 }
