@@ -59,7 +59,7 @@ function WalletAnalyzer({ workerUrl }) {
         </button>
       </form>
 
-      {error && <p style={{ color: 'red' }}>Error: {error}</p>}
+      {error && <p style={{ color: 'var(--color-error)' }}>Error: {error}</p>}
       {summary && (
         <div>
           <h3>AI Summary:</h3>
@@ -80,13 +80,13 @@ function WalletAnalyzer({ workerUrl }) {
 
 function DashboardPage({ workerUrl }) {
   const containerStyle = {
-    border: '2px solid #26cc66',  // bright green border
+    border: '2px solid var(--color-accent)',  // Was #26cc66
     borderRadius: '8px',
     padding: '20px',
     margin: '20px auto',
     maxWidth: '900px',
-    backgroundColor: '#121212', // matching dark background
-    color: '#d0ffd0',           // matching light green text
+    backgroundColor: 'var(--color-surface)', // Was #121212
+    color: 'var(--color-text)',           // Was #d0ffd0
     boxSizing: 'border-box',
   };
 

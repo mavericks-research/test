@@ -156,7 +156,7 @@ section, .card {
     --color-card-bg: #FFFFFF;
 
     --color-text: #212529;
-    --color-heading: #000000;
+    --color-heading: #004080; /* Changed from #000000 to var(--color-accent) equivalent */
     --color-link: #003366;
     --color-link-hover: #001F3D;
     --color-border: #CED4DA;
