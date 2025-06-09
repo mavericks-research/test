@@ -1,0 +1,23 @@
+/* cloudflare-openai-boilerplate/frontend/frontend-app/src/components/AdBanner.css */
+.ad-banner-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: #f0f0f0; /* Light grey background, change as needed */
+  border-top: 1px solid #ccc;
+  text-align: center;
+  z-index: 1000; /* Ensure it's above most other content */
+  display: flex; /* Use flex to center the placeholder */
+  justify-content: center;
+  align-items: center;
+  min-height: 50px; /* Minimum height for an ad banner */
+}
+
+.ad-banner-placeholder {
+  padding: 10px;
+  color: #333;
+  font-size: 14px;
+}
+
+/* You might need to adjust the height or min-height based on the ad sizes you plan to use */

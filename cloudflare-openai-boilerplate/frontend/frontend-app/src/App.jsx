@@ -12,6 +12,7 @@ import SettingsPage from './pages/SettingsPage';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import NavigationBar from './components/NavigationBar';
+import AdBanner from './components/AdBanner';
 import './App.css';
 
 // Protected route wrapper
@@ -40,6 +41,7 @@ function AppContent() {
         display: 'flex',
         flexDirection: 'column',
         minHeight: '100vh',
+        paddingBottom: '50px', // Add padding to the bottom to prevent content overlap by adbanner
         backgroundColor: isSplashScreen ? 'transparent' : undefined
       }}
     >
@@ -123,6 +125,9 @@ function AppContent() {
 
       {/* Footer visibility can also be conditional */}
       {isAuthenticated && !isSplashScreen && <Footer />}
+
+      {/* Ad Banner to be displayed at the bottom */}
+      <AdBanner />
     </div>
   );
 }
