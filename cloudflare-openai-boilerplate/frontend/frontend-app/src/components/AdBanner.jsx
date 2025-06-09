@@ -41,15 +41,12 @@ const AdBanner = () => {
       */}
       <div className="ad-banner-placeholder">
         <p>Advertisement</p>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7518550515165517"
-     crossorigin="anonymous"></script>
-<ins class="adsbygoogle"
-     style="display:inline-block;width:728px;height:90px"
-     data-ad-client="ca-pub-7518550515165517"
-     data-ad-slot="9516989212"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
+          <ins class="adsbygoogle"
+             style={{ display: 'block', maxWidth: '728px', width: '100%', height: '90px' }}
+             data-ad-client="ca-pub-7518550515165517"
+             data-ad-slot="9516989212"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
         <p>(AdBanner.jsx - Replace with your AdSense code)</p>
       </div>
     </div>

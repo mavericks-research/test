@@ -1,23 +1,44 @@
 /* cloudflare-openai-boilerplate/frontend/frontend-app/src/components/AdBanner.css */
+
 .ad-banner-container {
   position: fixed;
   bottom: 0;
   left: 0;
   width: 100%;
-  background-color: #f0f0f0; /* Light grey background, change as needed */
+  max-height: 90px; /* Limit ad size for consistency */
+  background-color: #f0f0f0; /* Light grey background */
   border-top: 1px solid #ccc;
   text-align: center;
-  z-index: 1000; /* Ensure it's above most other content */
-  display: flex; /* Use flex to center the placeholder */
+  z-index: 1000;
+  display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 50px; /* Minimum height for an ad banner */
+  overflow: hidden; /* Prevent overflow if ad resizes */
+  padding: 5px 0;
 }
 
+.adsbygoogle {
+  display: block;
+  width: 100%;
+  max-width: 728px; /* Cap width to common leaderboard ad size */
+  height: 90px; /* Optional: fixed height for consistency */
+}
+
+/* Fallback placeholder text (for dev mode or non-loaded ads) */
 .ad-banner-placeholder {
   padding: 10px;
   color: #333;
   font-size: 14px;
 }
 
-/* You might need to adjust the height or min-height based on the ad sizes you plan to use */
+/* Mobile adjustments */
+@media (max-width: 600px) {
+  .ad-banner-container {
+    max-height: 60px;
+  }
+
+  .adsbygoogle {
+    height: 60px;
+    max-width: 100%;
+  }
+}
