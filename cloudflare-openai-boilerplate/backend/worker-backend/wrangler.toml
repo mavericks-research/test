@@ -26,6 +26,7 @@ compatibility_date = "2023-10-30" # Use a recent compatibility date
 # OPENAI_API_KEY = "your-openai-api-key-goes-here-if-not-using-secrets-or-dev-vars"
 # ETHERSCAN_API_KEY = "your-etherscan-api-key-goes-here-if-not-using-secrets-or-dev-vars"
 # COINGECKO_API_KEY = "your-coingecko-api-key-goes-here-if-not-using-secrets-or-dev-vars"
+# MORALIS_API_KEY = "your-moralis-api-key-goes-here-if-not-using-secrets-or-dev-vars"
 
 # --- Example Non-Sensitive Configuration Variable ---
 # This defines a default model that can be overridden by `.dev.vars` or a production environment variable.

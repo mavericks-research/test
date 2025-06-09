@@ -28,6 +28,38 @@ cloudflare-openai-boilerplate/
 *   **CoinGecko API Key (Optional but Recommended):** For more stable access to cryptocurrency data, sign up for a free "Demo API Key" at [CoinGecko API](https://www.coingecko.com/en/api/pricing) (choose the Demo plan). This key will be set as `COINGECKO_API_KEY`.
 *   **Wrangler CLI:** Install the Cloudflare Wrangler CLI globally: `npm install -g wrangler` (or use `npx wrangler` for commands).
 
+### Moralis API Key (Required for Wallet Features)
+
+The application uses Moralis to fetch detailed wallet information, including token balances (ERC20 and native) and transaction history. This is primarily utilized by the functions in `backend/worker-backend/src/cryptoApi.js`. A Moralis API key is required for these features to work. If the key is missing or invalid, you may encounter errors like "Error: Moralis API key is missing. Please configure it in the backend."
+
+**1. Obtaining a Moralis API Key:**
+
+*   Visit the [Moralis website](https://moralis.io/) and create an account or log in.
+*   Navigate to your dashboard to get your API Key. You can typically register for a free plan to start: [Moralis Signup](https://admin.moralis.com/register).
+*   For more detailed information on Moralis APIs, refer to their [official documentation](https://docs.moralis.com/).
+
+**2. Setting the API Key:**
+
+You need to configure the `MORALIS_API_KEY` for both local development and your deployed Cloudflare Worker.
+
+**a. Local Development (`wrangler dev`):**
+
+*   In the `cloudflare-openai-boilerplate/backend/worker-backend/` directory, ensure you have a `.dev.vars` file (create it if it doesn't exist).
+*   Add the following line to your `.dev.vars` file, replacing `YOUR_MORALIS_API_KEY_HERE` with your actual API key:
+    ```ini
+    MORALIS_API_KEY="YOUR_MORALIS_API_KEY_HERE"
+    ```
+*   The `.dev.vars` file should be in your `.gitignore` to prevent committing secrets.
+
+**b. Deployed Cloudflare Worker (Production):**
+
+*   Navigate to the `cloudflare-openai-boilerplate/backend/worker-backend/` directory in your terminal.
+*   Store your Moralis API key securely using Wrangler secrets. You will be prompted to enter the key:
+    ```bash
+    npx wrangler secret put MORALIS_API_KEY
+    ```
+*   This command uploads the secret to Cloudflare, where your deployed worker can access it.
+
 ## Setup and Deployment
 
 ### 1. Backend (Cloudflare Worker)
