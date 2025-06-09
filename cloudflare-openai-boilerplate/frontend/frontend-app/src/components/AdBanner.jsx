@@ -6,14 +6,13 @@ const AdBanner = () => {
   useEffect(() => {
     // Placeholder for Google AdSense script loading
     // When you have your AdSense code, it might look something like this:
-    /*
+    
     try {
       (window.adsbygoogle = window.adsbygoogle || []).push({});
       console.log('AdSense script pushed.');
     } catch (e) {
       console.error('AdSense error:', e);
     }
-    */
     // For now, we'll just log that the component mounted
     console.log('AdBanner component mounted. Replace placeholder logic with AdSense script.');
   }, []);
@@ -42,6 +41,12 @@ const AdBanner = () => {
       */}
       <div className="ad-banner-placeholder">
         <p>Advertisement</p>
+          <ins class="adsbygoogle"
+             style={{ display: 'block' }}
+             data-ad-client="ca-pub-7518550515165517"
+             data-ad-slot="9516989212"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
         <p>(AdBanner.jsx - Replace with your AdSense code)</p>
       </div>
     </div>
