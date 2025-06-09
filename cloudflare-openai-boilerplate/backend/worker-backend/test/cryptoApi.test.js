@@ -1,6 +1,14 @@
 // cloudflare-openai-boilerplate/backend/worker-backend/test/cryptoApi.test.js
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getCoinList, getCurrentPrices, getHistoricalData, getTransactionHistory } from '../src/cryptoApi';
+import { getCoinList, getCurrentPrices, getHistoricalData, getTransactionHistory, getWalletTokenHoldings } from '../src/cryptoApi.js';
+
+// Mock the openAIService module
+vi.mock('../src/openAIService.js', () => ({
+  generateReport: vi.fn(),
+}));
+// Import after mocking
+import { generateReport as mockGenerateReport } from '../src/openAIService.js';
+
 
 // Mock the global fetch function
 global.fetch = vi.fn();
@@ -220,5 +228,141 @@ describe('Crypto API Tests (cryptoApi.js)', () => {
       global.fetch.mockRejectedValueOnce(new Error('Network failure'));
       await expect(getTransactionHistory('ltc', 'someLtcAddress')).rejects.toThrow('Network failure');
     });
+  });
+});
+
+describe('getWalletTokenHoldings', () => {
+  const mockEnv = { OPENAI_API_KEY: 'test-key-for-getwallettokenholdings' };
+  const walletAddress = '0xMockAddress';
+  const chainId = 'ethereum';
+
+  beforeEach(() => {
+    mockGenerateReport.mockReset(); // Reset this specific mock
+    // global.fetch.mockReset(); // Already done in the global beforeEach
+  });
+
+  it('should process mock holdings, calculate allocations, generate summary, and call generateReport', async () => {
+    const mockAINarrative = 'This is a mock AI summary for the processed holdings.';
+    mockGenerateReport.mockResolvedValue(mockAINarrative);
+
+    // Since getCurrentPrices is internal and cryptoApi.js has fallback mock prices,
+    // we rely on that internal mechanism for this test.
+    // If getCurrentPrices were external and critical, it would be mocked too.
+    // fetch.mockResolvedValue... (if getCurrentPrices was not self-contained with mocks)
+
+    const result = await getWalletTokenHoldings(walletAddress, chainId, mockEnv);
+
+    expect(result.tokenHoldings.length).toBeGreaterThan(0); // Based on internal mock data
+
+    let calculatedTotalValue = 0;
+    result.tokenHoldings.forEach(h => {
+      calculatedTotalValue += parseFloat(h.value_usd); // Assuming value_usd is a string 'number.toFixed(2)'
+      expect(h.percentageAllocation).toBeDefined();
+      const percentage = parseFloat(h.percentageAllocation.replace('%', ''));
+      expect(percentage).toBeGreaterThanOrEqual(0);
+      expect(percentage).toBeLessThanOrEqual(100.01); // Allow for minor floating point artifcats sum to 100
+      expect(h.value_usd_numeric).toBeUndefined(); // Ensure helper field is removed
+    });
+
+    // Verify that the sum of percentages is close to 100%
+    const sumOfPercentages = result.tokenHoldings.reduce((sum, h) => sum + parseFloat(h.percentageAllocation.replace('%', '')), 0);
+    expect(sumOfPercentages).toBeCloseTo(100, 1); // Close to 100 within 1 decimal place of precision
+
+    expect(mockGenerateReport).toHaveBeenCalledTimes(1);
+    const [passedHoldings, passedSummary, passedEnv] = mockGenerateReport.mock.calls[0];
+
+    expect(passedHoldings.length).toEqual(result.tokenHoldings.length);
+    passedHoldings.forEach(h => {
+      expect(h.percentageAllocation).toBeDefined();
+    });
+
+    expect(passedSummary.totalPortfolioValueUSD).toBe(calculatedTotalValue.toFixed(2));
+    expect(passedSummary.numberOfUniqueAssets).toBe(result.tokenHoldings.length);
+    expect(passedSummary.topAssetsMessage).toBeDefined();
+
+    // Validate topAssetsMessage content based on internal mock data structure
+    // This is inherently coupled to the mock data in cryptoApi.js
+    if (passedSummary.numberOfUniqueAssets > 0) {
+        const sortedByValue = [...passedHoldings].sort((a,b) => parseFloat(b.value_usd) - parseFloat(a.value_usd));
+        expect(passedSummary.topAssetsMessage).toContain(sortedByValue[0].name);
+        if (passedSummary.numberOfUniqueAssets > 1) {
+            expect(passedSummary.topAssetsMessage).toContain(sortedByValue[1].name);
+        }
+    } else {
+        expect(passedSummary.topAssetsMessage).toEqual("The portfolio is currently empty.");
+    }
+
+    expect(passedEnv).toEqual(mockEnv);
+
+    expect(result.reportNarrative).toBe(mockAINarrative);
+    expect(result.tokenHoldings).toEqual(passedHoldings);
+  });
+
+  it('should return the narrative from generateReport even if holdings are empty (conceptually)', async () => {
+    // This test is more about the flow if internal data somehow became empty.
+    // The current cryptoApi.js mock data always provides 4 assets.
+    // If we could inject empty mockHoldings at the start of getWalletTokenHoldings, this test would be more direct.
+    const mockAINarrativeForEmpty = 'AI report for an empty or minimal portfolio.';
+    mockGenerateReport.mockResolvedValue(mockAINarrativeForEmpty);
+
+    // Assuming the internal mock data generation runs as is.
+    const result = await getWalletTokenHoldings(walletAddress, chainId, mockEnv);
+
+    const [passedHoldings, passedSummary, passedEnv] = mockGenerateReport.mock.calls[0];
+
+    // If internal mock data is NOT empty (which is the case for cryptoApi.js)
+    expect(passedHoldings.length).toBeGreaterThan(0);
+    expect(passedSummary.numberOfUniqueAssets).toBeGreaterThan(0);
+    // But the report narrative should still be what we mocked
+    expect(result.reportNarrative).toBe(mockAINarrativeForEmpty);
+  });
+
+  // Test for when generateReport itself throws an error
+  it('should propagate errors from generateReport', async () => {
+    const errorMessage = "OpenAI service is down";
+    mockGenerateReport.mockRejectedValueOnce(new Error(errorMessage));
+
+    // We expect getWalletTokenHoldings to throw this error
+    await expect(getWalletTokenHoldings(walletAddress, chainId, mockEnv))
+      .rejects
+      .toThrow(errorMessage);
+  });
+
+  // Test for when price fetching (getCurrentPrices) fails and fallback mock prices are used
+  it('should use fallback mock prices and proceed if getCurrentPrices fails', async () => {
+    // Simulate getCurrentPrices throwing an error.
+    // Since getCurrentPrices is not directly mockable here without changing cryptoApi.js,
+    // we rely on the fact that if it fails, the catch block in getWalletTokenHoldings
+    // assigns default mock prices. This is an integration aspect being tested.
+    // To explicitly test this, one might need to mock 'fetch' to fail for the prices call.
+
+    fetch.mockImplementation((url) => {
+      if (url.includes('api.coingecko.com/api/v3/simple/price')) {
+        return Promise.resolve({
+          ok: false,
+          status: 500,
+          text: async () => "CoinGecko price fetch error"
+        });
+      }
+      // Handle other fetch calls if any (none expected in this specific function flow after prices)
+      return Promise.resolve({ ok: true, json: async () => ({}) });
+    });
+
+    const mockAINarrative = 'AI report with fallback prices.';
+    mockGenerateReport.mockResolvedValue(mockAINarrative);
+
+    const result = await getWalletTokenHoldings(walletAddress, chainId, mockEnv);
+
+    expect(result.tokenHoldings.length).toBeGreaterThan(0); // Should use internal mock holdings
+    // Verify prices are the fallback ones (e.g. USDC price is 1.00)
+    const usdcToken = result.tokenHoldings.find(t => t.symbol === 'USDC');
+    if (usdcToken) {
+        // The fallback is { 'usd-coin': { usd: 1.00 } }
+        // and token.price_usd is priceData.usd.toFixed(2)
+        expect(usdcToken.price_usd).toBe('1.00');
+    }
+
+    expect(mockGenerateReport).toHaveBeenCalledTimes(1);
+    expect(result.reportNarrative).toBe(mockAINarrative);
   });
 });

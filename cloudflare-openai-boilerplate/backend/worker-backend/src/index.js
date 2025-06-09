@@ -1,5 +1,6 @@
 import { normalizeTokenNames, normalizeTimestamps, normalizeBlockCypherTransactions, convertToUSD } from './normalizer.js';
-import { getCurrentPrices, getHistoricalData, getCoinList, getTransactionHistory, getCoinsByBlockchain, getMarketChartData } from './cryptoApi.js'; // Added getMarketChartData
+// Added getWalletTokenHoldings and getWalletTransactions to the import
+import { getCurrentPrices, getHistoricalData, getCoinList, getTransactionHistory, getCoinsByBlockchain, getMarketChartData, getWalletTokenHoldings, getWalletTransactions } from './cryptoApi.js';
 
 // Define CORS headers - Added GET
 const corsHeaders = {
@@ -904,9 +905,89 @@ Provide a concise, human-readable analysis.
       }
       // --- End of Stock Market API Routes ---
 
+      // --- Wallet Token Holdings Route (New) ---
+      else if (url.pathname === '/api/wallet/token-holdings' && request.method === 'GET') {
+        const walletAddress = url.searchParams.get('walletAddress');
+        const chainId = url.searchParams.get('chainId'); // e.g., 'ethereum', 'bsc', 'polygon'
+
+        if (!walletAddress || !chainId) {
+          return new Response(JSON.stringify({ error: 'Missing "walletAddress" or "chainId" query parameters.' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        try {
+          // Call the function from cryptoApi.js, now passing the 'env' object
+          // COINGECKO_API_KEY is already available in cryptoApi.js if needed via env.
+          const result = await getWalletTokenHoldings(walletAddress, chainId, env); // Pass env
+          return new Response(JSON.stringify(result), { // result is now { tokenHoldings: [], reportNarrative: "..." }
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error) {
+          console.error(`Error fetching token holdings for address ${walletAddress} on chain ${chainId}:`, error);
+          // Determine if the error is from an upstream API or a general server error
+          let errorStatus = 500;
+          if (error.message && error.message.includes("API request failed")) { // Generic check for upstream failures
+            errorStatus = 502; // Bad Gateway
+          }
+          return new Response(JSON.stringify({ error: error.message || 'Error retrieving token holdings.' }), {
+            status: errorStatus,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+      // --- End of Wallet Token Holdings Route ---
+
+      // --- Wallet Transactions Route (New) ---
+      else if (url.pathname === '/api/wallet/transactions' && request.method === 'GET') {
+        const walletAddress = url.searchParams.get('walletAddress');
+        const chainId = url.searchParams.get('chainId');
+
+        if (!walletAddress || !chainId) {
+          return new Response(JSON.stringify({ error: 'Missing "walletAddress" or "chainId" query parameters.' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        try {
+          const result = await getWalletTransactions(walletAddress, chainId, env);
+          // Check if 'result' itself is an error object returned from getWalletTransactions
+          if (result && result.error) {
+             // Determine status code based on error message, or default to 500
+            let status = 500;
+            if (result.error.toLowerCase().includes("api key is missing")) {
+              status = 500; // Internal server configuration error
+            } else if (result.error.toLowerCase().includes("not supported")) {
+              status = 400; // Bad request due to unsupported chain
+            } else if (result.error.toLowerCase().includes("failed to fetch")) {
+              status = 502; // Bad Gateway if Moralis fetch failed
+            }
+            return new Response(JSON.stringify(result), { // result already contains { error: "..." }
+              status: status,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+          // Successful response from getWalletTransactions
+          return new Response(JSON.stringify(result), { // result should be { transactions: [...] }
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error) { // Catch unexpected errors from within getWalletTransactions if it throws
+          console.error(`Error fetching wallet transactions for address ${walletAddress} on chain ${chainId}:`, error);
+          return new Response(JSON.stringify({ error: error.message || 'Error retrieving wallet transactions.' }), {
+            status: 500, // Internal Server Error for unexpected issues
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+      // --- End of Wallet Transactions Route ---
+
       // Fallback for unhandled paths or methods must be the FINAL else in the chain
       else {
-        let supportedEndpoints = 'GET /api/crypto/current, GET /api/crypto/historical, GET /api/crypto/coinslist, GET /api/crypto/enriched-historical-data, GET /api/crypto/transaction-analysis, POST / (for Etherscan/OpenAI), GET /api/crypto/coins-by-blockchain, GET /api/crypto/market-chart/:coinId?days=:days';
+        let supportedEndpoints = 'GET /api/crypto/current, GET /api/crypto/historical, GET /api/crypto/coinslist, GET /api/crypto/enriched-historical-data, GET /api/crypto/transaction-analysis, POST / (for Etherscan/OpenAI), GET /api/crypto/coins-by-blockchain, GET /api/crypto/market-chart/:coinId?days=:days, GET /api/wallet/token-holdings, GET /api/wallet/transactions';
         supportedEndpoints += ', POST /api/budgets, GET /api/budgets, GET /api/budgets/:id, PUT /api/budgets/:id, DELETE /api/budgets/:id';
         supportedEndpoints += ', GET /api/stocks/profile/:symbol, GET /api/stocks/quote/:symbol, GET /api/stocks/historical/:symbol';
         return new Response(`Not Found. Supported endpoints: ${supportedEndpoints}`, { status: 404, headers: corsHeaders });

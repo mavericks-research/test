@@ -40,3 +40,34 @@ export const getCoinMarketChart = async (coinId, days) => {
 // For example:
 // export const getCurrentCoinPrice = async (coinId) => { ... };
 // export const getHistoricalCoinPrice = async (coinId, date) => { ... };
+
+/**
+ * Fetches token holdings for a given wallet address and chain ID.
+ * @param {string} walletAddress - The wallet address.
+ * @param {string} chainId - The chain ID (e.g., "ethereum").
+ * @returns {Promise<Array<object>>} A promise that resolves to an array of token holding objects.
+ * @throws {Error} If walletAddress or chainId are not provided, or if the fetch request fails.
+ */
+export const getWalletTokenHoldings = async (walletAddress, chainId) => {
+  if (!walletAddress) {
+    throw new Error('Wallet address is required to fetch token holdings.');
+  }
+  if (!chainId) {
+    throw new Error('Chain ID is required to fetch token holdings.');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/wallet/token-holdings?walletAddress=${encodeURIComponent(walletAddress)}&chainId=${encodeURIComponent(chainId)}`);
+
+  if (!response.ok) {
+    let errorMessage = `Failed to fetch token holdings for ${walletAddress} on ${chainId}: ${response.statusText}`;
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.error || errorMessage;
+    } catch (e) {
+      // Stick with the original statusText message
+    }
+    throw new Error(errorMessage);
+  }
+
+  return response.json(); // Expected to be an array of token holding objects
+};
