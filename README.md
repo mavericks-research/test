@@ -88,3 +88,60 @@ When your worker is deployed to Cloudflare:
 6.  Save the changes. The worker will automatically pick up this environment variable.
 
 By configuring this API key, the backend worker will use it when making requests to the CoinGecko API, reducing the likelihood of encountering public rate limits.
+
+## AdSense Configuration
+
+This application includes a banner ad component designed for Google AdSense, located at `cloudflare-openai-boilerplate/frontend/frontend-app/src/components/AdBanner.jsx`. To enable ads, you need to configure it with your Google AdSense account details.
+
+### Prerequisites
+
+1.  **Google AdSense Account**: You must have an active and approved Google AdSense account.
+2.  **Ad Unit Created**: Within your AdSense account, you should create an ad unit for this banner. A responsive display ad unit is generally suitable. Note down your Publisher ID and the Ad Slot ID for this unit.
+
+### Configuration Steps
+
+1.  **Provide AdSense Script in `index.html` (Recommended Method):**
+    *   The most common way to include AdSense is by adding their script to the `<head>` of your main HTML file.
+    *   Open `cloudflare-openai-boilerplate/frontend/frontend-app/index.html`.
+    *   Add the AdSense script tag provided by Google, replacing `ca-pub-YOUR_PUBLISHER_ID` with your actual Publisher ID. It looks like this:
+        ```html
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUBLISHER_ID"
+             crossorigin="anonymous"></script>
+        ```
+
+2.  **Update `AdBanner.jsx` Component:**
+    *   Open the ad banner component file: `cloudflare-openai-boilerplate/frontend/frontend-app/src/components/AdBanner.jsx`.
+    *   Locate the placeholder `div` with the class `ad-banner-placeholder`.
+    *   Replace this placeholder (or the content within `ad-banner-container` if you prefer more control) with the ad unit code provided by AdSense. It usually looks like an `<ins>` tag:
+        ```jsx
+        // Inside the return statement of AdBanner.jsx
+        <div className="ad-banner-container">
+          <ins className="adsbygoogle"
+               style={{ display: 'block' }} // Or other styles recommended by AdSense
+               data-ad-client="ca-pub-YOUR_PUBLISHER_ID" // Replace with your Publisher ID
+               data-ad-slot="YOUR_AD_SLOT_ID"       // Replace with your Ad Slot ID
+               data-ad-format="auto"                 // Or specific format like 'horizontal'
+               data-full-width-responsive="true"></ins>
+        </div>
+        ```
+    *   Replace `ca-pub-YOUR_PUBLISHER_ID` with your Publisher ID and `YOUR_AD_SLOT_ID` with the specific Ad Slot ID for this banner.
+
+3.  **Initialize Ads (if not using auto-init):**
+    *   The `AdBanner.jsx` component contains a `useEffect` hook. If your AdSense implementation requires an explicit push to `window.adsbygoogle` after the component mounts (and after the main AdSense script has loaded), you can uncomment and use the example code provided in that `useEffect`:
+        ```javascript
+        useEffect(() => {
+          try {
+            (window.adsbygoogle = window.adsbygoogle || []).push({});
+            console.log('AdSense ad pushed.');
+          } catch (e) {
+            console.error('AdSense initialization error:', e);
+          }
+        }, []);
+        ```
+    *   Often, if the main AdSense script and the `<ins>` tag are correctly placed, ads will load automatically. This step is for cases where manual initialization is needed or preferred.
+
+4.  **Adjust Styling and Padding:**
+    *   The ad banner is styled in `cloudflare-openai-boilerplate/frontend/frontend-app/src/components/AdBanner.css`.
+    *   The main application layout in `cloudflare-openai-boilerplate/frontend/frontend-app/src/App.jsx` has a `paddingBottom` style applied to its main container div to prevent the ad banner from overlapping content. This padding is currently set to `50px`. If your ad banner renders at a different height, you may need to adjust this `paddingBottom` value in `App.jsx` to match the actual height of the loaded ad.
+
+After following these steps and deploying your updated application, the AdSense banner should appear at the bottom of your site. Monitor your AdSense dashboard for performance and any policy notifications.
