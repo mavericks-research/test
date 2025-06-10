@@ -954,11 +954,78 @@ Provide a concise, human-readable analysis.
       }
       // --- End of Stock Market API Routes ---
 
+      // --- News API Route ---
+      else if (url.pathname === '/api/news' && request.method === 'GET') {
+        const apiKey = env.NEWS_API_KEY;
+        if (!apiKey) {
+          console.error('NEWS_API_KEY not configured');
+          return new Response(JSON.stringify({ error: 'News API service is not configured by the server administrator.' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        // Placeholder: User needs to replace this with their chosen News API endpoint and parameters.
+        // Example for NewsAPI.org (requires user to have an account and key)
+        const newsApiUrl = `https://newsapi.org/v2/top-headlines?country=us&category=business&pageSize=10&apiKey=${apiKey}`;
+        // Example for GNews (requires user to have an account and key)
+        // const newsApiUrl = `https://gnews.io/api/v4/top-headlines?category=business&lang=en&max=5&apikey=${apiKey}`;
+
+
+        try {
+          const newsResponse = await fetch(newsApiUrl, {
+            headers: {
+              'User-Agent': 'DashboardApp/1.0 (Cloudflare Worker)' // Added User-Agent header
+            }
+          });
+          if (!newsResponse.ok) {
+            const errorText = await newsResponse.text();
+            console.error(`External News API error: ${newsResponse.status} ${newsResponse.statusText}`, errorText);
+            return new Response(JSON.stringify({ error: `Failed to fetch news from external source: ${newsResponse.status}` }), {
+              status: 502, // Bad Gateway
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+          }
+          const newsData = await newsResponse.json();
+
+          // Adapt this part based on the actual structure of the chosen News API's response
+          let articles = [];
+          if (newsData.articles) { // Common structure for many news APIs
+              articles = newsData.articles.map(article => ({
+                  title: article.title,
+                  description: article.description,
+                  url: article.url,
+                  source: article.source ? article.source.name : 'Unknown Source',
+                  publishedAt: article.publishedAt,
+                  imageUrl: article.urlToImage // if available
+              }));
+          } else {
+              // Handle other possible structures or log if unexpected
+              console.warn("News API response did not contain an 'articles' array. Data:", newsData);
+              // Depending on the API, you might need to parse a different structure.
+              // For now, returning empty if 'articles' is not found.
+          }
+
+          return new Response(JSON.stringify(articles), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+
+        } catch (err) {
+          console.error('Error fetching or processing news data:', err);
+          return new Response(JSON.stringify({ error: 'Internal server error while fetching news.' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+      // --- End of News API Route ---
+
       // Fallback for unhandled paths or methods must be the FINAL else in the chain
       else {
         let supportedEndpoints = 'GET /api/crypto/current, GET /api/crypto/historical, GET /api/crypto/coinslist, GET /api/crypto/enriched-historical-data, GET /api/crypto/transaction-analysis, POST / (for Etherscan/OpenAI), GET /api/crypto/coins-by-blockchain, GET /api/crypto/market-chart/:coinId?days=:days, GET /api/crypto/trending, GET /api/crypto/global';
         supportedEndpoints += ', POST /api/budgets, GET /api/budgets, GET /api/budgets/:id, PUT /api/budgets/:id, DELETE /api/budgets/:id';
         supportedEndpoints += ', GET /api/stocks/profile/:symbol, GET /api/stocks/quote/:symbol, GET /api/stocks/historical/:symbol';
+        supportedEndpoints += ', GET /api/news'; // Added news endpoint
         return new Response(`Not Found. Supported endpoints: ${supportedEndpoints}`, { status: 404, headers: corsHeaders });
       }
     } catch (error) {

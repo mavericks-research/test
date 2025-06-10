@@ -7,7 +7,9 @@ import StockHistoricalChart from '../components/StockHistoricalChart';
 import BlockchainDataViewer from '../components/BlockchainDataViewer';
 import TrendingCoins from '../components/TrendingCoins'; // New import
 import GlobalMarketOverview from '../components/GlobalMarketOverview'; // New import
+import NewsWidget from '../components/NewsWidget'; // Import NewsWidget
 import { getStockProfile, getStockQuote, getStockHistoricalData } from '../services/stockService';
+import './DashboardPage.css'; // Import the CSS file
 // Removed NavigationBar import
 
 function WalletAnalyzer({ workerUrl }) {
@@ -152,55 +154,67 @@ function DashboardPage({ workerUrl }) {
   };
 
   return (
-    <div style={containerStyle}>
-      <div style={themedSectionStyle}>
+    <div className="dashboard-container">
+      <div className="dashboard-header">
         <p>Welcome to your dashboard.</p>
         <p>Current Data Refresh Interval: {settings.dataRefreshInterval}</p>
       </div>
 
-      {/* Two-column layout for Global Market Overview and Trending Coins */}
-      <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', gap: '20px', marginTop: '20px' }}>
-        <div style={{ flex: '1', ...themedSectionStyle }}>
-          <GlobalMarketOverview />
-          <hr style={{ margin: '30px 0', borderColor: settings.theme === 'dark' ? '#555' : 'var(--color-border)' }}/>
-          <TrendingCoins />
-        </div>
-        <div style={{ flex: '1', ...themedSectionStyle }}>
-          <BlockchainDataViewer />
-        </div>
-        <div style={{ flex: '1', ...themedSectionStyle }}>
-          <CryptoDisplay currency={settings.currency} /> {/* Pass currency as a prop */}
-          <hr style={{ margin: '30px 0', borderColor: settings.theme === 'dark' ? '#555' : 'var(--color-border)' }}/>
-          <WalletAnalyzer workerUrl={workerUrl} />
-        </div>
-      </div>
-
-
-
-      <div style={{ marginTop: '20px', ...themedSectionStyle }}> {/* Apply theme to stock section */}
+      <div className="stock-section">
         <h2>Stock Market Data</h2>
         <StockSelector onSymbolSubmit={handleSymbolSubmit} />
 
         {isStockLoading && <p>Loading stock data...</p>}
-        {stockError && <p style={{ color: settings.theme === 'dark' ? 'salmon': 'red' }}>Error: {stockError}</p>}
+        {stockError && (
+          <p className="error">
+            Error: {stockError}
+          </p>
+        )}
 
         {!isStockLoading && !stockError && selectedStockSymbol && (
-          <div style={{ marginTop: '20px' }}>
-            {stockQuoteData && <StockQuoteDisplay quoteData={stockQuoteData} profileData={stockProfileData} currency={settings.currency} />}
-            {stockHistoricalData && stockHistoricalData.length > 0 && (
+          <div>
+            {stockQuoteData && (
+              <StockQuoteDisplay
+                quoteData={stockQuoteData}
+                profileData={stockProfileData}
+                currency={settings.currency}
+              />
+            )}
+
+            {stockHistoricalData?.length > 0 ? (
               <StockHistoricalChart
                 historicalData={stockHistoricalData}
                 stockName={stockQuoteData?.name || selectedStockSymbol}
               />
-            )}
-            {stockHistoricalData && stockHistoricalData.length === 0 && (
+            ) : (
               <p>No historical data points found for {stockQuoteData?.name || selectedStockSymbol}.</p>
             )}
           </div>
         )}
-         {!isStockLoading && !stockError && !selectedStockSymbol && (
+
+        {!isStockLoading && !stockError && !selectedStockSymbol && (
           <p>Enter a stock symbol above to view its data.</p>
         )}
+      </div>
+
+      <div className="dashboard-grid">
+        <div className="widget">
+          <NewsWidget />
+        </div>
+
+        <div className="widget">
+          <GlobalMarketOverview />
+          <hr />
+          <TrendingCoins />
+          <hr />
+          <CryptoDisplay currency={settings.currency} />
+          <hr />
+          <WalletAnalyzer workerUrl={workerUrl} />
+        </div>
+
+        <div className="widget">
+          <BlockchainDataViewer />
+        </div>
       </div>
 
 
