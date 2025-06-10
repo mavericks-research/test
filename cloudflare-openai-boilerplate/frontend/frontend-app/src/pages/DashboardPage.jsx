@@ -161,13 +161,19 @@ function DashboardPage({ workerUrl }) {
       {/* Two-column layout for Global Market Overview and Trending Coins */}
       <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', gap: '20px', marginTop: '20px' }}>
         <div style={{ flex: '1', ...themedSectionStyle }}>
-          <h2>Global Market Overview</h2>
-          <GlobalMarketOverview />
-        </div>
-        <div style={{ flex: '1', ...themedSectionStyle }}>
           <h2>Trending Coins</h2>
           <TrendingCoins />
         </div>
+        <div style={{ flex: '1', ...themedSectionStyle }}>
+          <h2>Global Market Overview</h2>
+          <GlobalMarketOverview />
+        </div>
+      </div>
+
+      <hr style={{ margin: '30px 0', borderColor: settings.theme === 'dark' ? '#555' : 'var(--color-border)' }}/>
+      <div style={{ marginTop: '20px', ...themedSectionStyle }}> {/* Apply theme to blockchain section */}
+        <h2>Blockchain Explorer</h2>
+        <BlockchainDataViewer />
       </div>
 
       <hr style={{ margin: '30px 0', borderColor: settings.theme === 'dark' ? '#555' : 'var(--color-border)' }} />
@@ -202,11 +208,7 @@ function DashboardPage({ workerUrl }) {
         )}
       </div>
 
-      <hr style={{ margin: '30px 0', borderColor: settings.theme === 'dark' ? '#555' : 'var(--color-border)' }}/>
-      <div style={{ marginTop: '20px', ...themedSectionStyle }}> {/* Apply theme to blockchain section */}
-        <h2>Blockchain Explorer</h2>
-        <BlockchainDataViewer />
-      </div>
+
     </div>
   );
 }
