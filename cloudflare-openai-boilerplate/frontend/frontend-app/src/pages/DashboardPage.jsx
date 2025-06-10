@@ -4,7 +4,9 @@ import CryptoDisplay from '../components/CryptoDisplay'; // Import CryptoDisplay
 import StockSelector from '../components/StockSelector';
 import StockQuoteDisplay from '../components/StockQuoteDisplay';
 import StockHistoricalChart from '../components/StockHistoricalChart';
-import BlockchainDataViewer from '../components/BlockchainDataViewer'; // New import
+import BlockchainDataViewer from '../components/BlockchainDataViewer';
+import TrendingCoins from '../components/TrendingCoins'; // New import
+import GlobalMarketOverview from '../components/GlobalMarketOverview'; // New import
 import { getStockProfile, getStockQuote, getStockHistoricalData } from '../services/stockService';
 // Removed NavigationBar import
 
@@ -191,6 +193,18 @@ function DashboardPage({ workerUrl }) {
       <div style={{ marginTop: '20px', ...themedSectionStyle }}> {/* Apply theme to blockchain section */}
         <h2>Blockchain Explorer</h2>
         <BlockchainDataViewer />
+      </div>
+
+      <hr style={{ margin: '30px 0', borderColor: settings.theme === 'dark' ? '#555' : 'var(--color-border)' }}/>
+      <div style={{ marginTop: '20px', ...themedSectionStyle }}>
+        <h2>Trending Coins</h2>
+        <TrendingCoins />
+      </div>
+
+      <hr style={{ margin: '30px 0', borderColor: settings.theme === 'dark' ? '#555' : 'var(--color-border)' }}/>
+      <div style={{ marginTop: '20px', ...themedSectionStyle }}>
+        <h2>Global Market Overview</h2>
+        <GlobalMarketOverview />
       </div>
     </div>
   );

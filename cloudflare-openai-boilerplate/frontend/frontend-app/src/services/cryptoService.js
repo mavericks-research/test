@@ -40,3 +40,47 @@ export const getCoinMarketChart = async (coinId, days) => {
 // For example:
 // export const getCurrentCoinPrice = async (coinId) => { ... };
 // export const getHistoricalCoinPrice = async (coinId, date) => { ... };
+
+/**
+ * Fetches the list of trending coins.
+ * @returns {Promise<object>} A promise that resolves to an object containing the list of trending coins.
+ * @throws {Error} If the fetch request fails or the response is not ok.
+ */
+export const getTrendingCoins = async () => {
+  const response = await fetch(`${API_BASE_URL}/api/crypto/trending`);
+
+  if (!response.ok) {
+    let errorMessage = `Failed to fetch trending coins: ${response.statusText}`;
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.error || errorMessage;
+    } catch (e) {
+      // Stick with the original statusText message if JSON parsing fails
+    }
+    throw new Error(errorMessage);
+  }
+
+  return response.json(); // Expected to be an object like { coins: [...] }
+};
+
+/**
+ * Fetches global cryptocurrency market data.
+ * @returns {Promise<object>} A promise that resolves to an object containing global market data.
+ * @throws {Error} If the fetch request fails or the response is not ok.
+ */
+export const getGlobalMarketData = async () => {
+  const response = await fetch(`${API_BASE_URL}/api/crypto/global`);
+
+  if (!response.ok) {
+    let errorMessage = `Failed to fetch global market data: ${response.statusText}`;
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.error || errorMessage;
+    } catch (e) {
+      // Stick with the original statusText message if JSON parsing fails
+    }
+    throw new Error(errorMessage);
+  }
+
+  return response.json(); // Expected to be an object like { data: { ... } }
+};
