@@ -2,7 +2,6 @@
 import React, { useState, useContext } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'; // Import useLocation
 import { SettingsContext } from './contexts/SettingsContext.jsx';
-import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import SplashScreen from './pages/SplashScreen';
 import WalletsPage from './pages/WalletsPage';
@@ -15,24 +14,17 @@ import NavigationBar from './components/NavigationBar';
 import AdBanner from './components/AdBanner';
 import './App.css';
 
-// Protected route wrapper
-function ProtectedRoute({ children, isAuthenticated }) {
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
-}
-
 // New AppContent component
 function AppContent() {
   const location = useLocation();
   const { theme } = useContext(SettingsContext);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(true); // isAuthenticated by default
   const [isNavVisible, setIsNavVisible] = useState(false);
   const WORKER_URL = import.meta.env.VITE_WORKER_URL;
 
   const toggleNav = () => setIsNavVisible(prev => !prev);
-  const handleLogin = () => setIsAuthenticated(true);
-  const handleLogout = () => setIsAuthenticated(false);
 
-  const isSplashScreen = location.pathname === '/';
+  const isSplashScreen = location.pathname === '/'; // This will effectively be unused
 
   return (
     <div
@@ -45,86 +37,49 @@ function AppContent() {
         backgroundColor: isSplashScreen ? 'transparent' : undefined
       }}
     >
-      {/* Pass toggleNav only to Header, only show header if not splash screen OR if authenticated (adjust as needed) */}
-      {!isSplashScreen && <Header onToggleNav={toggleNav} isLoggedIn={isAuthenticated} />}
-      {/* Or, if header should always be there for logged-in users: */}
-      {/* <Header onToggleNav={toggleNav} isLoggedIn={isAuthenticated} /> */}
+      {/* Header is always shown as user is authenticated */}
+      <Header onToggleNav={toggleNav} isLoggedIn={true} />
 
-      {/* NavigationBar will only receive visibility + logout */}
-
-        {/* NavigationBar will only receive visibility + logout */}
-      {isAuthenticated && (
-        <NavigationBar
-          isNavVisible={isNavVisible}
-          handleLogout={handleLogout}
-          onToggleNav={toggleNav}
-          isLoggedIn={isAuthenticated}
-        />
-      )}
+      {/* NavigationBar is always shown as user is authenticated */}
+      <NavigationBar
+        isNavVisible={isNavVisible}
+        onToggleNav={toggleNav}
+        isLoggedIn={true}
+      />
 
       <div style={{ flexGrow: 1, width: '100%', display: 'flex' }}>
-        {/* Adjust paddingTop if header visibility changes */}
-        <div style={{ flexGrow: 1, overflowY: 'auto', paddingTop: isAuthenticated && !isSplashScreen ? '56px' : '0px' }}>
+        {/* Adjust paddingTop; effectively always 56px as splash screen is removed */}
+        <div style={{ flexGrow: 1, overflowY: 'auto', paddingTop: '56px' }}>
           <Routes>
+            <Route path="/login" element={<Navigate to="/dashboard" />} />
             <Route
-              path="/login"
-                element={
-                  isAuthenticated ? <Navigate to="/dashboard" /> : <LoginPage onLogin={handleLogin} />
-                }
-              />
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute isAuthenticated={isAuthenticated}>
-                    <DashboardPage workerUrl={WORKER_URL} />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/wallets"
-                element={
-                  <ProtectedRoute isAuthenticated={isAuthenticated}>
-                    <WalletsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/planner"
-                element={
-                  <ProtectedRoute isAuthenticated={isAuthenticated}>
-                    <BudgetPlannerPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/reports"
-                element={
-                  <ProtectedRoute isAuthenticated={isAuthenticated}>
-                    <ReportsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/settings"
-                element={
-                  <ProtectedRoute isAuthenticated={isAuthenticated}>
-                    <SettingsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/"
-              element={
-                isAuthenticated ? <Navigate to="/dashboard" /> : <SplashScreen />
-              }
+              path="/dashboard"
+              element={<DashboardPage workerUrl={WORKER_URL} />}
             />
-            <Route path="*" element={<Navigate to="/" />} />
+            <Route
+              path="/wallets"
+              element={<WalletsPage />}
+            />
+            <Route
+              path="/planner"
+              element={<BudgetPlannerPage />}
+            />
+            <Route
+              path="/reports"
+              element={<ReportsPage />}
+            />
+            <Route
+              path="/settings"
+              element={<SettingsPage />}
+            />
+            <Route path="/" element={<Navigate to="/dashboard" />} />
+            <Route path="*" element={<Navigate to="/dashboard" />} /> {/* Default to dashboard */}
           </Routes>
         </div>
       </div>
 
-      {/* Footer visibility can also be conditional */}
-      {isAuthenticated && !isSplashScreen && <Footer />}
+      {/* Footer is always shown as user is authenticated */}
+      <Footer />
 
       {/* Ad Banner to be displayed at the bottom */}
       <AdBanner />
