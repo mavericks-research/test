@@ -975,8 +975,7 @@ Provide a concise, human-readable analysis.
         try {
           const newsResponse = await fetch(newsApiUrl, {
             headers: {
-              // Some APIs might require specific headers, e.g., 'User-Agent'
-              // 'User-Agent': 'CloudflareWorker/1.0' // Example User-Agent
+              'User-Agent': 'DashboardApp/1.0 (Cloudflare Worker)' // Added User-Agent header
             }
           });
           if (!newsResponse.ok) {
