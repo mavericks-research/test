@@ -157,6 +157,25 @@ function DashboardPage({ workerUrl }) {
         <p>Welcome to your dashboard.</p>
         <p>Current Data Refresh Interval: {settings.dataRefreshInterval}</p>
       </div>
+
+      <hr style={{ margin: '30px 0', borderColor: settings.theme === 'dark' ? '#555' : 'var(--color-border)' }}/>
+      <div style={{ marginTop: '20px', ...themedSectionStyle }}>
+        <h2>Global Market Overview</h2>
+        <GlobalMarketOverview />
+      </div>
+
+      <hr style={{ margin: '30px 0', borderColor: settings.theme === 'dark' ? '#555' : 'var(--color-border)' }}/>
+      <div style={{ marginTop: '20px', ...themedSectionStyle }}>
+        <h2>Trending Coins</h2>
+        <TrendingCoins />
+      </div>
+
+      <hr style={{ margin: '30px 0', borderColor: settings.theme === 'dark' ? '#555' : 'var(--color-border)' }}/>
+      <div style={{ marginTop: '20px', ...themedSectionStyle }}> {/* Apply theme to blockchain section */}
+        <h2>Blockchain Explorer</h2>
+        <BlockchainDataViewer />
+      </div>
+
       <hr />
       <CryptoDisplay currency={settings.currency} /> {/* Pass currency as a prop */}
       <hr />
@@ -189,23 +208,8 @@ function DashboardPage({ workerUrl }) {
         )}
       </div>
 
-      <hr style={{ margin: '30px 0', borderColor: settings.theme === 'dark' ? '#555' : 'var(--color-border)' }}/>
-      <div style={{ marginTop: '20px', ...themedSectionStyle }}> {/* Apply theme to blockchain section */}
-        <h2>Blockchain Explorer</h2>
-        <BlockchainDataViewer />
-      </div>
 
-      <hr style={{ margin: '30px 0', borderColor: settings.theme === 'dark' ? '#555' : 'var(--color-border)' }}/>
-      <div style={{ marginTop: '20px', ...themedSectionStyle }}>
-        <h2>Trending Coins</h2>
-        <TrendingCoins />
-      </div>
 
-      <hr style={{ margin: '30px 0', borderColor: settings.theme === 'dark' ? '#555' : 'var(--color-border)' }}/>
-      <div style={{ marginTop: '20px', ...themedSectionStyle }}>
-        <h2>Global Market Overview</h2>
-        <GlobalMarketOverview />
-      </div>
     </div>
   );
 }
