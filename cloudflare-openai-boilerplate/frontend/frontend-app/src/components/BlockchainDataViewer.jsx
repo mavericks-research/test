@@ -95,6 +95,7 @@ const BlockchainDataViewer = () => {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#f0f0f0' }}>
+                    <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'left' }}>Image</th>
                     <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'left' }}>Name</th>
                     <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'left' }}>Symbol</th>
                     <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'left' }}>Price (USD)</th>
@@ -106,6 +107,9 @@ const BlockchainDataViewer = () => {
                 <tbody>
                   {blockchainTokens.map(token => (
                     <tr key={token.id} style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '10px', border: '1px solid #ddd' }}>
+                        <img src={token.image} alt={token.name} style={{ width: '32px', height: '32px' }} />
+                      </td>
                       <td style={{ padding: '10px', border: '1px solid #ddd' }}>{token.name}</td>
                       <td style={{ padding: '10px', border: '1px solid #ddd' }}>{token.symbol.toUpperCase()}</td>
                       <td style={{ padding: '10px', border: '1px solid #ddd' }}>${token.current_price ? token.current_price.toLocaleString() : 'N/A'}</td>

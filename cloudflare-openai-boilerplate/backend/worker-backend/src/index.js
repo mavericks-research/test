@@ -1,5 +1,6 @@
 import { normalizeTokenNames, normalizeTimestamps, normalizeBlockCypherTransactions, convertToUSD } from './normalizer.js';
-import { getCurrentPrices, getHistoricalData, getCoinList, getTransactionHistory, getCoinsByBlockchain, getMarketChartData } from './cryptoApi.js'; // Added getMarketChartData
+// Added fetchTrendingCoins and fetchGlobalMarketData to the import below
+import { getCurrentPrices, getHistoricalData, getCoinList, getTransactionHistory, getCoinsByBlockchain, getMarketChartData, fetchTrendingCoins, fetchGlobalMarketData } from './cryptoApi.js'; // Added getMarketChartData
 
 // Define CORS headers - Added GET
 const corsHeaders = {
@@ -759,6 +760,55 @@ Provide a concise, human-readable analysis.
       }
       // --- End of New Crypto Market Chart Route ---
 
+      // --- New Route for Trending Coins ---
+      else if (url.pathname === '/api/crypto/trending' && request.method === 'GET') {
+        try {
+          const data = await fetchTrendingCoins(COINGECKO_API_KEY);
+          return new Response(JSON.stringify(data), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error) {
+          console.error('Error fetching trending coins:', error);
+          // Check if the error is from fetchTrendingCoins itself
+          if (error.message && error.message.includes("CoinGecko API request failed")) {
+            return new Response(JSON.stringify({ error: error.message }), {
+              status: 502, // Bad Gateway for upstream API issues
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+          return new Response(JSON.stringify({ error: `An unexpected error occurred: ${error.message}` }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+      // --- End of New Route for Trending Coins ---
+
+      // --- New Route for Global Market Data ---
+      else if (url.pathname === '/api/crypto/global' && request.method === 'GET') {
+        try {
+          const data = await fetchGlobalMarketData(COINGECKO_API_KEY);
+          return new Response(JSON.stringify(data), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error) {
+          console.error('Error fetching global market data:', error);
+          if (error.message && error.message.includes("CoinGecko API request failed")) {
+            return new Response(JSON.stringify({ error: error.message }), {
+              status: 502, // Bad Gateway
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+          return new Response(JSON.stringify({ error: `An unexpected error occurred: ${error.message}` }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+      // --- End of New Route for Global Market Data ---
+
       // --- Stock Market API Routes ---
       else if (url.pathname.startsWith('/api/stocks/profile/') && request.method === 'GET') {
         const symbol = url.pathname.split('/')[4];
@@ -906,7 +956,7 @@ Provide a concise, human-readable analysis.
 
       // Fallback for unhandled paths or methods must be the FINAL else in the chain
       else {
-        let supportedEndpoints = 'GET /api/crypto/current, GET /api/crypto/historical, GET /api/crypto/coinslist, GET /api/crypto/enriched-historical-data, GET /api/crypto/transaction-analysis, POST / (for Etherscan/OpenAI), GET /api/crypto/coins-by-blockchain, GET /api/crypto/market-chart/:coinId?days=:days';
+        let supportedEndpoints = 'GET /api/crypto/current, GET /api/crypto/historical, GET /api/crypto/coinslist, GET /api/crypto/enriched-historical-data, GET /api/crypto/transaction-analysis, POST / (for Etherscan/OpenAI), GET /api/crypto/coins-by-blockchain, GET /api/crypto/market-chart/:coinId?days=:days, GET /api/crypto/trending, GET /api/crypto/global';
         supportedEndpoints += ', POST /api/budgets, GET /api/budgets, GET /api/budgets/:id, PUT /api/budgets/:id, DELETE /api/budgets/:id';
         supportedEndpoints += ', GET /api/stocks/profile/:symbol, GET /api/stocks/quote/:symbol, GET /api/stocks/historical/:symbol';
         return new Response(`Not Found. Supported endpoints: ${supportedEndpoints}`, { status: 404, headers: corsHeaders });

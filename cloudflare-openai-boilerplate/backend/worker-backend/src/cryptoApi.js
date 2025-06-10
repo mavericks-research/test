@@ -200,7 +200,9 @@ export {
     getHistoricalData,
     getTransactionHistory,
     getCoinsByBlockchain,
-    getMarketChartData, // <-- Add this
+    getMarketChartData,
+    fetchTrendingCoins,
+    fetchGlobalMarketData, // <-- Add this
 };
 
 /**
@@ -280,5 +282,46 @@ async function getMarketChartData(coinId, days, apiKey = null) {
   } catch (error) {
     console.error(`Error fetching market chart data for ${coinId} over ${days} days:`, error);
     throw error; // Re-throw to be caught by the route handler in index.js
+  }
+}
+
+/**
+ * Fetches the top 7 trending search coins on CoinGecko.
+ * @param {string|null} apiKey Optional CoinGecko API key.
+ * @returns {Promise<object>} An object containing the list of trending coins.
+ *                            Typically { coins: [{item: {id, coin_id, name, symbol, market_cap_rank, thumb, small, large, slug, price_btc, score}}, ...], exchanges: [] }
+ */
+async function fetchTrendingCoins(apiKey = null) {
+  try {
+    // The endpoint for trending searches
+    const data = await fetchFromCoinGecko('/search/trending', {}, apiKey);
+    // The API returns an object, typically with a 'coins' array holding the trending items.
+    // Each item in 'coins' has an 'item' sub-object with details.
+    return data;
+  } catch (error) {
+    console.error('Error fetching trending coins:', error);
+    // Re-throw to be caught by the route handler in index.js
+    // The error from fetchFromCoinGecko already includes "CoinGecko API request failed"
+    throw error;
+  }
+}
+
+/**
+ * Fetches global cryptocurrency market data.
+ * @param {string|null} apiKey Optional CoinGecko API key.
+ * @returns {Promise<object>} An object containing global market statistics.
+ *                            E.g., { data: { active_cryptocurrencies: ..., total_market_cap: { usd: ... }, ... } }
+ */
+async function fetchGlobalMarketData(apiKey = null) {
+  try {
+    // The endpoint for global data
+    const data = await fetchFromCoinGecko('/global', {}, apiKey);
+    // The API returns an object, typically with a 'data' object containing all the stats.
+    return data;
+  } catch (error) {
+    console.error('Error fetching global market data:', error);
+    // Re-throw to be caught by the route handler in index.js
+    // The error from fetchFromCoinGecko already includes "CoinGecko API request failed"
+    throw error;
   }
 }
