@@ -1,9 +1,7 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
-function NavigationBar({ isNavVisible, handleLogout, onToggleNav, isLoggedIn }) {
-
-  const navigate = useNavigate();
+function NavigationBar({ isNavVisible, onToggleNav }) {
 
   const navStyle = {
     background: '#0f0f0f', // Obsidian background
@@ -59,30 +57,11 @@ function NavigationBar({ isNavVisible, handleLogout, onToggleNav, isLoggedIn }) 
     transition: 'color 0.2s',
   };
 
-  const logoutButtonStyle = {
-    ...linkStyle,
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    color: '#ff6b81', // Soft pinkish red for logout (for visibility)
-    width: '100%',
-    textAlign: 'left',
-  };
-
-  const onLogoutClick = () => {
-    if (handleLogout) {
-      handleLogout();
-    }
-    console.log("Logout clicked");
-  };
-
   return (
     <nav style={navStyle}>
-      {isLoggedIn && (
-        <button onClick={onToggleNav} style={toggleButtonStyle}>
-          {isNavVisible ? '←' : '→'}
-        </button>
-      )}
+      <button onClick={onToggleNav} style={toggleButtonStyle}>
+        {isNavVisible ? '←' : '→'}
+      </button>
 
       {isNavVisible && (
         <ul style={ulStyle}>
@@ -100,11 +79,6 @@ function NavigationBar({ isNavVisible, handleLogout, onToggleNav, isLoggedIn }) 
           </li>
           <li style={liStyle}>
             <Link to="/settings" style={linkStyle}>Settings</Link>
-          </li>
-          <li style={{ ...liStyle, marginTop: 'auto' }}>
-            <button onClick={onLogoutClick} style={logoutButtonStyle}>
-              Logout
-            </button>
           </li>
         </ul>
       )}
