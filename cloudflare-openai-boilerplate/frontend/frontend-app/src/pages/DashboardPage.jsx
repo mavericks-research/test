@@ -158,16 +158,16 @@ function DashboardPage({ workerUrl }) {
         <p>Current Data Refresh Interval: {settings.dataRefreshInterval}</p>
       </div>
 
-      <hr style={{ margin: '30px 0', borderColor: settings.theme === 'dark' ? '#555' : 'var(--color-border)' }}/>
-      <div style={{ marginTop: '20px', ...themedSectionStyle }}>
-        <h2>Global Market Overview</h2>
-        <GlobalMarketOverview />
-      </div>
-
-      <hr style={{ margin: '30px 0', borderColor: settings.theme === 'dark' ? '#555' : 'var(--color-border)' }}/>
-      <div style={{ marginTop: '20px', ...themedSectionStyle }}>
-        <h2>Trending Coins</h2>
-        <TrendingCoins />
+      {/* Two-column layout for Global Market Overview and Trending Coins */}
+      <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', gap: '20px', marginTop: '20px' }}>
+        <div style={{ flex: '1', ...themedSectionStyle }}>
+          <h2>Trending Coins</h2>
+          <TrendingCoins />
+        </div>
+        <div style={{ flex: '1', ...themedSectionStyle }}>
+          <h2>Global Market Overview</h2>
+          <GlobalMarketOverview />
+        </div>
       </div>
 
       <hr style={{ margin: '30px 0', borderColor: settings.theme === 'dark' ? '#555' : 'var(--color-border)' }}/>
@@ -176,7 +176,7 @@ function DashboardPage({ workerUrl }) {
         <BlockchainDataViewer />
       </div>
 
-      <hr />
+      <hr style={{ margin: '30px 0', borderColor: settings.theme === 'dark' ? '#555' : 'var(--color-border)' }} />
       <CryptoDisplay currency={settings.currency} /> {/* Pass currency as a prop */}
       <hr />
       <WalletAnalyzer workerUrl={workerUrl} />
@@ -207,7 +207,6 @@ function DashboardPage({ workerUrl }) {
           <p>Enter a stock symbol above to view its data.</p>
         )}
       </div>
-
 
 
     </div>
