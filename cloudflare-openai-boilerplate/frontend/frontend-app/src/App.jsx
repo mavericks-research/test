@@ -39,6 +39,7 @@ function AppContent() {
     >
       {/* Header is always shown as user is authenticated */}
       <Header onToggleNav={toggleNav} isLoggedIn={true} />
+      <AdBanner />
 
       {/* NavigationBar is always shown as user is authenticated */}
       <NavigationBar
