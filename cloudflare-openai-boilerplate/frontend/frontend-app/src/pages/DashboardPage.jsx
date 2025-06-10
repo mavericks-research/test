@@ -7,7 +7,9 @@ import StockHistoricalChart from '../components/StockHistoricalChart';
 import BlockchainDataViewer from '../components/BlockchainDataViewer';
 import TrendingCoins from '../components/TrendingCoins'; // New import
 import GlobalMarketOverview from '../components/GlobalMarketOverview'; // New import
+import NewsWidget from '../components/NewsWidget'; // Import NewsWidget
 import { getStockProfile, getStockQuote, getStockHistoricalData } from '../services/stockService';
+import './DashboardPage.css'; // Import the CSS file
 // Removed NavigationBar import
 
 function WalletAnalyzer({ workerUrl }) {
@@ -159,7 +161,7 @@ function DashboardPage({ workerUrl }) {
       </div>
 
       {/* Two-column layout for Global Market Overview and Trending Coins */}
-      <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', gap: '20px', marginTop: '20px' }}>
+      <div className="dashboard-layout-container" style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', gap: '20px', marginTop: '20px' }}>
         <div style={{ flex: '1', ...themedSectionStyle }}>
           <GlobalMarketOverview />
           <hr style={{ margin: '30px 0', borderColor: settings.theme === 'dark' ? '#555' : 'var(--color-border)' }}/>
@@ -172,6 +174,9 @@ function DashboardPage({ workerUrl }) {
           <CryptoDisplay currency={settings.currency} /> {/* Pass currency as a prop */}
           <hr style={{ margin: '30px 0', borderColor: settings.theme === 'dark' ? '#555' : 'var(--color-border)' }}/>
           <WalletAnalyzer workerUrl={workerUrl} />
+        </div>
+        <div style={{ flex: '1', ...themedSectionStyle }}>
+          <NewsWidget />
         </div>
       </div>
 

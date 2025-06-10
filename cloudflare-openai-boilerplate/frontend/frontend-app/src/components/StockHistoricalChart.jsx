@@ -1,5 +1,5 @@
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const StockHistoricalChart = ({ historicalData, stockName }) => {
   if (!historicalData || historicalData.length === 0) {
@@ -17,39 +17,50 @@ const StockHistoricalChart = ({ historicalData, stockName }) => {
       borderRadius: '5px',
       marginTop: '20px',
       backgroundColor: '#ffffff', // Light background for the chart area
-      overflowX: 'auto' // Added this
+      // overflowX: 'auto' // Removed this
     }}>
       <h4 style={{ textAlign: 'center', marginBottom: '20px' }}>
-        Historical Closing Prices for {stockName || 'Selected Stock'}
+        Historical Price and Volume for {stockName || 'Selected Stock'}
       </h4>
-      {/* ResponsiveContainer might be removed or adjusted. For fixed width chart,
-          LineChart itself gets the width/height directly. */}
-      <LineChart
-        width={1200} // Example fixed width
-        height={400}
-        data={sortedData}
-        margin={{
-          top: 5,
-          right: 30,
-          left: 20,
-          bottom: 5,
-        }}
-      >
-        <CartesianGrid strokeDasharray="3 3" stroke="#ccc" />
-        <XAxis
+      <ResponsiveContainer width="100%" height={400}>
+        <ComposedChart
+          data={sortedData}
+          margin={{
+            top: 5,
+            right: 30, // Adjusted margin to accommodate the second Y-axis
+            left: 20,
+            bottom: 5,
+          }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#ccc" />
+          <XAxis
             dataKey="date"
             stroke="#333"
-            // Optional: tickFormatter to shorten date if necessary
-            // tickFormatter={(dateStr) => dateStr.substring(5)} // Example: YYYY-MM-DD -> MM-DD
+            // tickFormatter={(dateStr) => dateStr.substring(5)} // Example: MM-DD
           />
           <YAxis
-            stroke="#333"
+            yAxisId="left"
+            stroke="#007bff"
             domain={['auto', 'auto']}
-            // Optional: tickFormatter to add currency, e.g., (value) => `$${value.toFixed(2)}`
             tickFormatter={(value) => `$${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`}
+            name="Price"
+          />
+          <YAxis
+            yAxisId="right"
+            orientation="right"
+            stroke="#82ca9d"
+            dataKey="volume"
+            name="Volume"
+            tickFormatter={(value) => {
+              if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+              if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
+              return value;
+            }}
+            domain={['auto', 'auto']} // Let Recharts determine domain, or set manually e.g. [0, 'dataMax + 20%']
           />
           <Tooltip
-            formatter={(value, name, props) => [`$${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, "Close Price"]}
+            // formatter can be enhanced if specific formatting per series is needed
+            // For now, relying on default behavior which uses the 'name' prop of each series
             labelFormatter={(label) => `Date: ${label}`}
             contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.8)', borderRadius: '5px', padding: '10px' }}
           />
@@ -57,13 +68,22 @@ const StockHistoricalChart = ({ historicalData, stockName }) => {
           <Line
             type="monotone"
             dataKey="close"
-            stroke="#007bff" // Changed stroke color for better visibility
+            stroke="#007bff"
             strokeWidth={2}
-            activeDot={{ r: 6, stroke: '#0056b3', fill: '#007bff' }}
+            yAxisId="left"
             name="Close Price"
-            dot={false} // Hides dots on the line for a cleaner look, activeDot shows on hover
+            dot={false}
+            activeDot={{ r: 6, stroke: '#0056b3', fill: '#007bff' }}
           />
-        </LineChart>
+          <Bar
+            dataKey="volume"
+            yAxisId="right"
+            fill="#82ca9d"
+            name="Volume"
+            barSize={20} // Optional: adjust bar size
+          />
+        </ComposedChart>
+      </ResponsiveContainer>
     </div>
   );
 };

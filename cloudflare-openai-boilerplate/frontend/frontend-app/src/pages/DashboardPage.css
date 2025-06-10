@@ -1,0 +1,15 @@
+.dashboard-layout-container {
+  /* Default styles can be added here if needed */
+}
+
+@media (max-width: 768px) {
+  .dashboard-layout-container {
+    flex-direction: column;
+  }
+
+  .dashboard-layout-container > div {
+    flex-basis: 100% !important; /* Ensure override of inline style */
+    width: 100% !important; /* Ensure override of inline style */
+    margin-bottom: 20px; /* Add some space between stacked items */
+  }
+}
