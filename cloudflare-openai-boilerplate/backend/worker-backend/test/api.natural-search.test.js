@@ -1,83 +1,54 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import worker from '../src/index'; // Assuming default export has a fetch method
+import worker from '../src/index';
 
 const TEST_OPENAI_API_KEY = 'test-openai-key';
-const TEST_FMP_API_KEY = 'test-fmp-key';
-const TEST_OPENAI_MODEL_SEARCH = 'gpt-3.5-turbo'; // Updated model
+const TEST_ALPHA_VANTAGE_API_KEY = 'test-alpha-vantage-key';
+const TEST_OPENAI_MODEL_SEARCH = 'gpt-3.5-turbo';
 
-// Helper to create a Request object like Cloudflare Workers do
 function createRequest(urlPath, method = 'GET', body = null) {
   const url = new URL(`http://worker.test${urlPath}`);
-  return new Request(url.toString(), { method, body: body ? JSON.stringify(body) : null });
+  const requestInit = { method };
+  if (body) {
+    requestInit.body = JSON.stringify(body);
+    requestInit.headers = { 'Content-Type': 'application/json' };
+  }
+  return new Request(url.toString(), requestInit);
 }
 
-// Mock environment
 let env;
 
-describe('/api/stocks/natural-search endpoint', () => {
+describe('/api/stocks/natural-search endpoint (Alpha Vantage SYMBOL_SEARCH)', () => {
   const originalGlobalFetch = global.fetch;
 
   beforeEach(() => {
     env = {
       OPENAI_API_KEY: TEST_OPENAI_API_KEY,
-      FMP_API_KEY: TEST_FMP_API_KEY,
+      ALPHA_VANTAGE_API_KEY: TEST_ALPHA_VANTAGE_API_KEY,
       OPENAI_MODEL_SEARCH: TEST_OPENAI_MODEL_SEARCH,
+      // FMP_API_KEY is no longer used by this endpoint, but other tests might need it
+      // If other tests in this file were using it, it should be mocked or removed from those tests too
     };
-    global.fetch = vi.fn(); // Mock global fetch
+    global.fetch = vi.fn();
   });
 
   afterEach(() => {
-    global.fetch = originalGlobalFetch; // Restore original fetch
-    vi.restoreAllMocks(); // Clears spies and stubs
+    global.fetch = originalGlobalFetch;
+    vi.restoreAllMocks();
   });
 
-  it('should return successful search results for a basic query', async () => {
-    const mockOpenAICriteria = { sector: "Technology", keywords: ["tech"] };
-    const mockFMPResults = [{ symbol: "AAPL", companyName: "Apple Inc." }];
-
-    global.fetch.mockImplementation(async (url) => {
-      if (url.startsWith('https://api.openai.com/v1/chat/completions')) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({
-            choices: [{ message: { function_call: { arguments: JSON.stringify(mockOpenAICriteria) } } }],
-          }),
-        });
-      }
-      if (url.startsWith('https://financialmodelingprep.com/api/v3/stock-screener')) {
-        expect(url.toString()).toContain('sector=Technology');
-        // expect(url.toString()).toContain('keywords=tech'); // Keywords are not directly used in FMP for now
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve(mockFMPResults),
-        });
-      }
-      return Promise.reject(new Error(`Unexpected fetch call: ${url}`));
-    });
-
-    const req = createRequest('/api/stocks/natural-search?q=tech%20stocks');
-    const res = await worker.fetch(req, env, {});
-    const jsonResponse = await res.json();
-
-    expect(res.status).toBe(200);
-    expect(jsonResponse.openAICriteria).toEqual(mockOpenAICriteria);
-    expect(jsonResponse.fmpResults).toEqual(mockFMPResults);
-    expect(jsonResponse.fmpQuery).toContain('sector=Technology');
-    expect(global.fetch).toHaveBeenCalledTimes(2); // OpenAI + FMP
-  });
-
-  it('should handle search with multiple criteria (P/E, Market Cap)', async () => {
-    const query = 'profitable tech companies with P/E under 20 and market cap over 100 billion';
-    const mockOpenAICriteria = {
-      sector: "Technology",
-      pe_ratio_max: 20,
-      market_cap_min: 100000000000,
-      keywords: ["profitable"]
+  it('should return successful search results for a basic keyword query', async () => {
+    const query = 'search for Apple';
+    const mockOpenAICriteria = { keywords: ["Apple"] };
+    const mockAlphaVantageResults = {
+      bestMatches: [
+        { "1. symbol": "AAPL", "2. name": "Apple Inc.", "3. type": "Equity", "4. region": "United States", "5. marketOpen": "09:30", "6. marketClose": "16:00", "7. timezone": "UTC-04", "8. currency": "USD", "9. matchScore": "1.0000" },
+        { "1. symbol": "APPL", "2. name": "Apple Hospitality REIT Inc.", "3. type": "Equity", "4. region": "United States", "5. marketOpen": "09:30", "6. marketClose": "16:00", "7. timezone": "UTC-04", "8. currency": "USD", "9. matchScore": "0.6000" }
+      ]
     };
-    const mockFMPResults = [{ symbol: "MSFT", companyName: "Microsoft Corp." }];
 
     global.fetch.mockImplementation(async (url) => {
-      if (url.startsWith('https://api.openai.com/v1/chat/completions')) {
+      const urlString = url.toString();
+      if (urlString.startsWith('https://api.openai.com/v1/chat/completions')) {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({
@@ -85,17 +56,15 @@ describe('/api/stocks/natural-search endpoint', () => {
           }),
         });
       }
-      if (url.startsWith('https://financialmodelingprep.com/api/v3/stock-screener')) {
-        const fmpUrl = url.toString();
-        expect(fmpUrl).toContain('sector=Technology');
-        expect(fmpUrl).toContain('priceEarningsRatioTTMLessThan=20');
-        expect(fmpUrl).toContain('marketCapMoreThan=100000000000');
+      if (urlString.startsWith('https://www.alphavantage.co/query?function=SYMBOL_SEARCH')) {
+        expect(urlString).toContain(`keywords=${encodeURIComponent("Apple")}`);
+        expect(urlString).toContain(`apikey=${TEST_ALPHA_VANTAGE_API_KEY}`);
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve(mockFMPResults),
+          json: () => Promise.resolve(mockAlphaVantageResults),
         });
       }
-      return Promise.reject(new Error(`Unexpected fetch call: ${url}`));
+      return Promise.reject(new Error(`Unexpected fetch call: ${urlString}`));
     });
 
     const req = createRequest(`/api/stocks/natural-search?q=${encodeURIComponent(query)}`);
@@ -104,23 +73,59 @@ describe('/api/stocks/natural-search endpoint', () => {
 
     expect(res.status).toBe(200);
     expect(jsonResponse.openAICriteria).toEqual(mockOpenAICriteria);
-    expect(jsonResponse.fmpResults).toEqual(mockFMPResults);
-    expect(jsonResponse.fmpQuery).toContain('sector=Technology');
-    expect(jsonResponse.fmpQuery).toContain('priceEarningsRatioTTMLessThan=20');
-    expect(jsonResponse.fmpQuery).toContain('marketCapMoreThan=100000000000');
+    expect(jsonResponse.alphaVantageSearchQuery).toBe("Apple");
+    expect(jsonResponse.alphaVantageSearchResults).toEqual(mockAlphaVantageResults.bestMatches);
+    expect(global.fetch).toHaveBeenCalledTimes(2); // OpenAI + Alpha Vantage
   });
 
-  it('should return 500 if OpenAI fails to return function call arguments', async () => {
+  it('should combine sector and keywords for Alpha Vantage search', async () => {
+    const query = 'tech companies like Microsoft';
+    const mockOpenAICriteria = { sector: "Technology", keywords: ["Microsoft"] };
+    const mockAlphaVantageResults = {
+      bestMatches: [{ "1. symbol": "MSFT", "2. name": "Microsoft Corp." }]
+    };
+
+    global.fetch.mockImplementation(async (url) => {
+      const urlString = url.toString();
+      if (urlString.startsWith('https://api.openai.com/v1/chat/completions')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            choices: [{ message: { function_call: { arguments: JSON.stringify(mockOpenAICriteria) } } }],
+          }),
+        });
+      }
+      if (urlString.startsWith('https://www.alphavantage.co/query?function=SYMBOL_SEARCH')) {
+        // Expect "Microsoft Technology" or "Technology Microsoft" - order might vary but both should be present
+        expect(decodeURIComponent(urlString)).toContain("keywords=Microsoft Technology"); // Current implementation: keywords then sector
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockAlphaVantageResults),
+        });
+      }
+      return Promise.reject(new Error(`Unexpected fetch call: ${urlString}`));
+    });
+
+    const req = createRequest(`/api/stocks/natural-search?q=${encodeURIComponent(query)}`);
+    const res = await worker.fetch(req, env, {});
+    const jsonResponse = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(jsonResponse.openAICriteria).toEqual(mockOpenAICriteria);
+    expect(jsonResponse.alphaVantageSearchQuery).toBe("Microsoft Technology");
+    expect(jsonResponse.alphaVantageSearchResults).toEqual(mockAlphaVantageResults.bestMatches);
+  });
+
+  it('should return 502 if OpenAI fails to return function call arguments', async () => {
     global.fetch.mockImplementation(async (url) => {
       if (url.startsWith('https://api.openai.com/v1/chat/completions')) {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({
-            choices: [{ message: { content: "No function call today." } }], // Missing function_call
+            choices: [{ message: { content: "No function call today." } }],
           }),
         });
       }
-      // FMP should not be called
       return Promise.reject(new Error(`Unexpected fetch call: ${url}`));
     });
 
@@ -128,12 +133,13 @@ describe('/api/stocks/natural-search endpoint', () => {
     const res = await worker.fetch(req, env, {});
     const jsonResponse = await res.json();
 
-    expect(res.status).toBe(500);
-    expect(jsonResponse.error).toContain('Could not parse financial criteria using OpenAI');
-    expect(global.fetch).toHaveBeenCalledTimes(1); // Only OpenAI call
+    expect(res.status).toBe(502); // Changed from 500 to 502 as per new error handling
+    expect(jsonResponse.error).toContain('Could not parse search criteria using OpenAI');
+    expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
   it('should return 500 if OpenAI function call arguments are malformed JSON', async () => {
+    // This scenario is less likely if OpenAI API is functioning correctly, but good to test
     global.fetch.mockImplementation(async (url) => {
       if (url.startsWith('https://api.openai.com/v1/chat/completions')) {
         return Promise.resolve({
@@ -150,16 +156,17 @@ describe('/api/stocks/natural-search endpoint', () => {
     const res = await worker.fetch(req, env, {});
     const jsonResponse = await res.json();
 
+    // The worker code has a try-catch for JSON.parse, which would lead to a 500
     expect(res.status).toBe(500);
     expect(jsonResponse.error).toContain('Failed to parse financial criteria from OpenAI response.');
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
-
-  it('should return error if FMP API fails', async () => {
-    const mockOpenAICriteria = { sector: "Healthcare" };
+  it('should return error from Alpha Vantage if SYMBOL_SEARCH API fails', async () => {
+    const mockOpenAICriteria = { keywords: ["XYZ"] };
     global.fetch.mockImplementation(async (url) => {
-      if (url.startsWith('https://api.openai.com/v1/chat/completions')) {
+      const urlString = url.toString();
+      if (urlString.startsWith('https://api.openai.com/v1/chat/completions')) {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({
@@ -167,24 +174,78 @@ describe('/api/stocks/natural-search endpoint', () => {
           }),
         });
       }
-      if (url.startsWith('https://financialmodelingprep.com/api/v3/stock-screener')) {
+      if (urlString.startsWith('https://www.alphavantage.co/query?function=SYMBOL_SEARCH')) {
         return Promise.resolve({
           ok: false,
-          status: 503,
-          text: () => Promise.resolve("FMP Service Unavailable"), // FMP might return HTML or plain text on error
+          status: 403, // Example: Forbidden (API key issue)
+          text: () => Promise.resolve("Invalid API Key"),
         });
       }
-      return Promise.reject(new Error(`Unexpected fetch call: ${url}`));
+      return Promise.reject(new Error(`Unexpected fetch call: ${urlString}`));
     });
 
-    const req = createRequest('/api/stocks/natural-search?q=healthcare%20stocks');
+    const req = createRequest('/api/stocks/natural-search?q=XYZ');
     const res = await worker.fetch(req, env, {});
     const jsonResponse = await res.json();
 
-    expect(res.status).toBe(503); // Should reflect FMP's error status
-    expect(jsonResponse.error).toContain('FMP API request failed: 503 FMP Service Unavailable');
-    expect(jsonResponse.fmpQuery).toBeDefined(); // fmpQuery should still be in the response
+    expect(res.status).toBe(403);
+    expect(jsonResponse.error).toContain('Alpha Vantage SYMBOL_SEARCH API request failed: 403 Invalid API Key');
+    expect(jsonResponse.alphaVantageSearchQuery).toBe("XYZ");
   });
+
+  it('should handle Alpha Vantage API returning an error message in JSON', async () => {
+    const query = 'search for nonexist';
+    const mockOpenAICriteria = { keywords: ["nonexist"] };
+    const mockAlphaVantageError = { "Error Message": "Invalid API call. Please check your API key and parameters." };
+
+    global.fetch.mockImplementation(async (url) => {
+      const urlString = url.toString();
+      if (urlString.startsWith('https://api.openai.com/v1/chat/completions')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ choices: [{ message: { function_call: { arguments: JSON.stringify(mockOpenAICriteria) } } }] }) });
+      }
+      if (urlString.startsWith('https://www.alphavantage.co/query?function=SYMBOL_SEARCH')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockAlphaVantageError) }); // API returns 200 but with error in body
+      }
+      return Promise.reject(new Error(`Unexpected fetch call: ${urlString}`));
+    });
+
+    const req = createRequest(`/api/stocks/natural-search?q=${encodeURIComponent(query)}`);
+    const res = await worker.fetch(req, env, {});
+    const jsonResponse = await res.json();
+
+    expect(res.status).toBe(502); // Worker should identify this as an upstream error
+    expect(jsonResponse.error).toBe(`Alpha Vantage API error: ${mockAlphaVantageError["Error Message"]}`);
+    expect(jsonResponse.openAICriteria).toEqual(mockOpenAICriteria);
+    expect(jsonResponse.alphaVantageSearchQuery).toBe("nonexist");
+  });
+
+  it('should handle Alpha Vantage API returning a "Note" and no bestMatches', async () => {
+    const query = 'search for something obscure';
+    const mockOpenAICriteria = { keywords: ["obscuresearch"] };
+    const mockAlphaVantageNote = { "Note": "Thank you for using Alpha Vantage! Our standard API call frequency is 25 calls per day." };
+
+    global.fetch.mockImplementation(async (url) => {
+       const urlString = url.toString();
+      if (urlString.startsWith('https://api.openai.com/v1/chat/completions')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ choices: [{ message: { function_call: { arguments: JSON.stringify(mockOpenAICriteria) } } }] }) });
+      }
+      if (urlString.startsWith('https://www.alphavantage.co/query?function=SYMBOL_SEARCH')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockAlphaVantageNote) });
+      }
+      return Promise.reject(new Error(`Unexpected fetch call: ${urlString}`));
+    });
+
+    const req = createRequest(`/api/stocks/natural-search?q=${encodeURIComponent(query)}`);
+    const res = await worker.fetch(req, env, {});
+    const jsonResponse = await res.json();
+
+    expect(res.status).toBe(200); // As per current code, it returns 200 with a message and empty results
+    expect(jsonResponse.alphaVantageSearchResults).toEqual([]);
+    expect(jsonResponse.message).toContain(mockAlphaVantageNote.Note);
+    expect(jsonResponse.openAICriteria).toEqual(mockOpenAICriteria);
+    expect(jsonResponse.alphaVantageSearchQuery).toBe("obscuresearch");
+  });
+
 
   it('should return 500 if OPENAI_API_KEY is missing', async () => {
     const req = createRequest('/api/stocks/natural-search?q=any');
@@ -197,19 +258,33 @@ describe('/api/stocks/natural-search endpoint', () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
-  it('should return 500 if FMP_API_KEY is missing', async () => {
+  it('should return 500 if ALPHA_VANTAGE_API_KEY is missing', async () => {
     const req = createRequest('/api/stocks/natural-search?q=any');
-    const localEnv = { ...env, FMP_API_KEY: undefined };
+    // OpenAI will be called, so we need to mock that part, even if AV key is missing
+     global.fetch.mockImplementation(async (url) => {
+      if (url.startsWith('https://api.openai.com/v1/chat/completions')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            choices: [{ message: { function_call: { arguments: JSON.stringify({ keywords: ["any"]}) } } }],
+          }),
+        });
+      }
+       return Promise.reject(new Error(`Unexpected fetch call: ${url}`));
+    });
+    const localEnv = { ...env, ALPHA_VANTAGE_API_KEY: undefined }; // Remove only Alpha Vantage key
     const res = await worker.fetch(req, localEnv, {});
     const jsonResponse = await res.json();
 
     expect(res.status).toBe(500);
-    expect(jsonResponse.error).toBe('FMP API key is not configured.');
-    expect(global.fetch).not.toHaveBeenCalled();
+    expect(jsonResponse.error).toBe('Alpha Vantage API key is not configured.');
+    // global.fetch would have been called once for OpenAI
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(global.fetch.mock.calls[0][0]).toContain('api.openai.com');
   });
 
   it('should return 400 if query parameter "q" is missing', async () => {
-    const req = createRequest('/api/stocks/natural-search'); // No query param
+    const req = createRequest('/api/stocks/natural-search');
     const res = await worker.fetch(req, env, {});
     const jsonResponse = await res.json();
 
@@ -218,12 +293,9 @@ describe('/api/stocks/natural-search endpoint', () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
-  it('should handle dividend yield criteria correctly', async () => {
-    const query = 'stocks with dividend yield over 3%';
-    const mockOpenAICriteria = {
-      dividend_yield_min: 3  // OpenAI returns percentage
-    };
-    const mockFMPResults = [{ symbol: "T", companyName: "AT&T Inc." }];
+  it('should return 400 if OpenAI extracts no keywords', async () => {
+    const query = 'search for nothing useful';
+    const mockOpenAICriteria = { keywords: [] }; // Empty keywords
 
     global.fetch.mockImplementation(async (url) => {
       if (url.startsWith('https://api.openai.com/v1/chat/completions')) {
@@ -234,15 +306,6 @@ describe('/api/stocks/natural-search endpoint', () => {
           }),
         });
       }
-      if (url.startsWith('https://financialmodelingprep.com/api/v3/stock-screener')) {
-        const fmpUrl = url.toString();
-        // FMP expects decimal for dividendYieldMoreThan, e.g., 0.03 for 3%
-        expect(fmpUrl).toContain('dividendYieldMoreThan=0.03');
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve(mockFMPResults),
-        });
-      }
       return Promise.reject(new Error(`Unexpected fetch call: ${url}`));
     });
 
@@ -250,10 +313,11 @@ describe('/api/stocks/natural-search endpoint', () => {
     const res = await worker.fetch(req, env, {});
     const jsonResponse = await res.json();
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(400);
+    expect(jsonResponse.message).toBe("No valid keywords extracted for search.");
     expect(jsonResponse.openAICriteria).toEqual(mockOpenAICriteria);
-    expect(jsonResponse.fmpResults).toEqual(mockFMPResults);
-    expect(jsonResponse.fmpQuery).toContain('dividendYieldMoreThan=0.03');
+    expect(jsonResponse.alphaVantageSearchQuery).toBe("");
+    expect(jsonResponse.alphaVantageSearchResults).toEqual([]);
+    expect(global.fetch).toHaveBeenCalledTimes(1); // Only OpenAI call
   });
-
 });

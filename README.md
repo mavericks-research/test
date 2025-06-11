@@ -89,6 +89,49 @@ When your worker is deployed to Cloudflare:
 
 By configuring this API key, the backend worker will use it when making requests to the CoinGecko API, reducing the likelihood of encountering public rate limits.
 
+## Stock Market Data (Alpha Vantage)
+
+This application uses Alpha Vantage for providing stock market data, including company profiles, real-time quotes, and historical price data.
+
+### Alpha Vantage API Key
+
+To ensure reliable access to stock market data and to avoid the limitations of public API access, an Alpha Vantage API key is required.
+
+1.  **Obtain an API Key**: Visit [Alpha Vantage](https://www.alphavantage.co) and click on "GET YOUR FREE API KEY TODAY" to claim your free API key.
+2.  **API Call Limits**: Standard free keys from Alpha Vantage often have limitations, such as 25 requests per day and up to 5 requests per minute. For more demanding applications, you might need to consider their premium plans. Please refer to the [Alpha Vantage documentation](https://www.alphavantage.co/documentation/) for the most current information on API call limits and usage policies.
+
+### Setting the API Key
+
+You need to configure the `ALPHA_VANTAGE_API_KEY` environment variable for both local development and your deployed Cloudflare Worker.
+
+#### Local Development (`wrangler dev`)
+
+When running the backend worker locally using `wrangler dev`:
+
+1.  In the `cloudflare-openai-boilerplate/backend/worker-backend/` directory, create or open the `.dev.vars` file.
+2.  Add the following line, replacing `YOUR_ALPHA_VANTAGE_KEY_HERE` with your actual API key:
+    ```ini
+    ALPHA_VANTAGE_API_KEY="YOUR_ALPHA_VANTAGE_KEY_HERE"
+    ```
+3.  Ensure `.dev.vars` is listed in your `.gitignore` file to prevent committing your API key.
+
+#### Deployed Cloudflare Worker
+
+When your worker is deployed to Cloudflare:
+
+1.  Go to your Cloudflare Dashboard.
+2.  Select your Worker.
+3.  Navigate to **Settings > Variables**.
+4.  Under **Environment Variables**, click **Add variable**.
+    -   Set **Variable name** to `ALPHA_VANTAGE_API_KEY`.
+    -   Set **Variable value** to your actual Alpha Vantage API key.
+    -   It's recommended to **Encrypt** the API key for security.
+5.  Save the changes.
+
+### Natural Language Stock Search
+
+The `/api/stocks/natural-search` endpoint utilizes OpenAI to interpret natural language queries and then uses Alpha Vantage's `SYMBOL_SEARCH` functionality to find matching stock symbols. This search is based on keywords (like company names or tickers) and can also consider the sector if specified in the query. It provides a list of potential matches rather than performing a multi-criteria financial screen.
+
 ## AdSense Configuration
 
 This application includes a banner ad component designed for Google AdSense, located at `cloudflare-openai-boilerplate/frontend/frontend-app/src/components/AdBanner.jsx`. To enable ads, you need to configure it with your Google AdSense account details.

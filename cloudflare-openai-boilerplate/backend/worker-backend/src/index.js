@@ -875,15 +875,15 @@ Provide a concise, human-readable analysis.
         const openaiApiKey = env.OPENAI_API_KEY;
         // Default to a model known for function calling, allow override via env
         const openaiModelForSearch = env.OPENAI_MODEL_SEARCH || 'gpt-3.5-turbo';
-        const fmpApiKey = env.FMP_API_KEY;
+        const alphaVantageApiKey = env.ALPHA_VANTAGE_API_KEY;
 
         if (!openaiApiKey) {
           console.error('OPENAI_API_KEY not configured');
           return new Response(JSON.stringify({ error: 'OpenAI API key is not configured.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
-        if (!fmpApiKey) {
-          console.error('FMP_API_KEY not configured');
-          return new Response(JSON.stringify({ error: 'FMP API key is not configured.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        if (!alphaVantageApiKey) {
+          console.error('ALPHA_VANTAGE_API_KEY not configured');
+          return new Response(JSON.stringify({ error: 'Alpha Vantage API key is not configured.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
         if (!naturalQuery) {
           return new Response(JSON.stringify({ error: 'Missing "q" query parameter for natural language search.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
@@ -891,45 +891,21 @@ Provide a concise, human-readable analysis.
 
         const financialQueryFunction = {
           name: "extract_financial_criteria",
-          description: "Extracts financial criteria from a user's natural language query for stock searching.",
+          description: "Extracts keywords and sector from a user's natural language query for stock symbol searching. Focus on company names, stock tickers, sectors, and other relevant keywords.",
           parameters: {
             type: "object",
             properties: {
               sector: {
                 type: "string",
-                description: "The stock sector, e.g., Technology, Healthcare, Energy.",
-              },
-              pe_ratio_min: {
-                type: "number",
-                description: "The minimum desired P/E ratio.",
-              },
-              pe_ratio_max: {
-                type: "number",
-                description: "The maximum desired P/E ratio.",
-              },
-              market_cap_min: {
-                type: "number",
-                description: "The minimum desired market capitalization in USD, e.g., 1000000000 for $1 billion.",
-              },
-              market_cap_max: {
-                type: "number",
-                description: "The maximum desired market capitalization in USD, e.g., 50000000000 for $50 billion.",
-              },
-              dividend_yield_min: {
-                  type: "number",
-                  description: "The minimum desired dividend yield in percentage, e.g., 3 for 3%.",
-              },
-              dividend_yield_max: {
-                  type: "number",
-                  description: "The maximum desired dividend yield in percentage, e.g., 10 for 10%."
+                description: "The stock sector, e.g., Technology, Healthcare. Extracted if explicitly mentioned.",
               },
               keywords: {
                 type: "array",
                 items: { type: "string" },
-                description: "Any specific keywords or company names mentioned, e.g., AI, renewable energy.",
+                description: "Specific keywords, company names, or stock tickers mentioned, e.g., Apple, AAPL, AI, renewable energy.",
               },
             },
-            required: [], // Make parameters optional initially, OpenAI will only fill what it finds.
+            required: ["keywords"], // Keywords are essential for SYMBOL_SEARCH
           },
         };
 
@@ -943,11 +919,11 @@ Provide a concise, human-readable analysis.
             body: JSON.stringify({
               model: openaiModelForSearch,
               messages: [
-                { role: "system", content: "You are a financial query parser. Extract stock screening criteria from the user's query using the provided function." },
+                { role: "system", content: "You are a financial query parser. Extract stock search keywords and sector from the user's query using the provided function. Prioritize identifying company names or stock symbols as keywords." },
                 { role: "user", content: naturalQuery }
               ],
               functions: [financialQueryFunction],
-              function_call: { name: "extract_financial_criteria" }, // Force the function call
+              function_call: { name: "extract_financial_criteria" },
             }),
           });
 
@@ -961,71 +937,68 @@ Provide a concise, human-readable analysis.
           }
 
           const openaiData = await openaiResponse.json();
-          let searchCriteria = {};
+          let openAICriteria = {};
           if (openaiData.choices && openaiData.choices[0].message.function_call && openaiData.choices[0].message.function_call.arguments) {
-            searchCriteria = JSON.parse(openaiData.choices[0].message.function_call.arguments);
+            openAICriteria = JSON.parse(openaiData.choices[0].message.function_call.arguments);
           } else {
-            // Fallback or error if function call didn't happen as expected
             console.warn('OpenAI did not return a function call or arguments. Response:', openaiData);
-            // For now, proceed with empty criteria, which might result in a broad FMP search or no search.
-            // A more robust solution might try a non-function prompt or return an error.
-             return new Response(JSON.stringify({ error: 'Could not parse financial criteria using OpenAI.', openAIResponse: openaiData }), {
-                status: 500, // Or a more specific error like 502 Bad Gateway if OpenAI is the issue
+            return new Response(JSON.stringify({ error: 'Could not parse search criteria using OpenAI.', openAIResponse: openaiData }), {
+                status: 502, // Bad Gateway, as OpenAI response was not as expected
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
           }
 
-          // Construct FMP API query
-          // Base URL for FMP stock screener
-          let fmpScreenerUrl = `https://financialmodelingprep.com/api/v3/stock-screener?apikey=${fmpApiKey}`;
+          // Combine keywords and sector for Alpha Vantage SYMBOL_SEARCH
+          let searchKeywordsArray = openAICriteria.keywords || [];
+          if (openAICriteria.sector) {
+            searchKeywordsArray.push(openAICriteria.sector);
+          }
+          const alphaVantageSearchString = searchKeywordsArray.join(' ');
 
-          // Map extracted criteria to FMP parameters (simplified)
-          if (searchCriteria.sector) {
-            fmpScreenerUrl += `&sector=${encodeURIComponent(searchCriteria.sector)}`;
+          if (!alphaVantageSearchString.trim()) {
+            return new Response(JSON.stringify({
+                openAICriteria: openAICriteria,
+                alphaVantageSearchQuery: "",
+                alphaVantageSearchResults: [],
+                message: "No valid keywords extracted for search."
+            }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
           }
-          if (searchCriteria.pe_ratio_min) {
-            fmpScreenerUrl += `&priceEarningsRatioTTMMoreThan=${searchCriteria.pe_ratio_min}`;
-          }
-          if (searchCriteria.pe_ratio_max) {
-            fmpScreenerUrl += `&priceEarningsRatioTTMLessThan=${searchCriteria.pe_ratio_max}`;
-          }
-          if (searchCriteria.market_cap_min) {
-            fmpScreenerUrl += `&marketCapMoreThan=${searchCriteria.market_cap_min}`;
-          }
-          if (searchCriteria.market_cap_max) {
-            fmpScreenerUrl += `&marketCapLowerThan=${searchCriteria.market_cap_max}`;
-          }
-          if (searchCriteria.dividend_yield_min) {
-              // FMP uses 'dividendYieldMoreThan' but expects the raw decimal (e.g., 0.03 for 3%)
-              // OpenAI function call asks for percentage (e.g., 3 for 3%)
-              fmpScreenerUrl += `&dividendYieldMoreThan=${searchCriteria.dividend_yield_min / 100}`;
-          }
-          if (searchCriteria.dividend_yield_max) {
-              fmpScreenerUrl += `&dividendYieldLessThan=${searchCriteria.dividend_yield_max / 100}`;
-          }
-          // Note: FMP screener is powerful but has many specific params.
-          // Keywords are harder to directly map to FMP screener which is more field-based.
-          // A general keyword search might use /api/v3/search?query=...&apikey=... but that's different from screening.
-          // For now, keywords from OpenAI are not directly used in FMP screener unless they match a sector or other criteria.
-          // We can add a limit to the number of results, e.g., &limit=50
-          fmpScreenerUrl += `&limit=50`;
 
+          const alphaVantageUrl = `https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=${encodeURIComponent(alphaVantageSearchString)}&apikey=${alphaVantageApiKey}`;
 
-          const fmpResponse = await fetch(fmpScreenerUrl);
-          if (!fmpResponse.ok) {
-            const fmpErrorText = await fmpResponse.text();
-            console.error('FMP API Error for stock screener:', fmpErrorText);
-            return new Response(JSON.stringify({ error: `FMP API request failed: ${fmpResponse.status} ${fmpErrorText}`, fmpQuery: fmpScreenerUrl }), {
-              status: fmpResponse.status,
+          const alphaVantageResponse = await fetch(alphaVantageUrl);
+          if (!alphaVantageResponse.ok) {
+            const alphaVantageErrorText = await alphaVantageResponse.text();
+            console.error('Alpha Vantage API Error for SYMBOL_SEARCH:', alphaVantageErrorText);
+            return new Response(JSON.stringify({ error: `Alpha Vantage SYMBOL_SEARCH API request failed: ${alphaVantageResponse.status} ${alphaVantageErrorText}`, alphaVantageSearchQuery: alphaVantageSearchString }), {
+              status: alphaVantageResponse.status,
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
           }
 
-          const fmpData = await fmpResponse.json();
+          const alphaVantageData = await alphaVantageResponse.json();
+
+          // Handle cases like API notes or error messages from Alpha Vantage
+          if (alphaVantageData['Error Message']) {
+            console.warn(`Alpha Vantage SYMBOL_SEARCH API error: ${alphaVantageData['Error Message']}`);
+            return new Response(JSON.stringify({ error: `Alpha Vantage API error: ${alphaVantageData['Error Message']}`, openAICriteria, alphaVantageSearchQuery: alphaVantageSearchString }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+           if (alphaVantageData['Note'] && (!alphaVantageData.bestMatches || alphaVantageData.bestMatches.length === 0)) {
+            console.warn(`Alpha Vantage SYMBOL_SEARCH API Note (potential issue or no results): ${alphaVantageData['Note']}`);
+            // If 'bestMatches' is also empty or not present, treat it as no results or an issue.
+            return new Response(JSON.stringify({
+                openAICriteria: openAICriteria,
+                alphaVantageSearchQuery: alphaVantageSearchString,
+                alphaVantageSearchResults: [],
+                message: `Alpha Vantage API Note: ${alphaVantageData['Note']}`
+            }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }); // 200 as the request was "successful" but yielded a note and no data
+          }
+
+
           return new Response(JSON.stringify({
-              openAICriteria: searchCriteria, // Return what OpenAI extracted for debugging/info
-              fmpQuery: fmpScreenerUrl, // Return the query sent to FMP
-              fmpResults: fmpData
+              openAICriteria: openAICriteria,
+              alphaVantageSearchQuery: alphaVantageSearchString,
+              alphaVantageSearchResults: alphaVantageData.bestMatches || []
           }), {
             status: 200,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -1052,143 +1025,208 @@ Provide a concise, human-readable analysis.
       // --- Stock Market API Routes ---
       else if (url.pathname.startsWith('/api/stocks/profile/') && request.method === 'GET') {
         const symbol = url.pathname.split('/')[4];
-        const apiKey = env.FMP_API_KEY;
+        const apiKey = env.ALPHA_VANTAGE_API_KEY;
 
         if (!apiKey) {
-          console.error('FMP_API_KEY not configured');
-          return new Response(JSON.stringify({ error: 'Financial Modeling Prep API key not configured.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          console.error('ALPHA_VANTAGE_API_KEY not configured');
+          return new Response(JSON.stringify({ error: 'Alpha Vantage API key not configured.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
         if (!symbol) {
           return new Response(JSON.stringify({ error: 'Stock symbol missing in path.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
 
-        const fmpUrl = `https://financialmodelingprep.com/api/v3/profile/${symbol}?apikey=${apiKey}`;
+        const alphaVantageUrl = `https://www.alphavantage.co/query?function=OVERVIEW&symbol=${symbol}&apikey=${apiKey}`;
         try {
-          const fmpResponse = await fetch(fmpUrl);
-          if (!fmpResponse.ok) {
-            console.error(`FMP API error for profile ${symbol}: ${fmpResponse.status} ${fmpResponse.statusText}`);
-            return new Response(JSON.stringify({ error: `Failed to fetch company profile from FMP: ${fmpResponse.status}` }), { status: fmpResponse.status === 404 ? 404 : 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          const alphaVantageResponse = await fetch(alphaVantageUrl);
+          if (!alphaVantageResponse.ok) {
+            console.error(`Alpha Vantage API error for profile ${symbol}: ${alphaVantageResponse.status} ${alphaVantageResponse.statusText}`);
+            return new Response(JSON.stringify({ error: `Failed to fetch company profile from Alpha Vantage: ${alphaVantageResponse.status}` }), { status: alphaVantageResponse.status === 404 ? 404 : 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
           }
-          const data = await fmpResponse.json();
-          if (Array.isArray(data) && data.length > 0) {
-            const profile = data[0];
-            return new Response(JSON.stringify({
-              symbol: profile.symbol,
-              companyName: profile.companyName,
-              image: profile.image,
-              description: profile.description,
-              industry: profile.industry,
-              sector: profile.sector,
-              marketCap: profile.mktCap, // Note: FMP uses mktCap
-              exchangeShortName: profile.exchangeShortName,
-              currency: profile.currency,
-              website: profile.website,
-            }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-          } else {
-            return new Response(JSON.stringify({ error: 'No profile data found for symbol or unexpected format.' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          const data = await alphaVantageResponse.json();
+
+          // Check for Alpha Vantage API error messages (e.g., if symbol doesn't exist or API limit reached)
+          if (data['Error Message'] || Object.keys(data).length === 0) {
+            console.warn(`Alpha Vantage API returned an error or empty object for symbol ${symbol}:`, data['Error Message'] || 'Empty object');
+            return new Response(JSON.stringify({ error: `No profile data found for symbol ${symbol} or API error: ${data['Error Message'] || 'Not found'}` }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
           }
+          // Check if the response indicates a "thank you for using Alpha Vantage" message, which often means no data or an issue.
+          if (data['Note'] && data['Note'].includes('Thank you for using Alpha Vantage')) {
+            console.warn(`Alpha Vantage API note for symbol ${symbol} might indicate no data:`, data['Note']);
+            // If other fields are also missing, treat as not found.
+            if (!data.Symbol && !data.Name) {
+                 return new Response(JSON.stringify({ error: `No substantive profile data found for symbol ${symbol}. API Note: ${data['Note']}` }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            }
+          }
+
+
+          // Alpha Vantage returns a single object, not an array
+          const profileData = {
+            symbol: data.Symbol || null,
+            companyName: data.Name || null,
+            // image: null, // Not available in Alpha Vantage OVERVIEW
+            description: data.Description || null,
+            industry: data.Industry || null,
+            sector: data.Sector || null,
+            marketCap: data.MarketCapitalization ? parseFloat(data.MarketCapitalization) : null,
+            exchangeShortName: data.Exchange || null,
+            currency: data.Currency || null,
+            // website: null, // Not available in Alpha Vantage OVERVIEW
+          };
+
+          // If essential fields like symbol or companyName are null after mapping,
+          // it might indicate that the symbol was not found or data is incomplete.
+          if (!profileData.symbol && !profileData.companyName) {
+            return new Response(JSON.stringify({ error: `Incomplete profile data received for symbol ${symbol}.` }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+
+          return new Response(JSON.stringify(profileData), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         } catch (err) {
-          console.error(`Error fetching/processing FMP profile for ${symbol}:`, err);
+          console.error(`Error fetching/processing Alpha Vantage profile for ${symbol}:`, err);
           return new Response(JSON.stringify({ error: 'Internal server error while fetching company profile.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
       }
       else if (url.pathname.startsWith('/api/stocks/quote/') && request.method === 'GET') {
         const symbol = url.pathname.split('/')[4];
-        const apiKey = env.FMP_API_KEY;
+        const apiKey = env.ALPHA_VANTAGE_API_KEY;
 
         if (!apiKey) {
-          console.error('FMP_API_KEY not configured');
-          return new Response(JSON.stringify({ error: 'Financial Modeling Prep API key not configured.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          console.error('ALPHA_VANTAGE_API_KEY not configured');
+          return new Response(JSON.stringify({ error: 'Alpha Vantage API key not configured.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
         if (!symbol) {
           return new Response(JSON.stringify({ error: 'Stock symbol missing in path.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
 
-        const fmpUrl = `https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=${apiKey}`;
+        const alphaVantageUrl = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${apiKey}`;
         try {
-          const fmpResponse = await fetch(fmpUrl);
-          if (!fmpResponse.ok) {
-            console.error(`FMP API error for quote ${symbol}: ${fmpResponse.status} ${fmpResponse.statusText}`);
-            return new Response(JSON.stringify({ error: `Failed to fetch stock quote from FMP: ${fmpResponse.status}` }), { status: fmpResponse.status === 404 ? 404 : 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          const alphaVantageResponse = await fetch(alphaVantageUrl);
+          if (!alphaVantageResponse.ok) {
+            console.error(`Alpha Vantage API error for quote ${symbol}: ${alphaVantageResponse.status} ${alphaVantageResponse.statusText}`);
+            return new Response(JSON.stringify({ error: `Failed to fetch stock quote from Alpha Vantage: ${alphaVantageResponse.status}` }), { status: alphaVantageResponse.status === 404 ? 404 : 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
           }
-          const data = await fmpResponse.json();
-          if (Array.isArray(data) && data.length > 0) {
-            const quote = data[0];
-            return new Response(JSON.stringify({
-              symbol: quote.symbol,
-              name: quote.name,
-              price: quote.price,
-              changesPercentage: quote.changesPercentage,
-              change: quote.change,
-              dayLow: quote.dayLow,
-              dayHigh: quote.dayHigh,
-              yearHigh: quote.yearHigh,
-              yearLow: quote.yearLow,
-              marketCap: quote.marketCap,
-              volume: quote.volume,
-              avgVolume: quote.avgVolume,
-              open: quote.open,
-              previousClose: quote.previousClose,
-              exchange: quote.exchange,
-            }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-          } else {
+          const data = await alphaVantageResponse.json();
+
+          // Alpha Vantage returns quote data under "Global Quote" key.
+          // It also returns an empty object {} if the symbol is not found, or an error message.
+          const quoteData = data['Global Quote'];
+
+          if (!quoteData || Object.keys(quoteData).length === 0) {
+            // Check for API error messages or "thank you" notes which might indicate an issue
+            if (data['Error Message']) {
+                console.warn(`Alpha Vantage API error for symbol ${symbol}: ${data['Error Message']}`);
+                return new Response(JSON.stringify({ error: `Alpha Vantage API error: ${data['Error Message']}` }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            }
+            if (data['Note'] && data['Note'].includes('Thank you for using Alpha Vantage')) {
+                 console.warn(`Alpha Vantage API note for symbol ${symbol} (likely invalid or premium endpoint): ${data['Note']}`);
+                 return new Response(JSON.stringify({ error: `No quote data found for symbol ${symbol}. API Note: ${data['Note']}` }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            }
+            console.warn(`No "Global Quote" data found for symbol ${symbol} or it was empty. Response:`, data);
             return new Response(JSON.stringify({ error: 'No quote data found for symbol or unexpected format.' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
           }
+
+          // Helper to safely parse float, returning null if NaN or input is invalid
+          const parseFloatSafe = (value) => {
+            const num = parseFloat(value);
+            return isNaN(num) ? null : num;
+          };
+          // Helper to safely parse int, returning null if NaN or input is invalid
+          const parseIntSafe = (value) => {
+            const num = parseInt(value, 10);
+            return isNaN(num) ? null : num;
+          };
+
+
+          const formattedQuote = {
+            symbol: quoteData['01. symbol'],
+            // name: undefined, // Omitted
+            price: parseFloatSafe(quoteData['05. price']),
+            changesPercentage: parseFloatSafe(quoteData['10. change percent'] ? quoteData['10. change percent'].replace('%', '') : null),
+            change: parseFloatSafe(quoteData['09. change']),
+            dayLow: parseFloatSafe(quoteData['04. low']),
+            dayHigh: parseFloatSafe(quoteData['03. high']),
+            // yearHigh: undefined, // Omitted
+            // yearLow: undefined, // Omitted
+            // marketCap: undefined, // Omitted
+            volume: parseIntSafe(quoteData['06. volume']),
+            // avgVolume: undefined, // Omitted
+            open: parseFloatSafe(quoteData['02. open']),
+            previousClose: parseFloatSafe(quoteData['08. previous close']),
+            // exchange: undefined, // Omitted
+          };
+
+          return new Response(JSON.stringify(formattedQuote), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         } catch (err) {
-          console.error(`Error fetching/processing FMP quote for ${symbol}:`, err);
+          console.error(`Error fetching/processing Alpha Vantage quote for ${symbol}:`, err);
           return new Response(JSON.stringify({ error: 'Internal server error while fetching stock quote.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
       }
       else if (url.pathname.startsWith('/api/stocks/historical/') && request.method === 'GET') {
         const symbol = url.pathname.split('/')[4];
-        const apiKey = env.FMP_API_KEY;
+        const apiKey = env.ALPHA_VANTAGE_API_KEY;
 
         if (!apiKey) {
-          console.error('FMP_API_KEY not configured');
-          return new Response(JSON.stringify({ error: 'Financial Modeling Prep API key not configured.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          console.error('ALPHA_VANTAGE_API_KEY not configured');
+          return new Response(JSON.stringify({ error: 'Alpha Vantage API key not configured.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
         if (!symbol) {
           return new Response(JSON.stringify({ error: 'Stock symbol missing in path.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
 
-        // Optional: Add &timeseries=365 for 1 year, or other values. Default is often 5 years.
-        const fmpUrl = `https://financialmodelingprep.com/api/v3/historical-price-full/${symbol}?apikey=${apiKey}`;
+        const alphaVantageUrl = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&outputsize=full&apikey=${apiKey}`;
         try {
-          const fmpResponse = await fetch(fmpUrl);
-          if (!fmpResponse.ok) {
-            console.error(`FMP API error for historical data ${symbol}: ${fmpResponse.status} ${fmpResponse.statusText}`);
-            return new Response(JSON.stringify({ error: `Failed to fetch historical data from FMP: ${fmpResponse.status}` }), { status: fmpResponse.status === 404 ? 404 : 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          const alphaVantageResponse = await fetch(alphaVantageUrl);
+          if (!alphaVantageResponse.ok) {
+            console.error(`Alpha Vantage API error for historical data ${symbol}: ${alphaVantageResponse.status} ${alphaVantageResponse.statusText}`);
+            return new Response(JSON.stringify({ error: `Failed to fetch historical data from Alpha Vantage: ${alphaVantageResponse.status}` }), { status: alphaVantageResponse.status === 404 ? 404 : 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
           }
-          const data = await fmpResponse.json();
-          // FMP historical data is usually an object like { symbol: "AAPL", historical: [...] }
-          if (data && Array.isArray(data.historical) && data.historical.length > 0) {
-            const historicalData = data.historical.map(item => ({
-              date: item.date,
-              close: item.close,
-              volume: item.volume,
-              // Add other fields if needed: open: item.open, high: item.high, low: item.low, change: item.change, changePercent: item.changePercent
-            }));
-            return new Response(JSON.stringify(historicalData), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-          } else if (Array.isArray(data) && data.length > 0 && data[0] && data[0].historical ) { // some symbols might return [{historical: []}]
-             const historicalData = data[0].historical.map(item => ({
-                date: item.date,
-                close: item.close,
-                volume: item.volume,
-             }));
-            return new Response(JSON.stringify(historicalData), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          const data = await alphaVantageResponse.json();
+          console.log('Alpha Vantage raw response:', JSON.stringify(data));
 
+          // Check for Alpha Vantage API error messages or notes
+          if (data['Error Message']) {
+            console.warn(`Alpha Vantage API error for symbol ${symbol}: ${data['Error Message']}`);
+            return new Response(JSON.stringify({ error: `Alpha Vantage API error: ${data['Error Message']}` }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
           }
-          else {
-            // Handle cases where FMP might return an empty object for a symbol it doesn't have full historical data for,
-            // or if `data.historical` is empty.
-            if (data && data.historical && data.historical.length === 0) {
-                 return new Response(JSON.stringify([]), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }); // Return empty array
-            }
-            console.warn(`No historical data array found for symbol ${symbol} or unexpected FMP format:`, data);
+          if (data['Note'] && data['Note'].includes('Thank you for using Alpha Vantage')) {
+            console.warn(`Alpha Vantage API note for symbol ${symbol} (likely invalid symbol or API limit): ${data['Note']}`);
+            // It's possible to get this note even with valid data if the API key is free and makes too many requests.
+            // However, if "Time Series (Daily)" is also missing, it's more likely an issue with the symbol or request.
+             if (!data['Time Series (Daily)']) {
+                return new Response(JSON.stringify({ error: `No historical data found for symbol ${symbol}. API Note: ${data['Note']}` }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+             }
+          }
+
+          if (data['Information'] && data['Information'].toLowerCase().includes('premium endpoint')) {
+            console.warn(`Alpha Vantage API information for symbol ${symbol}: ${data['Information']}`);
+            return new Response(JSON.stringify({ error: `Alpha Vantage API access error: ${data['Information']}` }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+
+          const timeSeriesData = data['Time Series (Daily)'];
+          if (!timeSeriesData || Object.keys(timeSeriesData).length === 0) {
+            console.warn(`No "Time Series (Daily)" data found for symbol ${symbol}. Response:`, data);
             return new Response(JSON.stringify({ error: 'No historical data found for symbol or unexpected format.' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
           }
+
+          // Helper to safely parse float, returning null if NaN or input is invalid
+          const parseFloatSafe = (value) => {
+            const num = parseFloat(value);
+            return isNaN(num) ? null : num;
+          };
+          // Helper to safely parse int, returning null if NaN or input is invalid
+          const parseIntSafe = (value) => {
+            const num = parseInt(value, 10);
+            return isNaN(num) ? null : num;
+          };
+
+          const historicalData = Object.entries(timeSeriesData).map(([date, dailyData]) => ({
+            date: date,
+            close: parseFloatSafe(dailyData['4. close']),
+            volume: parseIntSafe(dailyData['5. volume']),
+          })).sort((a, b) => new Date(a.date) - new Date(b.date)); // Sort by date ascending
+
+          return new Response(JSON.stringify(historicalData), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         } catch (err) {
-          console.error(`Error fetching/processing FMP historical for ${symbol}:`, err);
+          console.error(`Error fetching/processing Alpha Vantage historical for ${symbol}:`, err);
           return new Response(JSON.stringify({ error: 'Internal server error while fetching historical stock data.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
       }
