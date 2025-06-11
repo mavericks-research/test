@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 const BlockchainDataViewer = () => {
-  const [selectedBlockchain, setSelectedBlockchain] = useState('');
+  const [selectedBlockchain, setSelectedBlockchain] = useState('Ethereum');
   const [blockchainTokens, setBlockchainTokens] = useState([]);
   const [isLoadingBlockchainTokens, setIsLoadingBlockchainTokens] = useState(false);
 
@@ -76,7 +76,6 @@ const BlockchainDataViewer = () => {
           }}
           style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
         >
-          <option value="">Select Blockchain</option>
           <option value="Ethereum">Ethereum</option>
           <option value="Binance Smart Chain">Binance Smart Chain</option>
           <option value="Solana">Solana</option>
