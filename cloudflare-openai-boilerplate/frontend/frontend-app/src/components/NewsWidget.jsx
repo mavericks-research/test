@@ -6,6 +6,16 @@ const NewsWidget = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const getSentimentColor = (sentiment) => {
+    if (!sentiment) return 'inherit';
+    switch (sentiment.toLowerCase()) {
+      case 'positive': return 'green';
+      case 'negative': return 'red';
+      case 'neutral': return 'gray';
+      default: return 'inherit'; // For "N/A", "Error", etc.
+    }
+  };
+
   useEffect(() => {
     const fetchNews = async () => {
       setIsLoading(true);
@@ -86,7 +96,32 @@ const NewsWidget = () => {
           <p style={sourceStyle}>
             Source: {article.source} | Published: {new Date(article.publishedAt).toLocaleDateString()}
           </p>
-          <p style={descriptionStyle}>{article.description}</p>
+          {article.description && <p style={descriptionStyle}>{article.description}</p>}
+
+          {/* AI Summary and Sentiment Section */}
+          {article.aiSummary && article.aiSummary !== "Content too short to analyze." && article.aiSummary !== "Could not generate summary." && article.aiSummary !== "AI response format error." && article.aiSummary !== "OpenAI API error." && article.aiSummary !== "Processing exception." && article.aiSummary !== "No content from AI." && (
+            <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #eee' }}>
+              <p style={{ ...descriptionStyle, fontStyle: 'italic', color: '#555' }}>
+                <strong>AI Summary:</strong> {article.aiSummary}
+              </p>
+            </div>
+          )}
+          {article.sentiment && article.sentiment !== "N/A" && article.sentiment !== "Error" && (
+             <p style={{ fontSize: '0.9em', color: '#333', marginTop: '5px' }}>
+               Sentiment: <strong style={{ color: getSentimentColor(article.sentiment) }}>{article.sentiment}</strong>
+             </p>
+          )}
+          {(article.aiSummary === "Content too short to analyze." ||
+            article.aiSummary === "Could not generate summary." ||
+            article.aiSummary === "AI response format error." ||
+            article.aiSummary === "OpenAI API error." ||
+            article.aiSummary === "Processing exception." ||
+            article.aiSummary === "No content from AI.") &&
+            article.sentiment === "N/A" && (
+            <p style={{ fontSize: '0.9em', color: 'orange', marginTop: '5px' }}>
+              Note: AI analysis not available for this article. (Content too short or processing issue)
+            </p>
+          )}
         </div>
       ))}
     </div>
