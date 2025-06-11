@@ -1172,7 +1172,7 @@ Provide a concise, human-readable analysis.
           return new Response(JSON.stringify({ error: 'Stock symbol missing in path.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
 
-        const alphaVantageUrl = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=${symbol}&outputsize=full&apikey=${apiKey}`;
+        const alphaVantageUrl = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&outputsize=full&apikey=${apiKey}`;
         try {
           const alphaVantageResponse = await fetch(alphaVantageUrl);
           if (!alphaVantageResponse.ok) {
@@ -1180,6 +1180,7 @@ Provide a concise, human-readable analysis.
             return new Response(JSON.stringify({ error: `Failed to fetch historical data from Alpha Vantage: ${alphaVantageResponse.status}` }), { status: alphaVantageResponse.status === 404 ? 404 : 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
           }
           const data = await alphaVantageResponse.json();
+          console.log('Alpha Vantage raw response:', JSON.stringify(data));
 
           // Check for Alpha Vantage API error messages or notes
           if (data['Error Message']) {
@@ -1193,6 +1194,11 @@ Provide a concise, human-readable analysis.
              if (!data['Time Series (Daily)']) {
                 return new Response(JSON.stringify({ error: `No historical data found for symbol ${symbol}. API Note: ${data['Note']}` }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
              }
+          }
+
+          if (data['Information'] && data['Information'].toLowerCase().includes('premium endpoint')) {
+            console.warn(`Alpha Vantage API information for symbol ${symbol}: ${data['Information']}`);
+            return new Response(JSON.stringify({ error: `Alpha Vantage API access error: ${data['Information']}` }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
           }
 
           const timeSeriesData = data['Time Series (Daily)'];
@@ -1214,8 +1220,8 @@ Provide a concise, human-readable analysis.
 
           const historicalData = Object.entries(timeSeriesData).map(([date, dailyData]) => ({
             date: date,
-            close: parseFloatSafe(dailyData['5. adjusted close']),
-            volume: parseIntSafe(dailyData['6. volume']),
+            close: parseFloatSafe(dailyData['4. close']),
+            volume: parseIntSafe(dailyData['5. volume']),
           })).sort((a, b) => new Date(a.date) - new Date(b.date)); // Sort by date ascending
 
           return new Response(JSON.stringify(historicalData), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
