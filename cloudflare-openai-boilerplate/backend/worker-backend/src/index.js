@@ -874,7 +874,7 @@ Provide a concise, human-readable analysis.
         const naturalQuery = url.searchParams.get('q');
         const openaiApiKey = env.OPENAI_API_KEY;
         // Default to a model known for function calling, allow override via env
-        const openaiModelForSearch = env.OPENAI_MODEL_SEARCH || 'gpt-3.5-turbo-0613';
+        const openaiModelForSearch = env.OPENAI_MODEL_SEARCH || 'gpt-3.5-turbo';
         const fmpApiKey = env.FMP_API_KEY;
 
         if (!openaiApiKey) {

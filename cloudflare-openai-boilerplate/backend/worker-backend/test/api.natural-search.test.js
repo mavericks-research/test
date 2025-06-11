@@ -3,7 +3,7 @@ import worker from '../src/index'; // Assuming default export has a fetch method
 
 const TEST_OPENAI_API_KEY = 'test-openai-key';
 const TEST_FMP_API_KEY = 'test-fmp-key';
-const TEST_OPENAI_MODEL_SEARCH = 'gpt-3.5-turbo-test';
+const TEST_OPENAI_MODEL_SEARCH = 'gpt-3.5-turbo'; // Updated model
 
 // Helper to create a Request object like Cloudflare Workers do
 function createRequest(urlPath, method = 'GET', body = null) {
