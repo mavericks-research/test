@@ -492,17 +492,49 @@ Transaction Summary:
 `;
             }
             openAIPrompt += `
-Please provide a concise, human-readable summary of this wallet's activity. Focus on patterns, types of transactions, and potential insights.`;
+Please provide a concise, human-readable summary of this wallet's activity.
+In your summary, please also try to:
+- Identify any frequently interacting addresses (common counterparties).
+- Categorize the types of DApps or smart contracts primarily used (e.g., DeFi, NFT, DEX).
+- Highlight any transactions that are notably large or small compared to the wallet's typical activity.
+- Point out any patterns that might warrant a closer look for security reasons.
+Focus on patterns, types of transactions, and potential insights.`;
           } else {
             openAIPrompt = `Wallet Address: ${walletAddress}
-No transactions were found for this wallet. Please provide a general statement about what it means for a wallet to have no transaction history.`;
+No transactions were found for this wallet.
+Please provide a concise, human-readable summary of this wallet's activity.
+In your summary, please also try to:
+- Identify any frequently interacting addresses (common counterparties).
+- Categorize the types of DApps or smart contracts primarily used (e.g., DeFi, NFT, DEX).
+- Highlight any transactions that are notably large or small compared to the wallet's typical activity.
+- Point out any patterns that might warrant a closer look for security reasons.
+Focus on patterns, types of transactions, and potential insights.
+Please also provide a general statement about what it means for a wallet to have no transaction history.`;
           }
 
+          let openaiUrl = 'https://api.openai.com/v1/completions';
+          let openaiPayload;
 
-          const openaiResponse = await fetch('https://api.openai.com/v1/completions', {
+          const chatModels = ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo'];
+          if (OPENAI_MODEL && chatModels.includes(OPENAI_MODEL)) {
+            openaiUrl = 'https://api.openai.com/v1/chat/completions';
+            openaiPayload = {
+              model: OPENAI_MODEL,
+              messages: [{ "role": "user", "content": openAIPrompt }],
+              max_tokens: 250,
+            };
+          } else {
+            openaiPayload = {
+              model: OPENAI_MODEL,
+              prompt: openAIPrompt,
+              max_tokens: 250,
+            };
+          }
+
+          const openaiResponse = await fetch(openaiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.OPENAI_API_KEY}` },
-            body: JSON.stringify({ model: OPENAI_MODEL, prompt: openAIPrompt, max_tokens: 250 }),
+            body: JSON.stringify(openaiPayload),
           });
 
           if (!openaiResponse.ok) {
@@ -517,11 +549,39 @@ No transactions were found for this wallet. Please provide a general statement a
 
         } else if (etherscanData.status === "0") {
           const openAIPrompt = `Wallet Address: ${walletAddress}
-No transactions were found for this wallet according to Etherscan (${etherscanData.message || etherscanData.result}). Please provide a brief, general statement about what it means for a new or unused Ethereum wallet to have no transaction history.`;
-          const openaiResponse = await fetch('https://api.openai.com/v1/completions', {
+No transactions were found for this wallet according to Etherscan (${etherscanData.message || etherscanData.result}).
+Please provide a concise, human-readable summary of this wallet's activity.
+In your summary, please also try to:
+- Identify any frequently interacting addresses (common counterparties).
+- Categorize the types of DApps or smart contracts primarily used (e.g., DeFi, NFT, DEX).
+- Highlight any transactions that are notably large or small compared to the wallet's typical activity.
+- Point out any patterns that might warrant a closer look for security reasons.
+Focus on patterns, types of transactions, and potential insights.
+Please also provide a brief, general statement about what it means for a new or unused Ethereum wallet to have no transaction history.`;
+
+          let openaiUrl = 'https://api.openai.com/v1/completions';
+          let openaiPayload;
+
+          const chatModels = ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo'];
+          if (OPENAI_MODEL && chatModels.includes(OPENAI_MODEL)) {
+            openaiUrl = 'https://api.openai.com/v1/chat/completions';
+            openaiPayload = {
+              model: OPENAI_MODEL,
+              messages: [{ "role": "user", "content": openAIPrompt }],
+              max_tokens: 150,
+            };
+          } else {
+            openaiPayload = {
+              model: OPENAI_MODEL,
+              prompt: openAIPrompt,
+              max_tokens: 150,
+            };
+          }
+
+          const openaiResponse = await fetch(openaiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.OPENAI_API_KEY}` },
-            body: JSON.stringify({ model: OPENAI_MODEL, prompt: openAIPrompt, max_tokens: 150 }),
+            body: JSON.stringify(openaiPayload),
           });
 
           if (!openaiResponse.ok) {
@@ -809,6 +869,186 @@ Provide a concise, human-readable analysis.
       }
       // --- End of New Route for Global Market Data ---
 
+      // --- New Route for Natural Language Stock Search ---
+      else if (url.pathname === '/api/stocks/natural-search' && request.method === 'GET') {
+        const naturalQuery = url.searchParams.get('q');
+        const openaiApiKey = env.OPENAI_API_KEY;
+        // Default to a model known for function calling, allow override via env
+        const openaiModelForSearch = env.OPENAI_MODEL_SEARCH || 'gpt-3.5-turbo';
+        const fmpApiKey = env.FMP_API_KEY;
+
+        if (!openaiApiKey) {
+          console.error('OPENAI_API_KEY not configured');
+          return new Response(JSON.stringify({ error: 'OpenAI API key is not configured.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+        if (!fmpApiKey) {
+          console.error('FMP_API_KEY not configured');
+          return new Response(JSON.stringify({ error: 'FMP API key is not configured.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+        if (!naturalQuery) {
+          return new Response(JSON.stringify({ error: 'Missing "q" query parameter for natural language search.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+
+        const financialQueryFunction = {
+          name: "extract_financial_criteria",
+          description: "Extracts financial criteria from a user's natural language query for stock searching.",
+          parameters: {
+            type: "object",
+            properties: {
+              sector: {
+                type: "string",
+                description: "The stock sector, e.g., Technology, Healthcare, Energy.",
+              },
+              pe_ratio_min: {
+                type: "number",
+                description: "The minimum desired P/E ratio.",
+              },
+              pe_ratio_max: {
+                type: "number",
+                description: "The maximum desired P/E ratio.",
+              },
+              market_cap_min: {
+                type: "number",
+                description: "The minimum desired market capitalization in USD, e.g., 1000000000 for $1 billion.",
+              },
+              market_cap_max: {
+                type: "number",
+                description: "The maximum desired market capitalization in USD, e.g., 50000000000 for $50 billion.",
+              },
+              dividend_yield_min: {
+                  type: "number",
+                  description: "The minimum desired dividend yield in percentage, e.g., 3 for 3%.",
+              },
+              dividend_yield_max: {
+                  type: "number",
+                  description: "The maximum desired dividend yield in percentage, e.g., 10 for 10%."
+              },
+              keywords: {
+                type: "array",
+                items: { type: "string" },
+                description: "Any specific keywords or company names mentioned, e.g., AI, renewable energy.",
+              },
+            },
+            required: [], // Make parameters optional initially, OpenAI will only fill what it finds.
+          },
+        };
+
+        try {
+          const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${openaiApiKey}`,
+            },
+            body: JSON.stringify({
+              model: openaiModelForSearch,
+              messages: [
+                { role: "system", content: "You are a financial query parser. Extract stock screening criteria from the user's query using the provided function." },
+                { role: "user", content: naturalQuery }
+              ],
+              functions: [financialQueryFunction],
+              function_call: { name: "extract_financial_criteria" }, // Force the function call
+            }),
+          });
+
+          if (!openaiResponse.ok) {
+            const errorText = await openaiResponse.text();
+            console.error('OpenAI API Error for natural search:', errorText);
+            return new Response(JSON.stringify({ error: `OpenAI API request failed: ${openaiResponse.status} ${errorText}` }), {
+              status: openaiResponse.status,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          const openaiData = await openaiResponse.json();
+          let searchCriteria = {};
+          if (openaiData.choices && openaiData.choices[0].message.function_call && openaiData.choices[0].message.function_call.arguments) {
+            searchCriteria = JSON.parse(openaiData.choices[0].message.function_call.arguments);
+          } else {
+            // Fallback or error if function call didn't happen as expected
+            console.warn('OpenAI did not return a function call or arguments. Response:', openaiData);
+            // For now, proceed with empty criteria, which might result in a broad FMP search or no search.
+            // A more robust solution might try a non-function prompt or return an error.
+             return new Response(JSON.stringify({ error: 'Could not parse financial criteria using OpenAI.', openAIResponse: openaiData }), {
+                status: 500, // Or a more specific error like 502 Bad Gateway if OpenAI is the issue
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          // Construct FMP API query
+          // Base URL for FMP stock screener
+          let fmpScreenerUrl = `https://financialmodelingprep.com/api/v3/stock-screener?apikey=${fmpApiKey}`;
+
+          // Map extracted criteria to FMP parameters (simplified)
+          if (searchCriteria.sector) {
+            fmpScreenerUrl += `&sector=${encodeURIComponent(searchCriteria.sector)}`;
+          }
+          if (searchCriteria.pe_ratio_min) {
+            fmpScreenerUrl += `&priceEarningsRatioTTMMoreThan=${searchCriteria.pe_ratio_min}`;
+          }
+          if (searchCriteria.pe_ratio_max) {
+            fmpScreenerUrl += `&priceEarningsRatioTTMLessThan=${searchCriteria.pe_ratio_max}`;
+          }
+          if (searchCriteria.market_cap_min) {
+            fmpScreenerUrl += `&marketCapMoreThan=${searchCriteria.market_cap_min}`;
+          }
+          if (searchCriteria.market_cap_max) {
+            fmpScreenerUrl += `&marketCapLowerThan=${searchCriteria.market_cap_max}`;
+          }
+          if (searchCriteria.dividend_yield_min) {
+              // FMP uses 'dividendYieldMoreThan' but expects the raw decimal (e.g., 0.03 for 3%)
+              // OpenAI function call asks for percentage (e.g., 3 for 3%)
+              fmpScreenerUrl += `&dividendYieldMoreThan=${searchCriteria.dividend_yield_min / 100}`;
+          }
+          if (searchCriteria.dividend_yield_max) {
+              fmpScreenerUrl += `&dividendYieldLessThan=${searchCriteria.dividend_yield_max / 100}`;
+          }
+          // Note: FMP screener is powerful but has many specific params.
+          // Keywords are harder to directly map to FMP screener which is more field-based.
+          // A general keyword search might use /api/v3/search?query=...&apikey=... but that's different from screening.
+          // For now, keywords from OpenAI are not directly used in FMP screener unless they match a sector or other criteria.
+          // We can add a limit to the number of results, e.g., &limit=50
+          fmpScreenerUrl += `&limit=50`;
+
+
+          const fmpResponse = await fetch(fmpScreenerUrl);
+          if (!fmpResponse.ok) {
+            const fmpErrorText = await fmpResponse.text();
+            console.error('FMP API Error for stock screener:', fmpErrorText);
+            return new Response(JSON.stringify({ error: `FMP API request failed: ${fmpResponse.status} ${fmpErrorText}`, fmpQuery: fmpScreenerUrl }), {
+              status: fmpResponse.status,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          const fmpData = await fmpResponse.json();
+          return new Response(JSON.stringify({
+              openAICriteria: searchCriteria, // Return what OpenAI extracted for debugging/info
+              fmpQuery: fmpScreenerUrl, // Return the query sent to FMP
+              fmpResults: fmpData
+          }), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+
+        } catch (error) {
+          console.error('Error in /api/stocks/natural-search:', error);
+          // Check if error is JSON parsing error from function call arguments
+          if (error instanceof SyntaxError && error.message.includes("function_call.arguments")) {
+             console.error('Failed to parse OpenAI function call arguments:', error);
+             return new Response(JSON.stringify({ error: 'Failed to parse financial criteria from OpenAI response.' }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+          return new Response(JSON.stringify({ error: `An unexpected error occurred: ${error.message}` }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+      // --- End of Natural Language Stock Search Route ---
+
       // --- Stock Market API Routes ---
       else if (url.pathname.startsWith('/api/stocks/profile/') && request.method === 'GET') {
         const symbol = url.pathname.split('/')[4];
@@ -956,63 +1196,142 @@ Provide a concise, human-readable analysis.
 
       // --- News API Route ---
       else if (url.pathname === '/api/news' && request.method === 'GET') {
-        const apiKey = env.NEWS_API_KEY;
-        if (!apiKey) {
+        const newsApiKey = env.NEWS_API_KEY;
+        const openaiApiKey = env.OPENAI_API_KEY;
+        // Use a chat model for summarization/sentiment. Fallback to OPENAI_MODEL or a default.
+        const openaiModelForNews = (env.OPENAI_MODEL && env.OPENAI_MODEL.startsWith('gpt-')) ? env.OPENAI_MODEL : 'gpt-3.5-turbo';
+
+        if (!newsApiKey) {
           console.error('NEWS_API_KEY not configured');
           return new Response(JSON.stringify({ error: 'News API service is not configured by the server administrator.' }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
+        if (!openaiApiKey) {
+          console.error('OPENAI_API_KEY not configured for news summarization');
+          return new Response(JSON.stringify({ error: 'OpenAI API key is not configured for news processing.' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
 
-        // Placeholder: User needs to replace this with their chosen News API endpoint and parameters.
-        // Example for NewsAPI.org (requires user to have an account and key)
-        const newsApiUrl = `https://newsapi.org/v2/top-headlines?country=us&category=business&pageSize=10&apiKey=${apiKey}`;
-        // Example for GNews (requires user to have an account and key)
-        // const newsApiUrl = `https://gnews.io/api/v4/top-headlines?category=business&lang=en&max=5&apikey=${apiKey}`;
-
+        const newsApiUrl = `https://newsapi.org/v2/top-headlines?country=us&category=business&pageSize=10&apiKey=${newsApiKey}`; // pageSize=10 to limit article count for now
 
         try {
           const newsResponse = await fetch(newsApiUrl, {
-            headers: {
-              'User-Agent': 'DashboardApp/1.0 (Cloudflare Worker)' // Added User-Agent header
-            }
+            headers: { 'User-Agent': 'DashboardApp/1.0 (Cloudflare Worker)' }
           });
+
           if (!newsResponse.ok) {
             const errorText = await newsResponse.text();
             console.error(`External News API error: ${newsResponse.status} ${newsResponse.statusText}`, errorText);
             return new Response(JSON.stringify({ error: `Failed to fetch news from external source: ${newsResponse.status}` }), {
-              status: 502, // Bad Gateway
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
           }
           const newsData = await newsResponse.json();
-
-          // Adapt this part based on the actual structure of the chosen News API's response
-          let articles = [];
-          if (newsData.articles) { // Common structure for many news APIs
-              articles = newsData.articles.map(article => ({
-                  title: article.title,
-                  description: article.description,
-                  url: article.url,
-                  source: article.source ? article.source.name : 'Unknown Source',
-                  publishedAt: article.publishedAt,
-                  imageUrl: article.urlToImage // if available
-              }));
+          let rawArticles = [];
+          if (newsData.articles) {
+            rawArticles = newsData.articles.map(article => ({
+              title: article.title,
+              description: article.description, // This will be used as content for OpenAI
+              content: article.content, // Some APIs provide full content here
+              url: article.url,
+              source: article.source ? article.source.name : 'Unknown Source',
+              publishedAt: article.publishedAt,
+              imageUrl: article.urlToImage,
+            }));
           } else {
-              // Handle other possible structures or log if unexpected
-              console.warn("News API response did not contain an 'articles' array. Data:", newsData);
-              // Depending on the API, you might need to parse a different structure.
-              // For now, returning empty if 'articles' is not found.
+            console.warn("News API response did not contain an 'articles' array. Data:", newsData);
           }
 
-          return new Response(JSON.stringify(articles), {
+          const processedArticles = [];
+          for (const article of rawArticles) {
+            const contentToAnalyze = article.description || article.content || ""; // Prefer description or content
+            let aiSummary = "Content too short to analyze.";
+            let sentiment = "N/A";
+
+            if (contentToAnalyze.length < 50) { // Minimum length for meaningful analysis
+                 processedArticles.push({ ...article, aiSummary, sentiment });
+                 continue;
+            }
+
+            // Truncate content if too long to avoid excessive token usage
+            const maxContentLength = 2000; // Characters, roughly maps to tokens
+            const truncatedContent = contentToAnalyze.substring(0, maxContentLength);
+
+            const openAIPrompt = `
+Article Title: ${article.title}
+Article Snippet/Content: ${truncatedContent}
+
+Based on the above, please provide:
+1. A very concise summary (1-2 sentences).
+2. The overall sentiment (Positive, Negative, or Neutral).
+
+Return your response as a JSON object with keys "summary" and "sentiment".
+For example:
+{
+  "summary": "...",
+  "sentiment": "Positive"
+}`;
+            try {
+              const openaiApiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${openaiApiKey}`,
+                },
+                body: JSON.stringify({
+                  model: openaiModelForNews,
+                  messages: [{ role: "user", content: openAIPrompt }],
+                  // Attempt to use JSON response mode if supported by the model (e.g. gpt-3.5-turbo-1106+)
+                  // response_format: { type: "json_object" }, // Uncomment if model explicitly supports it
+                }),
+              });
+
+              if (openaiApiResponse.ok) {
+                const openaiJson = await openaiApiResponse.json();
+                // Check if response_format: { type: "json_object" } was used and successful
+                let extractedText = openaiJson.choices?.[0]?.message?.content;
+
+                if (extractedText) {
+                    try {
+                        // Attempt to parse the string as JSON
+                        const parsedJson = JSON.parse(extractedText);
+                        aiSummary = parsedJson.summary || "Could not extract summary.";
+                        sentiment = parsedJson.sentiment || "Could not extract sentiment.";
+                    } catch (parseError) {
+                        console.error(`Error parsing OpenAI JSON response for article "${article.title}":`, parseError, "Raw text:", extractedText);
+                        aiSummary = "AI response format error.";
+                        sentiment = "Error";
+                    }
+                } else {
+                    aiSummary = "No content from AI.";
+                    sentiment = "Error";
+                }
+
+              } else {
+                const errorText = await openaiApiResponse.text();
+                console.error(`OpenAI API Error for article "${article.title}": ${openaiApiResponse.status} ${errorText}`);
+                aiSummary = "OpenAI API error.";
+                sentiment = "Error";
+              }
+            } catch (e) {
+              console.error(`Exception during OpenAI call for article "${article.title}":`, e);
+              aiSummary = "Processing exception.";
+              sentiment = "Error";
+            }
+            processedArticles.push({ ...article, aiSummary, sentiment });
+          }
+
+          return new Response(JSON.stringify(processedArticles), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
 
         } catch (err) {
-          console.error('Error fetching or processing news data:', err);
-          return new Response(JSON.stringify({ error: 'Internal server error while fetching news.' }), {
+          console.error('Error fetching or processing news data with OpenAI:', err);
+          return new Response(JSON.stringify({ error: 'Internal server error while fetching and processing news.' }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
@@ -1024,7 +1343,7 @@ Provide a concise, human-readable analysis.
       else {
         let supportedEndpoints = 'GET /api/crypto/current, GET /api/crypto/historical, GET /api/crypto/coinslist, GET /api/crypto/enriched-historical-data, GET /api/crypto/transaction-analysis, POST / (for Etherscan/OpenAI), GET /api/crypto/coins-by-blockchain, GET /api/crypto/market-chart/:coinId?days=:days, GET /api/crypto/trending, GET /api/crypto/global';
         supportedEndpoints += ', POST /api/budgets, GET /api/budgets, GET /api/budgets/:id, PUT /api/budgets/:id, DELETE /api/budgets/:id';
-        supportedEndpoints += ', GET /api/stocks/profile/:symbol, GET /api/stocks/quote/:symbol, GET /api/stocks/historical/:symbol';
+        supportedEndpoints += ', GET /api/stocks/natural-search, GET /api/stocks/profile/:symbol, GET /api/stocks/quote/:symbol, GET /api/stocks/historical/:symbol';
         supportedEndpoints += ', GET /api/news'; // Added news endpoint
         return new Response(`Not Found. Supported endpoints: ${supportedEndpoints}`, { status: 404, headers: corsHeaders });
       }
