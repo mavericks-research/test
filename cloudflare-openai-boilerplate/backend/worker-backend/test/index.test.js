@@ -334,4 +334,209 @@ describe('index.js (Worker Integration Tests)', () => {
       });
     });
   });
+
+  describe('Stock API Routes (Alpha Vantage)', () => {
+    const mockAlphaVantageApiKey = 'test-alpha-vantage-key';
+    const mockEnvWithAlphaVantage = { ...mockEnv, ALPHA_VANTAGE_API_KEY: mockAlphaVantageApiKey };
+
+    // Helper to create a Request object for stock routes
+    const createStockRequest = (path) => ({
+      method: 'GET',
+      url: new URL(`http://localhost${path}`),
+      headers: new Headers(),
+    });
+
+    describe('/api/stocks/profile/:symbol', () => {
+      it('should return profile data for a valid symbol', async () => {
+        const mockSymbol = 'TESTSTOCK';
+        const mockAlphaVantageResponse = {
+          "Symbol": mockSymbol,
+          "Name": "Test Stock Inc.",
+          "Description": "A test company for API mocking.",
+          "Industry": "Technology",
+          "Sector": "Software",
+          "MarketCapitalization": "1000000000",
+          "Exchange": "NASDAQ",
+          "Currency": "USD"
+        };
+        global.fetch.mockResolvedValueOnce(new Response(JSON.stringify(mockAlphaVantageResponse), {
+          headers: { 'Content-Type': 'application/json' },
+        }));
+
+        const request = createStockRequest(`/api/stocks/profile/${mockSymbol}`);
+        const response = await worker.fetch(request, mockEnvWithAlphaVantage, {});
+        const jsonResponse = await response.json();
+
+        expect(response.status).toBe(200);
+        expect(jsonResponse.symbol).toBe(mockSymbol);
+        expect(jsonResponse.companyName).toBe("Test Stock Inc.");
+        expect(jsonResponse.description).toBe("A test company for API mocking.");
+        expect(jsonResponse.industry).toBe("Technology");
+        expect(jsonResponse.sector).toBe("Software");
+        expect(jsonResponse.marketCap).toBe(1000000000);
+        expect(jsonResponse.exchangeShortName).toBe("NASDAQ");
+        expect(jsonResponse.currency).toBe("USD");
+        expect(jsonResponse.image).toBeUndefined();
+        expect(jsonResponse.website).toBeUndefined();
+
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+        const fetchCall = global.fetch.mock.calls[0][0];
+        expect(fetchCall).toContain(`https://www.alphavantage.co/query?function=OVERVIEW&symbol=${mockSymbol}&apikey=${mockAlphaVantageApiKey}`);
+      });
+
+      it('should return 404 if Alpha Vantage returns an error message for profile', async () => {
+        const mockSymbol = 'UNKNOWN';
+        const mockAlphaVantageError = { "Error Message": "Invalid API call or symbol." };
+        global.fetch.mockResolvedValueOnce(new Response(JSON.stringify(mockAlphaVantageError), {
+          status: 200, // AV sometimes returns 200 with error in body
+          headers: { 'Content-Type': 'application/json' },
+        }));
+
+        const request = createStockRequest(`/api/stocks/profile/${mockSymbol}`);
+        const response = await worker.fetch(request, mockEnvWithAlphaVantage, {});
+        const jsonResponse = await response.json();
+
+        expect(response.status).toBe(404); // Worker should translate this
+        expect(jsonResponse.error).toContain(`No profile data found for symbol ${mockSymbol} or API error: ${mockAlphaVantageError["Error Message"]}`);
+      });
+       it('should return 404 if Alpha Vantage returns a "Note" for profile (e.g. rate limit)', async () => {
+        const mockSymbol = 'TESTNOTE';
+        const mockAlphaVantageNote = { "Note": "Thank you for using Alpha Vantage! Our standard API call frequency is 25 calls per day." };
+        global.fetch.mockResolvedValueOnce(new Response(JSON.stringify(mockAlphaVantageNote), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }));
+
+        const request = createStockRequest(`/api/stocks/profile/${mockSymbol}`);
+        const response = await worker.fetch(request, mockEnvWithAlphaVantage, {});
+        const jsonResponse = await response.json();
+
+        expect(response.status).toBe(404);
+        expect(jsonResponse.error).toContain(`No substantive profile data found for symbol ${mockSymbol}. API Note: ${mockAlphaVantageNote.Note}`);
+      });
+    });
+
+    describe('/api/stocks/quote/:symbol', () => {
+      it('should return quote data for a valid symbol', async () => {
+        const mockSymbol = 'TESTQUOTE';
+        const mockAlphaVantageResponse = {
+          "Global Quote": {
+            "01. symbol": mockSymbol,
+            "02. open": "150.00",
+            "03. high": "152.00",
+            "04. low": "148.00",
+            "05. price": "151.00",
+            "06. volume": "100000",
+            "08. previous close": "149.00",
+            "09. change": "2.00",
+            "10. change percent": "1.3423%"
+          }
+        };
+        global.fetch.mockResolvedValueOnce(new Response(JSON.stringify(mockAlphaVantageResponse), {
+          headers: { 'Content-Type': 'application/json' },
+        }));
+
+        const request = createStockRequest(`/api/stocks/quote/${mockSymbol}`);
+        const response = await worker.fetch(request, mockEnvWithAlphaVantage, {});
+        const jsonResponse = await response.json();
+
+        expect(response.status).toBe(200);
+        expect(jsonResponse.symbol).toBe(mockSymbol);
+        expect(jsonResponse.price).toBe(151.00);
+        expect(jsonResponse.changesPercentage).toBe(1.3423);
+        expect(jsonResponse.change).toBe(2.00);
+        expect(jsonResponse.dayLow).toBe(148.00);
+        expect(jsonResponse.dayHigh).toBe(152.00);
+        expect(jsonResponse.volume).toBe(100000);
+        expect(jsonResponse.open).toBe(150.00);
+        expect(jsonResponse.previousClose).toBe(149.00);
+        expect(jsonResponse.name).toBeUndefined();
+        expect(jsonResponse.yearHigh).toBeUndefined();
+
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+        const fetchCall = global.fetch.mock.calls[0][0];
+        expect(fetchCall).toContain(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${mockSymbol}&apikey=${mockAlphaVantageApiKey}`);
+      });
+
+      it('should return 404 if "Global Quote" is empty or symbol not found', async () => {
+        const mockSymbol = 'NOQUOTE';
+        const mockAlphaVantageResponse = { "Global Quote": {} }; // Empty quote object
+        global.fetch.mockResolvedValueOnce(new Response(JSON.stringify(mockAlphaVantageResponse), {
+          headers: { 'Content-Type': 'application/json' },
+        }));
+
+        const request = createStockRequest(`/api/stocks/quote/${mockSymbol}`);
+        const response = await worker.fetch(request, mockEnvWithAlphaVantage, {});
+        const jsonResponse = await response.json();
+
+        expect(response.status).toBe(404);
+        expect(jsonResponse.error).toBe('No quote data found for symbol or unexpected format.');
+      });
+    });
+
+    describe('/api/stocks/historical/:symbol', () => {
+      it('should return historical data for a valid symbol', async () => {
+        const mockSymbol = 'TESTHIST';
+        const mockAlphaVantageResponse = {
+          "Meta Data": { "2. Symbol": mockSymbol },
+          "Time Series (Daily)": {
+            "2023-01-02": { "5. adjusted close": "130.00", "6. volume": "200000" },
+            "2023-01-01": { "5. adjusted close": "128.50", "6. volume": "150000" }, // Ensure sorting
+          }
+        };
+        global.fetch.mockResolvedValueOnce(new Response(JSON.stringify(mockAlphaVantageResponse), {
+          headers: { 'Content-Type': 'application/json' },
+        }));
+
+        const request = createStockRequest(`/api/stocks/historical/${mockSymbol}`);
+        const response = await worker.fetch(request, mockEnvWithAlphaVantage, {});
+        const jsonResponse = await response.json();
+
+        expect(response.status).toBe(200);
+        expect(Array.isArray(jsonResponse)).toBe(true);
+        expect(jsonResponse.length).toBe(2);
+        expect(jsonResponse[0].date).toBe("2023-01-01");
+        expect(jsonResponse[0].close).toBe(128.50);
+        expect(jsonResponse[0].volume).toBe(150000);
+        expect(jsonResponse[1].date).toBe("2023-01-02");
+        expect(jsonResponse[1].close).toBe(130.00);
+        expect(jsonResponse[1].volume).toBe(200000);
+
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+        const fetchCall = global.fetch.mock.calls[0][0];
+        expect(fetchCall).toContain(`https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=${mockSymbol}&outputsize=full&apikey=${mockAlphaVantageApiKey}`);
+      });
+
+      it('should return 404 if "Time Series (Daily)" is missing', async () => {
+        const mockSymbol = 'NOHIST';
+        const mockAlphaVantageResponse = { "Meta Data": { "2. Symbol": mockSymbol } }; // Missing time series
+        global.fetch.mockResolvedValueOnce(new Response(JSON.stringify(mockAlphaVantageResponse), {
+          headers: { 'Content-Type': 'application/json' },
+        }));
+
+        const request = createStockRequest(`/api/stocks/historical/${mockSymbol}`);
+        const response = await worker.fetch(request, mockEnvWithAlphaVantage, {});
+        const jsonResponse = await response.json();
+
+        expect(response.status).toBe(404);
+        expect(jsonResponse.error).toBe('No historical data found for symbol or unexpected format.');
+      });
+
+       it('should return 502 if Alpha Vantage returns an "Error Message" for historical', async () => {
+        const mockSymbol = 'ERRORHIST';
+        const mockAlphaVantageError = { "Error Message": "API limit reached or invalid symbol." };
+        global.fetch.mockResolvedValueOnce(new Response(JSON.stringify(mockAlphaVantageError), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }));
+
+        const request = createStockRequest(`/api/stocks/historical/${mockSymbol}`);
+        const response = await worker.fetch(request, mockEnvWithAlphaVantage, {});
+        const jsonResponse = await response.json();
+
+        expect(response.status).toBe(502); // Worker should translate this to an upstream error
+        expect(jsonResponse.error).toContain(`Alpha Vantage API error: ${mockAlphaVantageError["Error Message"]}`);
+      });
+    });
+  });
 });
