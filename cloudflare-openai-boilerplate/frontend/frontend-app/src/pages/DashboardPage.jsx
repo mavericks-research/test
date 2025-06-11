@@ -1,23 +1,24 @@
 import React, { useState, useEffect, useContext } from 'react'; // Added useState for WalletAnalyzer, useEffect for stock data, useContext for settings
 import { SettingsContext } from '../contexts/SettingsContext.jsx'; // Import SettingsContext
 import CryptoDisplay from '../components/CryptoDisplay'; // Import CryptoDisplay
-import StockSelector from '../components/StockSelector';
-import StockQuoteDisplay from '../components/StockQuoteDisplay';
-import StockHistoricalChart from '../components/StockHistoricalChart';
 import BlockchainDataViewer from '../components/BlockchainDataViewer';
 import TrendingCoins from '../components/TrendingCoins'; // New import
 import GlobalMarketOverview from '../components/GlobalMarketOverview'; // New import
 import NewsWidget from '../components/NewsWidget'; // Import NewsWidget
-import { getStockProfile, getStockQuote, getStockHistoricalData } from '../services/stockService';
 import './DashboardPage.css'; // Import the CSS file
 // Removed NavigationBar import
 
 function WalletAnalyzer({ workerUrl }) {
-  const [walletAddress, setWalletAddress] = useState('');
+  const [walletAddress, setWalletAddress] = useState('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045');
   const [summary, setSummary] = useState('');
   const [transactions, setTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+
+  useEffect(() => {
+    handleSubmit({ preventDefault: () => {} });
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -93,20 +94,6 @@ function DashboardPage({ workerUrl }) {
   console.log("Dashboard displaying with settings:", settings);
   console.log("Current currency from context:", settings.currency);
 
-  // Stock Market Data States
-  const [selectedStockSymbol, setSelectedStockSymbol] = useState('');
-  const [stockProfileData, setStockProfileData] = useState(null);
-  const [stockQuoteData, setStockQuoteData] = useState(null);
-  const [stockHistoricalData, setStockHistoricalData] = useState(null);
-  const [isStockLoading, setIsStockLoading] = useState(false);
-  const [stockError, setStockError] = useState(null);
-
-  // Natural Language Stock Search States
-  const [naturalSearchQuery, setNaturalSearchQuery] = useState('');
-  const [naturalSearchResults, setNaturalSearchResults] = useState([]);
-  const [isNaturalSearchLoading, setIsNaturalSearchLoading] = useState(false);
-  const [naturalSearchError, setNaturalSearchError] = useState(null);
-  const [openAICriteria, setOpenAICriteria] = useState(null);
 
   const containerStyle = {
     border: '2px solid var(--color-accent)',
