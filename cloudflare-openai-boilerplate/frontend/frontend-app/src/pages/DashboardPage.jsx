@@ -203,7 +203,30 @@ function DashboardPage({ workerUrl }) {
         <p>Current Data Refresh Interval: {settings.dataRefreshInterval}</p>
       </div>
 
-      <div className="stock-section">
+      
+
+      <div className="dashboard-grid">
+        <div className="widget">
+          <NewsWidget />
+        </div>
+
+        <div className="widget">
+          <GlobalMarketOverview />
+          <hr />
+          <TrendingCoins />
+          <hr />
+          <CryptoDisplay currency={settings.currency} />
+          <hr />
+          <WalletAnalyzer workerUrl={workerUrl} />
+        </div>
+
+        <div className="widget">
+          <BlockchainDataViewer />
+        </div>
+      </div>
+
+
+<div className="stock-section">
         <h2>Stock Market Data</h2>
         <StockSelector onSymbolSubmit={handleSymbolSubmit} />
 
@@ -288,27 +311,6 @@ function DashboardPage({ workerUrl }) {
         )}
       </div>
       {/* End of Natural Language Stock Search Section */}
-
-      <div className="dashboard-grid">
-        <div className="widget">
-          <NewsWidget />
-        </div>
-
-        <div className="widget">
-          <GlobalMarketOverview />
-          <hr />
-          <TrendingCoins />
-          <hr />
-          <CryptoDisplay currency={settings.currency} />
-          <hr />
-          <WalletAnalyzer workerUrl={workerUrl} />
-        </div>
-
-        <div className="widget">
-          <BlockchainDataViewer />
-        </div>
-      </div>
-
 
     </div>
   );
