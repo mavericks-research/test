@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 function NavigationBar({ isNavVisible, onToggleNav }) {
 
   const navStyle = {
-    background: '#0f0f0f', // Obsidian background
+    background: '#0f0f0f',
     padding: '10px',
     position: 'fixed',
     left: 0,
@@ -13,11 +13,12 @@ function NavigationBar({ isNavVisible, onToggleNav }) {
     width: isNavVisible ? '250px' : '0px',
     transition: 'width 0.3s ease',
     zIndex: 1000,
-    display: 'flex',
+    display: isNavVisible ? 'flex' : 'none',  // <-- toggle display
     flexDirection: 'column',
     alignItems: 'center',
-    borderLeft: '2px solid #1ac0ff', // Laser blue accent border
+    borderLeft: '2px solid #1ac0ff',
   };
+
 
   const toggleButtonStyle = {
     background: '#1ac0ff',
