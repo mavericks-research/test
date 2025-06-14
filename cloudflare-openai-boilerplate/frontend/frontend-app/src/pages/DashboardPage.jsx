@@ -128,9 +128,10 @@ function DashboardPage({ workerUrl }) {
       <div className="dashboard-grid">
         <div className="widget">
           <NewsWidget />
-        </div>
-        <div className="widget">
+
+          <hr />
           <CryptoNewsWidget />
+
         </div>
 
         <div className="widget">
