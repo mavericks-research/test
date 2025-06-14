@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getCoinDetails, getCoinMarketChart } from '../services/cryptoService';
+import { getCoinDetails, getCoinMarketChart } from '../../services/cryptoService';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const CoinDetailsPage = () => {
