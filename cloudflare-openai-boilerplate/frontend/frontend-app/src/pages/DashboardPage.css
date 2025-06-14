@@ -15,16 +15,16 @@
 }
 
 .dashboard-container {
-  padding: 20px;
-  box-sizing: border-box;
-  max-width: 100%;
+  display: flex;
+  height: 100vh;        /* Full height for desktop */
+  width: 100vw;
 }
 
 .dashboard-header {
   background-color: var(--color-light-bg);
   padding: 10px;
   border-radius: 6px;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 .dashboard-grid {
@@ -35,16 +35,15 @@
 }
 
 .widget {
-  background-color: var(--color-widget-bg);
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+  flex: 1;
+  overflow-y: auto;     /* Scrollable columns on desktop */
+  padding: 16px;
+  box-sizing: border-box;
+  border-left: 1px solid #ccc;
 }
 
-.stock-section {
-  background-color: var(--color-light-bg);
-  padding: 20px;
-  border-radius: 8px;
+.widget:first-child {
+  border-left: none;
 }
 
 .error {
@@ -55,4 +54,21 @@ hr {
   margin: 20px 0;
   border: none;
   border-top: 1px solid var(--color-border);
+}
+
+/* -------- MOBILE OVERRIDE -------- */
+
+@media (max-width: 768px) {
+  .dashboard-container {
+    display: block;    /* Stack columns vertically on mobile */
+    height: auto;      /* Let height be natural */
+    width: 100%;
+  }
+
+  .widget {
+    overflow-y: visible;  /* Disable independent scroll */
+    height: auto;         /* Let height grow naturally */
+    border-left: none;
+    padding: 12px 0;
+  }
 }
