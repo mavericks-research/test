@@ -20,14 +20,13 @@ const CoinDetailsPage = () => {
         const details = await getCoinDetails(coinId);
         setCoinData(details);
 
-        const marketChart = await getCoinMarketChart(coinId, 'usd', 7); // 7 days data
-        setChartData(marketChart.prices.map(price => ({
-          date: new Date(price[0]).toLocaleDateString(),
-          price: price[1],
-        })));
+        // Corrected call and data handling for marketChart
+        const marketChart = await getCoinMarketChart(coinId, 7); // Removed 'usd', uses 7 days
+        setChartData(marketChart); // Directly use the formatted array
 
       } catch (err) {
         setError(err.message);
+        setChartData([]); // Also set chartData to empty array on error to prevent issues
       } finally {
         setLoading(false);
       }
