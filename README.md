@@ -89,6 +89,20 @@ When your worker is deployed to Cloudflare:
 
 By configuring this API key, the backend worker will use it when making requests to the CoinGecko API, reducing the likelihood of encountering public rate limits.
 
+### Crypto News (CryptoPanic API - Optional)
+
+The crypto news feature (`/api/crypto-news`) currently utilizes the public tier of the [CryptoPanic API](https://cryptopanic.com/developers/api/), which does not require an API key for basic functionality.
+
+However, if you have a CryptoPanic API key and wish to use their authenticated endpoints for potentially higher rate limits or additional features in the future, you can configure it as an environment variable for the backend worker:
+
+-   **Variable name**: `CRYPTO_PANIC_API_KEY`
+-   **Usage**: Set this in your `cloudflare-openai-boilerplate/backend/worker-backend/.dev.vars` file for local development, or in your Cloudflare Worker settings (Settings > Variables) for the deployed version.
+    ```ini
+    # Example for .dev.vars
+    CRYPTO_PANIC_API_KEY="YOUR_CRYPTO_PANIC_API_KEY_HERE"
+    ```
+-   **Current Implementation**: Please note that the current backend code for `/api/crypto-news` does **not** actively look for or use this API key. This information is provided for future enhancements or if you decide to modify the worker to use authenticated CryptoPanic API access.
+
 ## Stock Market Data (Alpha Vantage)
 
 This application uses Alpha Vantage for providing stock market data, including company profiles, real-time quotes, and historical price data.

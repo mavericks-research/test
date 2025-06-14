@@ -1377,12 +1377,71 @@ For example:
       }
       // --- End of News API Route ---
 
+      // --- CryptoPanic News API Route ---
+      else if (url.pathname === '/api/crypto-news' && request.method === 'GET') {
+        try {
+          const currencies = url.searchParams.get('currencies');
+          let cryptoPanicUrl = 'https://cryptopanic.com/api/v1/posts/?public=true';
+
+          if (currencies) {
+            cryptoPanicUrl += `&currencies=${currencies}`;
+          }
+
+          const cryptoPanicResponse = await fetch(cryptoPanicUrl, {
+            headers: { 'User-Agent': 'DashboardApp/1.0 (Cloudflare Worker)' } // Good practice to set a User-Agent
+          });
+
+          if (!cryptoPanicResponse.ok) {
+            const errorText = await cryptoPanicResponse.text();
+            console.error(`CryptoPanic API error: ${cryptoPanicResponse.status} ${cryptoPanicResponse.statusText}`, errorText);
+            return new Response(JSON.stringify({ error: `Failed to fetch news from CryptoPanic: ${cryptoPanicResponse.status}` }), {
+              status: 502, // Bad Gateway for upstream API errors
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+          }
+
+          const newsData = await cryptoPanicResponse.json();
+          let transformedArticles = [];
+
+          if (newsData && newsData.results) {
+            transformedArticles = newsData.results.map(article => {
+              const title = article.title || "";
+              // Use title for description, or empty if title is too short
+              const description = title.length > 20 ? title : "";
+              return {
+                title: title,
+                description: description,
+                url: article.url,
+                source: article.source && article.source.domain ? article.source.domain : 'Unknown Source',
+                publishedAt: article.published_at,
+                imageUrl: null, // CryptoPanic free API doesn't provide images here
+              };
+            });
+          } else {
+            console.warn("CryptoPanic API response did not contain 'results' array or was empty. Data:", newsData);
+          }
+
+          return new Response(JSON.stringify(transformedArticles), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+
+        } catch (err) {
+          console.error('Error fetching or processing CryptoPanic news data:', err);
+          return new Response(JSON.stringify({ error: 'Internal server error while fetching CryptoPanic news.' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+      // --- End of CryptoPanic News API Route ---
+
       // Fallback for unhandled paths or methods must be the FINAL else in the chain
       else {
         let supportedEndpoints = 'GET /api/crypto/current, GET /api/crypto/historical, GET /api/crypto/coinslist, GET /api/crypto/enriched-historical-data, GET /api/crypto/transaction-analysis, POST / (for Etherscan/OpenAI), GET /api/crypto/coins-by-blockchain, GET /api/crypto/market-chart/:coinId?days=:days, GET /api/crypto/trending, GET /api/crypto/global';
         supportedEndpoints += ', POST /api/budgets, GET /api/budgets, GET /api/budgets/:id, PUT /api/budgets/:id, DELETE /api/budgets/:id';
         supportedEndpoints += ', GET /api/stocks/natural-search, GET /api/stocks/profile/:symbol, GET /api/stocks/quote/:symbol, GET /api/stocks/historical/:symbol';
-        supportedEndpoints += ', GET /api/news'; // Added news endpoint
+        supportedEndpoints += ', GET /api/news, GET /api/crypto-news'; // Added crypto-news endpoint
         return new Response(`Not Found. Supported endpoints: ${supportedEndpoints}`, { status: 404, headers: corsHeaders });
       }
     } catch (error) {
