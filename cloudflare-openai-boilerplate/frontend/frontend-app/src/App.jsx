@@ -8,6 +8,7 @@ import WalletsPage from './pages/WalletsPage';
 import BudgetPlannerPage from './pages/BudgetPlannerPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
+import CoinDetailsPage from './pages/CoinDetailsPage'; // Import the CoinDetailsPage
 import Header from './components/Header';
 import Footer from './components/Footer';
 import NavigationBar from './components/NavigationBar';
@@ -73,6 +74,7 @@ function AppContent() {
               path="/settings"
               element={<SettingsPage />}
             />
+            <Route path="/coin/:coinId" element={<CoinDetailsPage />} />
             <Route path="/" element={<Navigate to="/dashboard" />} />
             <Route path="*" element={<Navigate to="/dashboard" />} /> {/* Default to dashboard */}
           </Routes>

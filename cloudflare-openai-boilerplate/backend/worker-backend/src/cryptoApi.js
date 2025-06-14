@@ -202,8 +202,40 @@ export {
     getCoinsByBlockchain,
     getMarketChartData,
     fetchTrendingCoins,
-    fetchGlobalMarketData, // <-- Add this
+    fetchGlobalMarketData,
+    getCoinDetailsById, // <-- Add this
 };
+
+/**
+ * Fetches detailed information for a specific cryptocurrency by its ID.
+ * @param {string} coinId - The ID of the cryptocurrency (e.g., 'bitcoin').
+ * @param {string|null} apiKey Optional CoinGecko API key.
+ * @returns {Promise<object>} An object containing detailed coin information.
+ */
+async function getCoinDetailsById(coinId, apiKey = null) {
+  if (!coinId) {
+    throw new Error('Coin ID is required to fetch coin details.');
+  }
+
+  // Parameters for the CoinGecko API
+  // Refer to CoinGecko API documentation for available options: https://www.coingecko.com/en/api/documentation
+  const params = {
+    localization: 'false', // Set to true or 'en' for localized data
+    tickers: 'false', // Include ticker data
+    market_data: 'true', // Include market data (price, market cap, etc.)
+    community_data: 'false', // Include community data
+    developer_data: 'false', // Include developer data
+    sparkline: 'false', // Include sparkline data
+  };
+
+  try {
+    const data = await fetchFromCoinGecko(`/coins/${coinId}`, params, apiKey);
+    return data; // This will be the full detailed response from CoinGecko
+  } catch (error) {
+    console.error(`Error fetching details for coin ${coinId}:`, error);
+    throw error; // Re-throw to be caught by the route handler
+  }
+}
 
 /**
  * Fetches coins/tokens for a specific blockchain platform.
