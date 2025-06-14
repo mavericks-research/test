@@ -5,6 +5,7 @@ import BlockchainDataViewer from '../components/BlockchainDataViewer';
 import TrendingCoins from '../components/TrendingCoins'; // New import
 import GlobalMarketOverview from '../components/GlobalMarketOverview'; // New import
 import NewsWidget from '../components/NewsWidget'; // Import NewsWidget
+import CryptoNewsWidget from '../components/CryptoNewsWidget.jsx'; // Import CryptoNewsWidget
 import './DashboardPage.css'; // Import the CSS file
 // Removed NavigationBar import
 
@@ -127,6 +128,9 @@ function DashboardPage({ workerUrl }) {
       <div className="dashboard-grid">
         <div className="widget">
           <NewsWidget />
+        </div>
+        <div className="widget">
+          <CryptoNewsWidget />
         </div>
 
         <div className="widget">
