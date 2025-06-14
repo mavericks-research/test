@@ -2,7 +2,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
-import logo from '../assets/splash.mp4'
+import logo from '../assets/public.avif'
 import logo2 from '../assets/public.avif'
 
 function SplashScreen() {

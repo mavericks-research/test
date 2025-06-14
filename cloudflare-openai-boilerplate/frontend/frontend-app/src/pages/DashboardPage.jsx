@@ -118,23 +118,15 @@ function DashboardPage({ workerUrl }) {
   };
 
   return (
-    <div className="dashboard-container">
-      <div className="dashboard-header">
-        <p>Welcome to your dashboard.</p>
-        <p>Current Data Refresh Interval: {settings.dataRefreshInterval}</p>
-      </div>
+    <div className="dashboard-container" style={{ height: '100vh', display: 'flex' }}>
 
-      
       <div className="dashboard-grid">
-        <div className="widget">
+        <div className="widget" style={{ flex: 1, overflowY: 'auto' }}>
           <NewsWidget />
-
           <hr />
           <CryptoNewsWidget />
-
         </div>
-
-        <div className="widget">
+        <div className="widget" style={{ flex: 1, overflowY: 'auto' }}>
           <GlobalMarketOverview />
           <hr />
           <TrendingCoins />
@@ -144,12 +136,10 @@ function DashboardPage({ workerUrl }) {
           <WalletAnalyzer workerUrl={workerUrl} />
         </div>
 
-        <div className="widget">
+        <div className="widget" style={{ flex: 1, overflowY: 'auto' }}>
           <BlockchainDataViewer />
         </div>
       </div>
-
-
     </div>
   );
 }

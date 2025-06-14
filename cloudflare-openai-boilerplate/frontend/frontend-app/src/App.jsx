@@ -79,9 +79,6 @@ function AppContent() {
         </div>
       </div>
 
-      {/* Footer is always shown as user is authenticated */}
-      <Footer />
-
       {/* Ad Banner to be displayed at the bottom */}
       <AdBanner />
     </div>

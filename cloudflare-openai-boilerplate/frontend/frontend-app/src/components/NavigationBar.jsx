@@ -7,7 +7,7 @@ function NavigationBar({ isNavVisible, onToggleNav }) {
     background: '#0f0f0f', // Obsidian background
     padding: '10px',
     position: 'fixed',
-    right: 0,
+    left: 0,
     top: 0,
     height: '100vh',
     width: isNavVisible ? '250px' : '0px',
@@ -53,7 +53,7 @@ function NavigationBar({ isNavVisible, onToggleNav }) {
     color: '#80eaff', // Laser blue link
     fontWeight: 'bold',
     fontSize: '1.1em',
-    paddingLeft: '10px',
+    paddingLeft: '0px',
     transition: 'color 0.2s',
   };
 
@@ -68,7 +68,14 @@ function NavigationBar({ isNavVisible, onToggleNav }) {
           <li style={liStyle}>
             <Link to="/dashboard" style={linkStyle}>Dashboard</Link>
           </li>
+
+
           <li style={liStyle}>
+            <Link to="/settings" style={linkStyle}>Settings</Link>
+          </li>
+
+          {/*
+                    <li style={liStyle}>
             <Link to="/wallets" style={linkStyle}>Wallets</Link>
           </li>
           <li style={liStyle}>
@@ -77,9 +84,9 @@ function NavigationBar({ isNavVisible, onToggleNav }) {
           <li style={liStyle}>
             <Link to="/reports" style={linkStyle}>Reports</Link>
           </li>
-          <li style={liStyle}>
-            <Link to="/settings" style={linkStyle}>Settings</Link>
-          </li>
+         
+          */}
+
         </ul>
       )}
     </nav>
