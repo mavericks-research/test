@@ -42,6 +42,33 @@ export const getCoinMarketChart = async (coinId, days) => {
 // export const getHistoricalCoinPrice = async (coinId, date) => { ... };
 
 /**
+ * Fetches detailed information for a specific cryptocurrency.
+ * @param {string} coinId - The ID of the cryptocurrency (e.g., "bitcoin").
+ * @returns {Promise<object>} A promise that resolves to an object containing the coin details.
+ * @throws {Error} If the coinId is not provided, or if the fetch request fails or the response is not ok.
+ */
+export const getCoinDetails = async (coinId) => {
+  if (!coinId) {
+    throw new Error('Coin ID is required to fetch coin details.');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/crypto/details/${coinId}`);
+
+  if (!response.ok) {
+    let errorMessage = `Failed to fetch coin details for ${coinId}: ${response.statusText}`;
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.error || errorMessage;
+    } catch (e) {
+      // Stick with the original statusText message if JSON parsing fails
+    }
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
+};
+
+/**
  * Fetches the list of trending coins.
  * @returns {Promise<object>} A promise that resolves to an object containing the list of trending coins.
  * @throws {Error} If the fetch request fails or the response is not ok.

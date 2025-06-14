@@ -1,5 +1,5 @@
 // frontend/frontend-app/src/App.jsx
-import React, { useState, useContext } from 'react';
+import React, { useState, useEffect, useContext } from 'react'; // Import useEffect
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'; // Import useLocation
 import { SettingsContext } from './contexts/SettingsContext.jsx';
 import DashboardPage from './pages/DashboardPage';
@@ -8,6 +8,7 @@ import WalletsPage from './pages/WalletsPage';
 import BudgetPlannerPage from './pages/BudgetPlannerPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
+import CoinDetailsPage from './pages/CoinDetailsPage'; // Import the CoinDetailsPage
 import Header from './components/Header';
 import Footer from './components/Footer';
 import NavigationBar from './components/NavigationBar';
@@ -20,11 +21,29 @@ function AppContent() {
   const { theme } = useContext(SettingsContext);
   const [isAuthenticated, setIsAuthenticated] = useState(true); // isAuthenticated by default
   const [isNavVisible, setIsNavVisible] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true); // State for initial loading
   const WORKER_URL = import.meta.env.VITE_WORKER_URL;
 
   const toggleNav = () => setIsNavVisible(prev => !prev);
 
+  // useEffect for the initial loading timer
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsInitialLoading(false);
+    }, 5000); // 5 seconds
+
+    return () => clearTimeout(timer); // Cleanup timer on component unmount
+  }, []);
+
   const isSplashScreen = location.pathname === '/'; // This will effectively be unused
+
+  if (isInitialLoading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#282c34', color: 'white', fontSize: '2em' }}>
+        Loading Dashboard...
+      </div>
+    );
+  }
 
   return (
     <div
@@ -73,6 +92,7 @@ function AppContent() {
               path="/settings"
               element={<SettingsPage />}
             />
+            <Route path="/coin/:coinId" element={<CoinDetailsPage />} />
             <Route path="/" element={<Navigate to="/dashboard" />} />
             <Route path="*" element={<Navigate to="/dashboard" />} /> {/* Default to dashboard */}
           </Routes>

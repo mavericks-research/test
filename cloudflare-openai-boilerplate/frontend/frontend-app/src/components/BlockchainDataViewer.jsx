@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom'; // Import Link
 
 const BlockchainDataViewer = () => {
   const [selectedBlockchain, setSelectedBlockchain] = useState('Ethereum');
@@ -107,9 +108,13 @@ const BlockchainDataViewer = () => {
                   {blockchainTokens.map(token => (
                     <tr key={token.id} style={{ borderBottom: '1px solid #eee' }}>
                       <td style={{ padding: '10px', border: '1px solid #ddd' }}>
-                        <img src={token.image} alt={token.name} style={{ width: '32px', height: '32px' }} />
+                        <Link to={`/coin/${token.id}`}>
+                          <img src={token.image} alt={token.name} style={{ width: '32px', height: '32px' }} />
+                        </Link>
                       </td>
-                      <td style={{ padding: '10px', border: '1px solid #ddd' }}>{token.name}</td>
+                      <td style={{ padding: '10px', border: '1px solid #ddd' }}>
+                        <Link to={`/coin/${token.id}`}>{token.name}</Link>
+                      </td>
                       <td style={{ padding: '10px', border: '1px solid #ddd' }}>{token.symbol.toUpperCase()}</td>
                       <td style={{ padding: '10px', border: '1px solid #ddd' }}>${token.current_price ? token.current_price.toLocaleString() : 'N/A'}</td>
                       <td style={{ padding: '10px', border: '1px solid #ddd' }}>${token.market_cap ? token.market_cap.toLocaleString() : 'N/A'}</td>

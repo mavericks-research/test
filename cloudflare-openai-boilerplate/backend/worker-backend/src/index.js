@@ -1,6 +1,6 @@
 import { normalizeTokenNames, normalizeTimestamps, normalizeBlockCypherTransactions, convertToUSD } from './normalizer.js';
 // Added fetchTrendingCoins and fetchGlobalMarketData to the import below
-import { getCurrentPrices, getHistoricalData, getCoinList, getTransactionHistory, getCoinsByBlockchain, getMarketChartData, fetchTrendingCoins, fetchGlobalMarketData } from './cryptoApi.js'; // Added getMarketChartData
+import { getCurrentPrices, getHistoricalData, getCoinList, getTransactionHistory, getCoinsByBlockchain, getMarketChartData, fetchTrendingCoins, fetchGlobalMarketData, getCoinDetailsById } from './cryptoApi.js'; // Added getCoinDetailsById
 
 // Define CORS headers - Added GET
 const corsHeaders = {
@@ -869,6 +869,40 @@ Provide a concise, human-readable analysis.
       }
       // --- End of New Route for Global Market Data ---
 
+      // --- New Route for Specific Coin Details ---
+      else if (url.pathname.startsWith('/api/crypto/details/') && request.method === 'GET') {
+        const parts = url.pathname.split('/');
+        const coinId = parts[4]; // Assuming path like /api/crypto/details/bitcoin
+
+        if (!coinId) {
+          return new Response(JSON.stringify({ error: 'Coin ID missing in path. Expected /api/crypto/details/:coinId' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const COINGECKO_API_KEY = env.COINGECKO_API_KEY || null;
+
+        try {
+          const data = await getCoinDetailsById(coinId, COINGECKO_API_KEY);
+          return new Response(JSON.stringify(data), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (error) {
+          console.error(`Error fetching coin details for ${coinId}:`, error);
+          let errorStatus = 500;
+          if (error.message && error.message.includes("CoinGecko API request failed")) {
+            errorStatus = 502; // Bad Gateway for upstream API issues
+          }
+          return new Response(JSON.stringify({ error: error.message || `Error retrieving details for coin ${coinId}.` }), {
+            status: errorStatus,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+      // --- End of New Route for Specific Coin Details ---
+
       // --- New Route for Natural Language Stock Search ---
       else if (url.pathname === '/api/stocks/natural-search' && request.method === 'GET') {
         const naturalQuery = url.searchParams.get('q');
@@ -1438,7 +1472,7 @@ For example:
 
       // Fallback for unhandled paths or methods must be the FINAL else in the chain
       else {
-        let supportedEndpoints = 'GET /api/crypto/current, GET /api/crypto/historical, GET /api/crypto/coinslist, GET /api/crypto/enriched-historical-data, GET /api/crypto/transaction-analysis, POST / (for Etherscan/OpenAI), GET /api/crypto/coins-by-blockchain, GET /api/crypto/market-chart/:coinId?days=:days, GET /api/crypto/trending, GET /api/crypto/global';
+        let supportedEndpoints = 'GET /api/crypto/current, GET /api/crypto/historical, GET /api/crypto/coinslist, GET /api/crypto/enriched-historical-data, GET /api/crypto/transaction-analysis, POST / (for Etherscan/OpenAI), GET /api/crypto/coins-by-blockchain, GET /api/crypto/market-chart/:coinId?days=:days, GET /api/crypto/trending, GET /api/crypto/global, GET /api/crypto/details/:coinId';
         supportedEndpoints += ', POST /api/budgets, GET /api/budgets, GET /api/budgets/:id, PUT /api/budgets/:id, DELETE /api/budgets/:id';
         supportedEndpoints += ', GET /api/stocks/natural-search, GET /api/stocks/profile/:symbol, GET /api/stocks/quote/:symbol, GET /api/stocks/historical/:symbol';
         supportedEndpoints += ', GET /api/news, GET /api/crypto-news'; // Added crypto-news endpoint
