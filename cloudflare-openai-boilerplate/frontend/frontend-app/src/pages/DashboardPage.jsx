@@ -95,38 +95,16 @@ function DashboardPage({ workerUrl }) {
   console.log("Dashboard displaying with settings:", settings);
   console.log("Current currency from context:", settings.currency);
 
-
-  const containerStyle = {
-    border: '2px solid var(--color-accent)',
-    borderRadius: '8px',
-    padding: '20px',
-    margin: '20px auto',
-    maxWidth: '100%', // Changed from 900px
-    overflowX: 'auto', // Added this line
-    // minWidth: '750px', // Removed this line
-    backgroundColor: settings.theme === 'dark' ? '#333' : '#FFF', // Theme-based background
-    color: settings.theme === 'dark' ? '#FFF' : '#333', // Theme-based text color
-    boxSizing: 'border-box',
-  };
-
-  const themedSectionStyle = {
-    backgroundColor: settings.theme === 'dark' ? '#444' : '#EEE', // Slightly different for contrast
-    color: settings.theme === 'dark' ? '#FFF' : '#333',
-    padding: '10px',
-    borderRadius: '4px',
-    margin: '10px 0',
-  };
-
   return (
     <div className="dashboard-container" style={{ height: '100vh', display: 'flex' }}>
 
       <div className="dashboard-grid">
-        <div className="widget" style={{ flex: 1, overflowY: 'auto' }}>
+        <div className="widget">
           <NewsWidget />
           <hr />
           <CryptoNewsWidget />
         </div>
-        <div className="widget" style={{ flex: 1, overflowY: 'auto' }}>
+        <div className="widget">
           <GlobalMarketOverview />
           <hr />
           <TrendingCoins />
@@ -136,7 +114,7 @@ function DashboardPage({ workerUrl }) {
           <WalletAnalyzer workerUrl={workerUrl} />
         </div>
 
-        <div className="widget" style={{ flex: 1, overflowY: 'auto' }}>
+        <div className="widget">
           <BlockchainDataViewer />
         </div>
       </div>
