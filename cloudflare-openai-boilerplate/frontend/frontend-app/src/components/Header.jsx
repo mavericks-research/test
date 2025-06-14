@@ -8,10 +8,11 @@ function Header({ onToggleNav, isLoggedIn }) {
     color: '#1ac0ff',           // Laser blue
     padding: '10px 20px',
     display: 'flex',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     boxSizing: 'border-box',
     position: 'sticky',
+    gap: '10px',
     top: 0,
     zIndex: 1010,
     borderBottom: '2px solid #1ac0ff', // Accent bottom border
@@ -37,12 +38,12 @@ function Header({ onToggleNav, isLoggedIn }) {
 
   return (
     <header style={headerStyle}>
-      <h4 style={titleStyle}>Coincept AI</h4>
       {isLoggedIn && (
         <button onClick={onToggleNav} style={toggleButtonStyle}>
-          L
+          ☰
         </button>
       )}
+      <h4 style={titleStyle}>Lumex Crypto AI</h4>
     </header>
   );
 }
