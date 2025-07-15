@@ -1,6 +1,7 @@
 import { normalizeTokenNames, normalizeTimestamps, normalizeBlockCypherTransactions, convertToUSD } from './normalizer.js';
 // Added fetchTrendingCoins and fetchGlobalMarketData to the import below
 import { getCurrentPrices, getHistoricalData, getCoinList, getTransactionHistory, getCoinsByBlockchain, getMarketChartData, fetchTrendingCoins, fetchGlobalMarketData, getCoinDetailsById } from './cryptoApi.js'; // Added getCoinDetailsById
+import { PlaidApi, Configuration, PlaidEnvironments } from 'plaid';
 
 // Define CORS headers - Added GET
 const corsHeaders = {
@@ -143,6 +144,16 @@ export default {
     const url = new URL(request.url);
     const COINGECKO_API_KEY = env.COINGECKO_API_KEY || null;
     const OPENAI_MODEL = env.OPENAI_MODEL || 'gpt-3.5-turbo-instruct';
+
+    const plaidClient = new PlaidApi(new Configuration({
+      basePath: PlaidEnvironments[env.PLAID_ENV || 'sandbox'],
+      baseOptions: {
+        headers: {
+          'PLAID-CLIENT-ID': env.PLAID_CLIENT_ID,
+          'PLAID-SECRET': env.PLAID_SECRET,
+        },
+      },
+    }));
 
     // Ensure BUDGET_PLANS_KV is available if budget routes are accessed
     // We can check specifically for budget routes to make this check conditional
@@ -1469,6 +1480,57 @@ For example:
         }
       }
       // --- End of CryptoPanic News API Route ---
+
+      // --- Plaid API Routes ---
+      else if (url.pathname === '/api/plaid/create_link_token' && request.method === 'POST') {
+        try {
+          const response = await plaidClient.linkTokenCreate({
+            user: {
+              client_user_id: 'user-id',
+            },
+            client_name: 'Plaid Quickstart',
+            products: ['auth', 'transactions'],
+            country_codes: ['US'],
+            language: 'en',
+          });
+          return new Response(JSON.stringify(response.data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        } catch (error) {
+          console.error('Plaid API Error:', error);
+          return new Response(JSON.stringify({ error: 'Plaid API request failed' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+      } else if (url.pathname === '/api/plaid/exchange_public_token' && request.method === 'POST') {
+        try {
+          const { public_token } = await request.json();
+          const response = await plaidClient.itemPublicTokenExchange({
+            public_token,
+          });
+          // Store the access_token in KV store
+          await env.BUDGET_PLANS_KV.put(`plaid_access_token_${'user-id'}`, response.data.access_token);
+          return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        } catch (error) {
+          console.error('Plaid API Error:', error);
+          return new Response(JSON.stringify({ error: 'Plaid API request failed' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+      }
+      // --- End of Plaid API Routes ---
+
+      // --- Plaid Accounts API Route ---
+      else if (url.pathname === '/api/plaid/accounts' && request.method === 'GET') {
+        try {
+          const accessToken = await env.BUDGET_PLANS_KV.get(`plaid_access_token_${'user-id'}`);
+          if (!accessToken) {
+            return new Response(JSON.stringify({ error: 'Plaid access token not found.' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+          const response = await plaidClient.accountsGet({
+            access_token: accessToken,
+          });
+          return new Response(JSON.stringify(response.data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        } catch (error) {
+          console.error('Plaid API Error:', error);
+          return new Response(JSON.stringify({ error: 'Plaid API request failed' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+      }
+      // --- End of Plaid Accounts API Route ---
 
       // Fallback for unhandled paths or methods must be the FINAL else in the chain
       else {

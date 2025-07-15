@@ -1,14 +1,32 @@
 // frontend/frontend-app/src/pages/SettingsPage.jsx
-import React, { useContext } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
+import { usePlaidLink } from 'react-plaid-link';
 import { SettingsContext } from '../contexts/SettingsContext.jsx'; // Adjusted path
-// Removed NavigationBar import
 
-function SettingsPage() { // Removed handleLogout from props
+function SettingsPage() {
   const { currency, theme, dataRefreshInterval, updateSetting } = useContext(SettingsContext);
+  const [linkToken, setLinkToken] = useState(null);
+
+  const onSuccess = React.useCallback((public_token, metadata) => {
+    // send public_token to server
+    console.log(public_token);
+  }, []);
+
+  const config = {
+    token: linkToken,
+    onSuccess,
+  };
+
+  const { open, ready, error } = usePlaidLink(config);
+
+  useEffect(() => {
+    // Fetch link_token from your server
+    // For now, we'll just mock it
+    setLinkToken('link-sandbox-12345678-1234-1234-1234-123456789012');
+  }, []);
 
   return (
     <div>
-      {/* NavigationBar removed from here */}
       <h1>Settings / Profile Page</h1>
       <p>Manage your preferences, currencies, and connected wallets.</p>
       <div>
@@ -47,6 +65,9 @@ function SettingsPage() { // Removed handleLogout from props
           <option value="30min">30 Minutes</option>
         </select>
       </div>
+      <button onClick={() => open()} disabled={!ready}>
+        Connect with Plaid
+      </button>
     </div>
   );
 }

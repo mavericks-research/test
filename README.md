@@ -202,3 +202,32 @@ This application includes a banner ad component designed for Google AdSense, loc
     *   The main application layout in `cloudflare-openai-boilerplate/frontend/frontend-app/src/App.jsx` has a `paddingBottom` style applied to its main container div to prevent the ad banner from overlapping content. This padding is currently set to `50px`. If your ad banner renders at a different height, you may need to adjust this `paddingBottom` value in `App.jsx` to match the actual height of the loaded ad.
 
 After following these steps and deploying your updated application, the AdSense banner should appear at the bottom of your site. Monitor your AdSense dashboard for performance and any policy notifications.
+
+## Testing the MetaMask and Plaid Integrations
+
+To test the changes, please follow these steps:
+
+1.  **Run the backend:**
+    *   Open a terminal and navigate to the `cloudflare-openai-boilerplate/backend/worker-backend` directory.
+    *   Run `npm install` to install the dependencies.
+    *   Run `npx wrangler dev` to start the development server.
+
+2.  **Run the frontend:**
+    *   Open a new terminal and navigate to the `cloudflare-openai-boilerplate/frontend/frontend-app` directory.
+    *   Run `npm install` to install the dependencies.
+    *   Run `npm run dev` to start the development server.
+
+3.  **Test the MetaMask integration:**
+    *   Open your browser and navigate to the frontend application (usually at `http://localhost:3000`).
+    *   Go to the "Wallets" page.
+    *   Click the "Connect with MetaMask" button.
+    *   A MetaMask pop-up should appear asking you to connect your wallet.
+    *   After connecting, your wallet address should appear in the "Wallet Address" input field.
+
+4.  **Test the Plaid integration:**
+    *   Go to the "Settings" page.
+    *   Click the "Connect with Plaid" button.
+    *   The Plaid Link modal should appear.
+    *   Follow the instructions to link a sandbox account.
+    *   After successfully linking an account, go to the "Wallets" page.
+    *   You should see a list of your Plaid accounts with their balances.
