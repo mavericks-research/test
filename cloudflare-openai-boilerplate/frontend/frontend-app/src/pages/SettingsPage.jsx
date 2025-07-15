@@ -2,6 +2,7 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { usePlaidLink } from 'react-plaid-link';
 import { SettingsContext } from '../contexts/SettingsContext.jsx'; // Adjusted path
+import api from '../services/api';
 
 function SettingsPage() {
   const { currency, theme, dataRefreshInterval, updateSetting } = useContext(SettingsContext);
@@ -9,7 +10,7 @@ function SettingsPage() {
 
   const onSuccess = React.useCallback((public_token, metadata) => {
     // send public_token to server
-    console.log(public_token);
+    api.post('/api/plaid/exchange_public_token', { public_token });
   }, []);
 
   const config = {
@@ -20,9 +21,15 @@ function SettingsPage() {
   const { open, ready, error } = usePlaidLink(config);
 
   useEffect(() => {
-    // Fetch link_token from your server
-    // For now, we'll just mock it
-    setLinkToken('link-sandbox-12345678-1234-1234-1234-123456789012');
+    const createLinkToken = async () => {
+      try {
+        const response = await api.post('/api/plaid/create_link_token');
+        setLinkToken(response.data.link_token);
+      } catch (error) {
+        console.error('Error creating link token:', error);
+      }
+    };
+    createLinkToken();
   }, []);
 
   return (

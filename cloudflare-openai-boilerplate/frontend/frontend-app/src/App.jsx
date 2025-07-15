@@ -9,40 +9,40 @@ import BudgetPlannerPage from './pages/BudgetPlannerPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 import CoinDetailsPage from './pages/CoinDetailsPage'; // Import the CoinDetailsPage
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import NavigationBar from './components/NavigationBar';
 import AdBanner from './components/AdBanner';
 import './App.css';
 
-// New AppContent component
 function AppContent() {
   const location = useLocation();
   const { theme } = useContext(SettingsContext);
-  const [isAuthenticated, setIsAuthenticated] = useState(true); // isAuthenticated by default
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isNavVisible, setIsNavVisible] = useState(false);
-  const [isInitialLoading, setIsInitialLoading] = useState(true); // State for initial loading
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const WORKER_URL = import.meta.env.VITE_WORKER_URL;
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const token = searchParams.get('token') || localStorage.getItem('token');
+    if (token) {
+      localStorage.setItem('token', token);
+      setIsAuthenticated(true);
+    }
+    const timer = setTimeout(() => {
+      setIsInitialLoading(false);
+    }, 1000); // Reduced splash screen time
+
+    return () => clearTimeout(timer);
+  }, [location.search]);
 
   const toggleNav = () => setIsNavVisible(prev => !prev);
 
-  // useEffect for the initial loading timer
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsInitialLoading(false);
-    }, 5000); // 5 seconds
-
-    return () => clearTimeout(timer); // Cleanup timer on component unmount
-  }, []);
-
-  const isSplashScreen = location.pathname === '/'; // This will effectively be unused
-
   if (isInitialLoading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#282c34', color: 'white', fontSize: '2em' }}>
-        Loading Dashboard...
-      </div>
-    );
+    return <SplashScreen />;
   }
 
   return (
@@ -52,54 +52,47 @@ function AppContent() {
         display: 'flex',
         flexDirection: 'column',
         minHeight: '100vh',
-        paddingBottom: '50px', // Add padding to the bottom to prevent content overlap by adbanner
-        backgroundColor: isSplashScreen ? 'transparent' : undefined
+        paddingBottom: '50px',
       }}
     >
-      {/* Header is always shown as user is authenticated */}
-      <Header onToggleNav={toggleNav} isLoggedIn={true} />
+      <Header onToggleNav={toggleNav} isLoggedIn={isAuthenticated} />
       <AdBanner />
-
-      {/* NavigationBar is always shown as user is authenticated */}
       <NavigationBar
         isNavVisible={isNavVisible}
         onToggleNav={toggleNav}
-        isLoggedIn={true}
+        isLoggedIn={isAuthenticated}
       />
-
       <div style={{ flexGrow: 1, width: '100%', display: 'flex' }}>
-        {/* Adjust paddingTop; effectively always 56px as splash screen is removed */}
         <div style={{ flexGrow: 1, overflowY: 'auto', paddingTop: '56px' }}>
           <Routes>
-            <Route path="/login" element={<Navigate to="/dashboard" />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
             <Route
               path="/dashboard"
-              element={<DashboardPage workerUrl={WORKER_URL} />}
+              element={isAuthenticated ? <DashboardPage workerUrl={WORKER_URL} /> : <Navigate to="/login" />}
             />
             <Route
               path="/wallets"
-              element={<WalletsPage />}
+              element={isAuthenticated ? <WalletsPage /> : <Navigate to="/login" />}
             />
             <Route
               path="/planner"
-              element={<BudgetPlannerPage />}
+              element={isAuthenticated ? <BudgetPlannerPage /> : <Navigate to="/login" />}
             />
             <Route
               path="/reports"
-              element={<ReportsPage />}
+              element={isAuthenticated ? <ReportsPage /> : <Navigate to="/login" />}
             />
             <Route
               path="/settings"
-              element={<SettingsPage />}
+              element={isAuthenticated ? <SettingsPage /> : <Navigate to="/login" />}
             />
-            <Route path="/coin/:coinId" element={<CoinDetailsPage />} />
-            <Route path="/" element={<Navigate to="/dashboard" />} />
-            <Route path="*" element={<Navigate to="/dashboard" />} /> {/* Default to dashboard */}
+            <Route path="/coin/:coinId" element={isAuthenticated ? <CoinDetailsPage /> : <Navigate to="/login" />} />
+            <Route path="/" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />} />
+            <Route path="*" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />} />
           </Routes>
         </div>
       </div>
-
-      {/* Ad Banner to be displayed at the bottom */}
       <AdBanner />
     </div>
   );

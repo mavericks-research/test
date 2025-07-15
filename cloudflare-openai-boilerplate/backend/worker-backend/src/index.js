@@ -2,6 +2,8 @@ import { normalizeTokenNames, normalizeTimestamps, normalizeBlockCypherTransacti
 // Added fetchTrendingCoins and fetchGlobalMarketData to the import below
 import { getCurrentPrices, getHistoricalData, getCoinList, getTransactionHistory, getCoinsByBlockchain, getMarketChartData, fetchTrendingCoins, fetchGlobalMarketData, getCoinDetailsById } from './cryptoApi.js'; // Added getCoinDetailsById
 import { PlaidApi, Configuration, PlaidEnvironments } from 'plaid';
+import bcrypt from 'bcryptjs';
+import { SignJWT, jwtVerify } from 'jose';
 
 // Define CORS headers - Added GET
 const corsHeaders = {
@@ -1484,9 +1486,11 @@ For example:
       // --- Plaid API Routes ---
       else if (url.pathname === '/api/plaid/create_link_token' && request.method === 'POST') {
         try {
+          const token = request.headers.get('Authorization').replace('Bearer ', '');
+          const { payload } = await jwtVerify(token, new TextEncoder().encode(env.JWT_SECRET));
           const response = await plaidClient.linkTokenCreate({
             user: {
-              client_user_id: 'user-id',
+              client_user_id: payload.email,
             },
             client_name: 'Plaid Quickstart',
             products: ['auth', 'transactions'],
@@ -1500,12 +1504,14 @@ For example:
         }
       } else if (url.pathname === '/api/plaid/exchange_public_token' && request.method === 'POST') {
         try {
+          const token = request.headers.get('Authorization').replace('Bearer ', '');
+          const { payload } = await jwtVerify(token, new TextEncoder().encode(env.JWT_SECRET));
           const { public_token } = await request.json();
           const response = await plaidClient.itemPublicTokenExchange({
             public_token,
           });
           // Store the access_token in KV store
-          await env.BUDGET_PLANS_KV.put(`plaid_access_token_${'user-id'}`, response.data.access_token);
+          await env.BUDGET_PLANS_KV.put(`plaid_access_token_${payload.email}`, response.data.access_token);
           return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         } catch (error) {
           console.error('Plaid API Error:', error);
@@ -1517,7 +1523,9 @@ For example:
       // --- Plaid Accounts API Route ---
       else if (url.pathname === '/api/plaid/accounts' && request.method === 'GET') {
         try {
-          const accessToken = await env.BUDGET_PLANS_KV.get(`plaid_access_token_${'user-id'}`);
+          const token = request.headers.get('Authorization').replace('Bearer ', '');
+          const { payload } = await jwtVerify(token, new TextEncoder().encode(env.JWT_SECRET));
+          const accessToken = await env.BUDGET_PLANS_KV.get(`plaid_access_token_${payload.email}`);
           if (!accessToken) {
             return new Response(JSON.stringify({ error: 'Plaid access token not found.' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
           }
@@ -1531,6 +1539,84 @@ For example:
         }
       }
       // --- End of Plaid Accounts API Route ---
+
+      // --- User Management API Routes ---
+      else if (url.pathname === '/api/users/register' && request.method === 'POST') {
+        try {
+          const { email, password } = await request.json();
+          const hashedPassword = await bcrypt.hash(password, 10);
+          await env.BUDGET_PLANS_KV.put(`user_${email}`, JSON.stringify({ email, password: hashedPassword }));
+          return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        } catch (error) {
+          console.error('Registration Error:', error);
+          return new Response(JSON.stringify({ error: 'Registration failed' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+      } else if (url.pathname === '/api/users/login' && request.method === 'POST') {
+        try {
+          const { email, password } = await request.json();
+          const userString = await env.BUDGET_PLANS_KV.get(`user_${email}`);
+          if (!userString) {
+            return new Response(JSON.stringify({ error: 'User not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+          const user = JSON.parse(userString);
+          const isPasswordValid = await bcrypt.compare(password, user.password);
+          if (!isPasswordValid) {
+            return new Response(JSON.stringify({ error: 'Invalid password' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+          const secret = new TextEncoder().encode(env.JWT_SECRET);
+          const token = await new SignJWT({ email: user.email })
+            .setProtectedHeader({ alg: 'HS256' })
+            .setIssuedAt()
+            .setExpirationTime('2h')
+            .sign(secret);
+          return new Response(JSON.stringify({ token }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        } catch (error) {
+          console.error('Login Error:', error);
+          return new Response(JSON.stringify({ error: 'Login failed' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+      }
+      // --- End of User Management API Routes ---
+
+      // --- Google OAuth API Routes ---
+      else if (url.pathname === '/api/auth/google' && request.method === 'GET') {
+        const googleUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${env.GOOGLE_CLIENT_ID}&redirect_uri=${env.GOOGLE_REDIRECT_URI}&response_type=code&scope=openid%20email%20profile`;
+        return Response.redirect(googleUrl, 302);
+      } else if (url.pathname === '/api/auth/google/callback' && request.method === 'GET') {
+        const code = url.searchParams.get('code');
+        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            code,
+            client_id: env.GOOGLE_CLIENT_ID,
+            client_secret: env.GOOGLE_CLIENT_SECRET,
+            redirect_uri: env.GOOGLE_REDIRECT_URI,
+            grant_type: 'authorization_code',
+          }),
+        });
+        const tokenData = await tokenResponse.json();
+        const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+          headers: {
+            Authorization: `Bearer ${tokenData.access_token}`,
+          },
+        });
+        const userInfo = await userInfoResponse.json();
+        const secret = new TextEncoder().encode(env.JWT_SECRET);
+        const token = await new SignJWT({ email: userInfo.email })
+          .setProtectedHeader({ alg: 'HS256' })
+          .setIssuedAt()
+          .setExpirationTime('2h')
+          .sign(secret);
+        return new Response(null, {
+          status: 302,
+          headers: {
+            Location: `/dashboard?token=${token}`,
+          },
+        });
+      }
+      // --- End of Google OAuth API Routes ---
 
       // Fallback for unhandled paths or methods must be the FINAL else in the chain
       else {

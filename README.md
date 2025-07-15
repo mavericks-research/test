@@ -203,6 +203,63 @@ This application includes a banner ad component designed for Google AdSense, loc
 
 After following these steps and deploying your updated application, the AdSense banner should appear at the bottom of your site. Monitor your AdSense dashboard for performance and any policy notifications.
 
+## Google OAuth 2.0 Configuration
+
+This application supports user authentication via Google OAuth 2.0. To enable this feature, you need to set up a project in the Google API Console, create OAuth 2.0 credentials, and configure them in your application.
+
+### Prerequisites
+
+1.  **Google Account**: You need a Google account to access the Google API Console.
+2.  **Project in Google API Console**: A project is required to manage APIs and credentials.
+
+### Configuration Steps
+
+1.  **Create a Project in Google API Console**:
+    *   Go to the [Google API Console](https://console.developers.google.com/).
+    *   Click the project drop-down and select an existing project or click **NEW PROJECT**.
+    *   Enter a project name and configure other options as needed, then click **CREATE**.
+
+2.  **Enable the Google People API**:
+    *   In the dashboard for your new project, click on **+ ENABLE APIS AND SERVICES**.
+    *   Search for "Google People API" and enable it. This API is used to retrieve user profile information like email and name.
+
+3.  **Configure the OAuth Consent Screen**:
+    *   In the left sidebar, go to **OAuth consent screen**.
+    *   Choose an **User Type**. For development and testing, **External** is a common choice. Click **CREATE**.
+    *   Fill in the required information:
+        *   **App name**: The name of your application.
+        *   **User support email**: Your email address for user support.
+        *   **Developer contact information**: Your email address.
+    *   Click **SAVE AND CONTINUE**.
+    *   On the **Scopes** page, you can leave it blank for now as the application will request scopes dynamically. Click **SAVE AND CONTINUE**.
+    *   On the **Test users** page, add your Google account email address to be able to test the OAuth flow while the app is in "testing" mode. Click **SAVE AND CONTINUE**.
+
+4.  **Create OAuth 2.0 Credentials**:
+    *   In the left sidebar, go to **Credentials**.
+    *   Click **+ CREATE CREDENTIALS** and select **OAuth client ID**.
+    *   For **Application type**, select **Web application**.
+    *   Under **Authorized JavaScript origins**, add the URL of your frontend application (e.g., `http://localhost:3000` for local development).
+    *   Under **Authorized redirect URIs**, add the callback URL for your backend. This should be `http://localhost:8787/api/auth/google/callback` for local development.
+    *   Click **CREATE**.
+
+5.  **Obtain Your Credentials**:
+    *   After creating the client ID, a dialog will appear with your **Client ID** and **Client Secret**. Copy these values.
+
+6.  **Set Environment Variables**:
+    *   You need to configure these credentials as environment variables for your backend worker.
+
+    #### Local Development (`wrangler dev`)
+    *   In the `cloudflare-openai-boilerplate/backend/worker-backend/` directory, create or open the `.dev.vars` file.
+    *   Add the following lines, replacing the placeholder values with your actual credentials:
+        ```ini
+        GOOGLE_CLIENT_ID="YOUR_GOOGLE_CLIENT_ID"
+        GOOGLE_CLIENT_SECRET="YOUR_GOOGLE_CLIENT_SECRET"
+        GOOGLE_REDIRECT_URI="http://localhost:8787/api/auth/google/callback"
+        ```
+
+    #### Deployed Cloudflare Worker
+    *   For your deployed worker, you will need to set these same variables in your Cloudflare dashboard under your worker's **Settings > Variables**. Make sure to encrypt the `GOOGLE_CLIENT_SECRET`. You will also need to update the `GOOGLE_REDIRECT_URI` to match your production URL.
+
 ## Testing the MetaMask and Plaid Integrations
 
 To test the changes, please follow these steps:

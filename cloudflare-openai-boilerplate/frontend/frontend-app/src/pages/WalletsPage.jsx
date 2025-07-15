@@ -1,7 +1,7 @@
 // frontend/frontend-app/src/pages/WalletsPage.jsx
 import React, { useState, useEffect } from 'react';
 import MetaMaskSDK from '@metamask/sdk';
-import axios from 'axios';
+import api from '../services/api';
 
 function WalletsPage() {
   const [walletAddress, setWalletAddress] = useState('');
@@ -19,7 +19,7 @@ function WalletsPage() {
   useEffect(() => {
     const fetchPlaidAccounts = async () => {
       try {
-        const response = await axios.get('/api/plaid/accounts');
+        const response = await api.get('/api/plaid/accounts');
         setPlaidAccounts(response.data.accounts);
       } catch (error) {
         console.error('Error fetching Plaid accounts:', error);
