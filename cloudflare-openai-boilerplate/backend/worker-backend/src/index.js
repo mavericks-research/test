@@ -100,13 +100,13 @@ async function createUser(userData, env) {
   if (!env.USERS_KV) {
     throw new Error("USERS_KV namespace not bound.");
   }
-  const { username, password } = userData;
+  const { username, password, walletAddress } = userData;
   const existingUser = await env.USERS_KV.get(`user_${username}`);
   if (existingUser) {
     throw new Error("User already exists.");
   }
   const hashedPassword = await hashPassword(password);
-  const newUser = { username, hashedPassword };
+  const newUser = { username, hashedPassword, walletAddress };
   await env.USERS_KV.put(`user_${username}`, JSON.stringify(newUser));
   return { username };
 }
@@ -280,6 +280,25 @@ export default {
           return new Response(JSON.stringify({ message: 'Login successful.' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         } catch (e) {
           return new Response(JSON.stringify({ error: e.message || 'Error logging in.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+      }
+      // --- User API Routes ---
+      else if (url.pathname === '/api/user/wallet' && request.method === 'PUT') {
+        try {
+          const { username, walletAddress } = await request.json();
+          if (!username || !walletAddress) {
+            return new Response(JSON.stringify({ error: 'Missing username or wallet address.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+          const user = await env.USERS_KV.get(`user_${username}`);
+          if (!user) {
+            return new Response(JSON.stringify({ error: 'User not found.' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+          const userData = JSON.parse(user);
+          userData.walletAddress = walletAddress;
+          await env.USERS_KV.put(`user_${username}`, JSON.stringify(userData));
+          return new Response(JSON.stringify({ message: 'Wallet address updated successfully.' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        } catch (e) {
+          return new Response(JSON.stringify({ error: e.message || 'Error updating wallet address.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
       }
       // --- Budget API Routes ---
