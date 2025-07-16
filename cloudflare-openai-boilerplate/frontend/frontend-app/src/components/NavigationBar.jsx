@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-function NavigationBar({ isNavVisible, onToggleNav }) {
+function NavigationBar({ isNavVisible, onToggleNav, isLoggedIn, onLogout }) {
 
   const navStyle = {
     background: '#0f0f0f',
@@ -74,6 +74,12 @@ function NavigationBar({ isNavVisible, onToggleNav }) {
           <li style={liStyle}>
             <Link to="/settings" style={linkStyle}>Settings</Link>
           </li>
+
+          {isLoggedIn && (
+            <li style={liStyle}>
+              <button onClick={onLogout} style={{...linkStyle, background: 'none', border: 'none', cursor: 'pointer', padding: 0}}>Logout</button>
+            </li>
+          )}
 
           {/*
                     <li style={liStyle}>

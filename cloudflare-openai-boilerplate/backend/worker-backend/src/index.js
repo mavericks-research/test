@@ -19,6 +19,99 @@ function handleOptions(request) {
   return new Response(null, { headers: corsHeaders });
 }
 
+// --- User Authentication Helper Functions ---
+
+/**
+ * Hashes a password using PBKDF2.
+ * @param {string} password The password to hash.
+ * @returns {Promise<string>} The salt and hashed password, concatenated and base64 encoded.
+ */
+async function hashPassword(password) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const encodedPassword = new TextEncoder().encode(password);
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encodedPassword,
+    { name: "PBKDF2" },
+    false,
+    ["deriveBits"]
+  );
+  const hash = await crypto.subtle.deriveBits(
+    {
+      name: "PBKDF2",
+      salt: salt,
+      iterations: 100000,
+      hash: "SHA-256",
+    },
+    key,
+    256
+  );
+  const hashedPassword = new Uint8Array(hash);
+  const saltAndHash = new Uint8Array(salt.length + hashedPassword.length);
+  saltAndHash.set(salt, 0);
+  saltAndHash.set(hashedPassword, salt.length);
+  return btoa(String.fromCharCode.apply(null, saltAndHash));
+}
+
+/**
+ * Verifies a password against a stored hash.
+ * @param {string} password The password to verify.
+ * @param {string} storedHash The stored salt and hash.
+ * @returns {Promise<boolean>} True if the password is correct, false otherwise.
+ */
+async function verifyPassword(password, storedHash) {
+  try {
+    const saltAndHash = new Uint8Array(atob(storedHash).split("").map(char => char.charCodeAt(0)));
+    const salt = saltAndHash.slice(0, 16);
+    const hash = saltAndHash.slice(16);
+    const encodedPassword = new TextEncoder().encode(password);
+    const key = await crypto.subtle.importKey(
+      "raw",
+      encodedPassword,
+      { name: "PBKDF2" },
+      false,
+      ["deriveBits"]
+    );
+    const newHash = await crypto.subtle.deriveBits(
+      {
+        name: "PBKDF2",
+        salt: salt,
+        iterations: 100000,
+        hash: "SHA-256",
+      },
+      key,
+      256
+    );
+    const newHashedPassword = new Uint8Array(newHash);
+    return crypto.subtle.timingSafeEqual(hash, newHashedPassword);
+  } catch (error) {
+    console.error("Error verifying password:", error);
+    return false;
+  }
+}
+
+/**
+ * Creates a new user.
+ * @param {object} userData - The data for the new user.
+ * @param {object} env - The Cloudflare environment object.
+ * @returns {object} The created user.
+ */
+async function createUser(userData, env) {
+  if (!env.USERS_KV) {
+    throw new Error("USERS_KV namespace not bound.");
+  }
+  const { username, password } = userData;
+  const existingUser = await env.USERS_KV.get(`user_${username}`);
+  if (existingUser) {
+    throw new Error("User already exists.");
+  }
+  const hashedPassword = await hashPassword(password);
+  const newUser = { username, hashedPassword };
+  await env.USERS_KV.put(`user_${username}`, JSON.stringify(newUser));
+  return { username };
+}
+
+
 // --- Budget Plan CRUD Helper Functions ---
 
 /**
@@ -154,8 +247,43 @@ export default {
     try {
       // Routing based on path
 
+      // --- Auth API Routes ---
+      if (url.pathname === '/api/register' && request.method === 'POST') {
+        try {
+          const userData = await request.json();
+          if (!userData.username || !userData.password) {
+            return new Response(JSON.stringify({ error: 'Missing username or password.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+          const newUser = await createUser(userData, env);
+          return new Response(JSON.stringify(newUser), { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        } catch (e) {
+          if (e.message === "User already exists.") {
+            return new Response(JSON.stringify({ error: e.message }), { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+          return new Response(JSON.stringify({ error: e.message || 'Error creating user.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+      } else if (url.pathname === '/api/login' && request.method === 'POST') {
+        try {
+          const userData = await request.json();
+          if (!userData.username || !userData.password) {
+            return new Response(JSON.stringify({ error: 'Missing username or password.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+          const user = await env.USERS_KV.get(`user_${userData.username}`);
+          if (!user) {
+            return new Response(JSON.stringify({ error: 'Invalid username or password.' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+          const { hashedPassword } = JSON.parse(user);
+          const passwordMatch = await verifyPassword(userData.password, hashedPassword);
+          if (!passwordMatch) {
+            return new Response(JSON.stringify({ error: 'Invalid username or password.' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+          return new Response(JSON.stringify({ message: 'Login successful.' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        } catch (e) {
+          return new Response(JSON.stringify({ error: e.message || 'Error logging in.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+      }
       // --- Budget API Routes ---
-      if (url.pathname === '/api/budgets' && request.method === 'POST') {
+      else if (url.pathname === '/api/budgets' && request.method === 'POST') {
         try {
           const planData = await request.json();
           // Validation for POST
