@@ -1,30 +1,33 @@
 // frontend/frontend-app/src/App.jsx
 import React, { useState, useContext } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'; // Import useLocation
-import { SettingsContext } from './contexts/SettingsContext.jsx';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { SettingsContext, SettingsProvider } from './contexts/SettingsContext.jsx';
+import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
 import DashboardPage from './pages/DashboardPage';
-import SplashScreen from './pages/SplashScreen';
 import WalletsPage from './pages/WalletsPage';
 import BudgetPlannerPage from './pages/BudgetPlannerPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
+import LoginPage from './pages/LoginPage.jsx';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import NavigationBar from './components/NavigationBar';
 import AdBanner from './components/AdBanner';
 import './App.css';
 
-// New AppContent component
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? children : <Navigate to="/login" />;
+};
+
 function AppContent() {
   const location = useLocation();
   const { theme } = useContext(SettingsContext);
-  const [isAuthenticated, setIsAuthenticated] = useState(true); // isAuthenticated by default
+  const { isAuthenticated } = useAuth();
   const [isNavVisible, setIsNavVisible] = useState(false);
   const WORKER_URL = import.meta.env.VITE_WORKER_URL;
 
   const toggleNav = () => setIsNavVisible(prev => !prev);
-
-  const isSplashScreen = location.pathname === '/'; // This will effectively be unused
 
   return (
     <div
@@ -33,53 +36,46 @@ function AppContent() {
         display: 'flex',
         flexDirection: 'column',
         minHeight: '100vh',
-        paddingBottom: '50px', // Add padding to the bottom to prevent content overlap by adbanner
-        backgroundColor: isSplashScreen ? 'transparent' : undefined
+        paddingBottom: '50px',
       }}
     >
-      {/* Header is always shown as user is authenticated */}
-      <Header onToggleNav={toggleNav} isLoggedIn={true} />
+      {isAuthenticated && <Header onToggleNav={toggleNav} />}
       <AdBanner />
-
-      {/* NavigationBar is always shown as user is authenticated */}
-      <NavigationBar
-        isNavVisible={isNavVisible}
-        onToggleNav={toggleNav}
-        isLoggedIn={true}
-      />
-
+      {isAuthenticated && (
+        <NavigationBar
+          isNavVisible={isNavVisible}
+          onToggleNav={toggleNav}
+        />
+      )}
       <div style={{ flexGrow: 1, width: '100%', display: 'flex' }}>
-        {/* Adjust paddingTop; effectively always 56px as splash screen is removed */}
-        <div style={{ flexGrow: 1, overflowY: 'auto', paddingTop: '56px' }}>
+        <div style={{ flexGrow: 1, overflowY: 'auto', paddingTop: isAuthenticated ? '56px' : '0' }}>
           <Routes>
-            <Route path="/login" element={<Navigate to="/dashboard" />} />
+            <Route path="/login" element={<LoginPage />} />
             <Route
               path="/dashboard"
-              element={<DashboardPage workerUrl={WORKER_URL} />}
+              element={<ProtectedRoute><DashboardPage workerUrl={WORKER_URL} /></ProtectedRoute>}
             />
             <Route
               path="/wallets"
-              element={<WalletsPage />}
+              element={<ProtectedRoute><WalletsPage /></ProtectedRoute>}
             />
             <Route
               path="/planner"
-              element={<BudgetPlannerPage />}
+              element={<ProtectedRoute><BudgetPlannerPage /></ProtectedRoute>}
             />
             <Route
               path="/reports"
-              element={<ReportsPage />}
+              element={<ProtectedRoute><ReportsPage /></ProtectedRoute>}
             />
             <Route
               path="/settings"
-              element={<SettingsPage />}
+              element={<ProtectedRoute><SettingsPage /></ProtectedRoute>}
             />
             <Route path="/" element={<Navigate to="/dashboard" />} />
-            <Route path="*" element={<Navigate to="/dashboard" />} /> {/* Default to dashboard */}
+            <Route path="*" element={<Navigate to="/dashboard" />} />
           </Routes>
         </div>
       </div>
-
-      {/* Ad Banner to be displayed at the bottom */}
       <AdBanner />
     </div>
   );
@@ -88,7 +84,11 @@ function AppContent() {
 function App() {
   return (
     <BrowserRouter>
-      <AppContent />
+      <SettingsProvider>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </SettingsProvider>
     </BrowserRouter>
   );
 }

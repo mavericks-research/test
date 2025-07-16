@@ -1,6 +1,12 @@
+import { Hono } from 'hono';
+import auth from './auth';
 import { normalizeTokenNames, normalizeTimestamps, normalizeBlockCypherTransactions, convertToUSD } from './normalizer.js';
 // Added fetchTrendingCoins and fetchGlobalMarketData to the import below
 import { getCurrentPrices, getHistoricalData, getCoinList, getTransactionHistory, getCoinsByBlockchain, getMarketChartData, fetchTrendingCoins, fetchGlobalMarketData } from './cryptoApi.js'; // Added getMarketChartData
+
+const app = new Hono();
+
+app.route('/api/auth', auth);
 
 // Define CORS headers - Added GET
 const corsHeaders = {
@@ -135,6 +141,14 @@ async function deleteBudgetPlan(id, env) {
 
 export default {
   async fetch(request, env, ctx) {
+    return app.fetch(request, env, ctx);
+  }
+}
+
+app.all('*', async (c) => {
+    const request = c.req;
+    const env = c.env;
+    const ctx = c.executionCtx;
     // Handle CORS preflight requests
     if (request.method === 'OPTIONS') {
       return handleOptions(request);
@@ -148,7 +162,7 @@ export default {
     // We can check specifically for budget routes to make this check conditional
     if (url.pathname.startsWith('/api/budgets') && !env.BUDGET_PLANS_KV) {
       console.error('BUDGET_PLANS_KV namespace not bound or not configured in wrangler.toml.');
-      return new Response(JSON.stringify({ error: 'Budget service is not configured.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      return c.json({ error: 'Budget service is not configured.' }, 500, { ...corsHeaders, 'Content-Type': 'application/json' });
     }
 
     try {
@@ -162,114 +176,111 @@ export default {
           if (!planData.name || typeof planData.name !== 'string' ||
               !planData.monthYear || typeof planData.monthYear !== 'string' ||
               !Array.isArray(planData.categories) || planData.categories.length === 0) {
-            return new Response(JSON.stringify({ error: 'Missing or invalid required fields: name (string), monthYear (string), categories (non-empty array).' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            return c.json({ error: 'Missing or invalid required fields: name (string), monthYear (string), categories (non-empty array).' }, 400, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
           for (const category of planData.categories) {
             if (!category.name || typeof category.name !== 'string' ||
                 category.budgetedAmount === undefined || typeof category.budgetedAmount !== 'number' || category.budgetedAmount < 0) {
-              return new Response(JSON.stringify({ error: 'Invalid category: Each category must have name (string) and budgetedAmount (non-negative number).' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+              return c.json({ error: 'Invalid category: Each category must have name (string) and budgetedAmount (non-negative number).' }, 400, { ...corsHeaders, 'Content-Type': 'application/json' });
             }
           }
 
           const newPlan = await createBudgetPlan(planData, env);
-          return new Response(JSON.stringify(newPlan), { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          return c.json(newPlan, 201, { ...corsHeaders, 'Content-Type': 'application/json' });
         } catch (e) {
           // Catch JSON parsing errors or other unexpected issues
           if (e instanceof SyntaxError) {
-            return new Response(JSON.stringify({ error: 'Invalid JSON in request body.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            return c.json({ error: 'Invalid JSON in request body.' }, 400, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
           console.error('Error creating budget plan:', e);
-          return new Response(JSON.stringify({ error: e.message || 'Error creating budget plan.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          return c.json({ error: e.message || 'Error creating budget plan.' }, 500, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
       } else if (url.pathname === '/api/budgets' && request.method === 'GET') {
         try {
           const plans = await getAllBudgetPlans(env);
-          return new Response(JSON.stringify(plans), {
-            status: 200,
-            headers: {
+          return c.json(plans, 200, {
               ...corsHeaders,
               'Content-Type': 'application/json',
               'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
               'Pragma': 'no-cache',
               'Expires': '0',
-            },
-          });
+            });
         } catch (e) {
           console.error('Error getting all budget plans:', e);
-          return new Response(JSON.stringify({ error: e.message || 'Error retrieving budget plans.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          return c.json({ error: e.message || 'Error retrieving budget plans.' }, 500, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
       } else if (url.pathname.startsWith('/api/budgets/') && request.method === 'GET') {
         const id = url.pathname.split('/')[3];
         if (!id) {
-          return new Response(JSON.stringify({ error: 'Budget plan ID missing in path.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          return c.json({ error: 'Budget plan ID missing in path.' }, 400, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
         try {
           const plan = await getBudgetPlan(id, env);
           if (plan) {
-            return new Response(JSON.stringify(plan), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            return c.json(plan, 200, { ...corsHeaders, 'Content-Type': 'application/json' });
           } else {
-            return new Response(JSON.stringify({ error: 'Budget plan not found.' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            return c.json({ error: 'Budget plan not found.' }, 404, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
         } catch (e) {
           console.error(`Error getting budget plan ${id}:`, e);
-          return new Response(JSON.stringify({ error: e.message || `Error retrieving budget plan ${id}.` }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          return c.json({ error: e.message || `Error retrieving budget plan ${id}.` }, 500, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
       } else if (url.pathname.startsWith('/api/budgets/') && request.method === 'PUT') {
         const id = url.pathname.split('/')[3];
         if (!id) {
-          return new Response(JSON.stringify({ error: 'Budget plan ID missing in path.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          return c.json({ error: 'Budget plan ID missing in path.' }, 400, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
         try {
           const updatedData = await request.json();
 
           // Validation for PUT (partial updates are allowed, but validate what's provided)
           if (updatedData.name !== undefined && typeof updatedData.name !== 'string') {
-            return new Response(JSON.stringify({ error: 'Invalid name: must be a string.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            return c.json({ error: 'Invalid name: must be a string.' }, 400, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
           if (updatedData.monthYear !== undefined && typeof updatedData.monthYear !== 'string') {
-            return new Response(JSON.stringify({ error: 'Invalid monthYear: must be a string.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            return c.json({ error: 'Invalid monthYear: must be a string.' }, 400, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
           if (updatedData.categories !== undefined) {
             if (!Array.isArray(updatedData.categories)) {
-              return new Response(JSON.stringify({ error: 'Invalid categories: must be an array.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+              return c.json({ error: 'Invalid categories: must be an array.' }, 400, { ...corsHeaders, 'Content-Type': 'application/json' });
             }
             for (const category of updatedData.categories) {
               if (!category.name || typeof category.name !== 'string' ||
                   category.budgetedAmount === undefined || typeof category.budgetedAmount !== 'number' || category.budgetedAmount < 0) {
                  // Allow categories to be updated without an ID, ID will be preserved or created by updateBudgetPlan
-                return new Response(JSON.stringify({ error: 'Invalid category in update: Each category must have name (string) and budgetedAmount (non-negative number).' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+                return c.json({ error: 'Invalid category in update: Each category must have name (string) and budgetedAmount (non-negative number).' }, 400, { ...corsHeaders, 'Content-Type': 'application/json' });
               }
             }
           }
 
           const updatedPlan = await updateBudgetPlan(id, updatedData, env);
           if (updatedPlan) {
-            return new Response(JSON.stringify(updatedPlan), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            return c.json(updatedPlan, 200, { ...corsHeaders, 'Content-Type': 'application/json' });
           } else {
-            return new Response(JSON.stringify({ error: 'Budget plan not found for update.' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            return c.json({ error: 'Budget plan not found for update.' }, 404, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
         } catch (e) {
           if (e instanceof SyntaxError) {
-            return new Response(JSON.stringify({ error: 'Invalid JSON in request body.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            return c.json({ error: 'Invalid JSON in request body.' }, 400, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
           console.error(`Error updating budget plan ${id}:`, e);
-          return new Response(JSON.stringify({ error: e.message || `Error updating budget plan ${id}.` }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          return c.json({ error: e.message || `Error updating budget plan ${id}.` }, 500, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
       } else if (url.pathname.startsWith('/api/budgets/') && request.method === 'DELETE') {
         const id = url.pathname.split('/')[3];
         if (!id) {
-          return new Response(JSON.stringify({ error: 'Budget plan ID missing in path.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          return c.json({ error: 'Budget plan ID missing in path.' }, 400, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
         try {
           const success = await deleteBudgetPlan(id, env);
           if (success) {
-            return new Response(JSON.stringify({ message: 'Budget plan deleted successfully.' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            return c.json({ message: 'Budget plan deleted successfully.' }, 200, { ...corsHeaders, 'Content-Type': 'application/json' });
           } else {
-            return new Response(JSON.stringify({ error: 'Budget plan not found or could not be deleted.' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            return c.json({ error: 'Budget plan not found or could not be deleted.' }, 404, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
         } catch (e) {
           console.error(`Error deleting budget plan ${id}:`, e);
-          return new Response(JSON.stringify({ error: e.message || `Error deleting budget plan ${id}.` }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          return c.json({ error: e.message || `Error deleting budget plan ${id}.` }, 500, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
       }
       // --- End of Budget API Routes ---
@@ -280,13 +291,13 @@ export default {
         const vsCurrenciesParam = url.searchParams.get('currencies'); // e.g., "usd,eur"
 
         if (!coinIdsParam || !vsCurrenciesParam) {
-          return new Response('Missing "coins" or "currencies" query parameters', { status: 400, headers: corsHeaders });
+          return c.text('Missing "coins" or "currencies" query parameters', 400, corsHeaders);
         }
         const coinIds = coinIdsParam.split(',');
         const vsCurrencies = vsCurrenciesParam.split(',');
 
         const data = await getCurrentPrices(coinIds, vsCurrencies, COINGECKO_API_KEY);
-        return new Response(JSON.stringify(data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        return c.json(data, 200, { ...corsHeaders, 'Content-Type': 'application/json' });
 
       } else if (url.pathname === '/api/crypto/historical' && request.method === 'GET') {
         const coinId = url.searchParams.get('coin'); // e.g., "bitcoin"
@@ -294,26 +305,23 @@ export default {
         // vsCurrency is part of the response structure from CoinGecko, not a direct query param for this specific history endpoint in cryptoApi.js
 
         if (!coinId || !date) {
-          return new Response('Missing "coin" or "date" query parameters', { status: 400, headers: corsHeaders });
+          return c.text('Missing "coin" or "date" query parameters', 400, corsHeaders);
         }
 
         const data = await getHistoricalData(coinId, date, COINGECKO_API_KEY);
-        return new Response(JSON.stringify(data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        return c.json(data, 200, { ...corsHeaders, 'Content-Type': 'application/json' });
 
       } else if (url.pathname === '/api/crypto/coinslist' && request.method === 'GET') {
         // Optional: Expose getCoinList for testing/utility
         const data = await getCoinList(COINGECKO_API_KEY);
-        return new Response(JSON.stringify(data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        return c.json(data, 200, { ...corsHeaders, 'Content-Type': 'application/json' });
 
       } else if (url.pathname === '/api/crypto/enriched-historical-data' && request.method === 'GET') {
         const coinId = url.searchParams.get('coinId');
         const date = url.searchParams.get('date');
 
         if (!coinId || !date) {
-          return new Response(JSON.stringify({ error: 'Missing "coinId" or "date" query parameters.' }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return c.json({ error: 'Missing "coinId" or "date" query parameters.' }, 400, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
 
         try {
@@ -324,10 +332,7 @@ export default {
           if (!historicalData || !historicalData.market_data) {
             // Log the unexpected structure for debugging
             console.error('Unexpected historicalData structure:', historicalData);
-            return new Response(JSON.stringify({ error: 'Failed to retrieve or parse valid market data from CoinGecko.' }), {
-              status: 502, // Bad Gateway, as it's an upstream issue
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
+            return c.json({ error: 'Failed to retrieve or parse valid market data from CoinGecko.' }, 502, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
 
           // 2. Extract relevant market data (price, market cap, volume in USD)
@@ -337,20 +342,14 @@ export default {
 
           if (price === undefined || marketCap === undefined || volume === undefined) {
             console.error('Missing USD market data fields in historicalData:', historicalData.market_data);
-            return new Response(JSON.stringify({ error: 'Required USD market data (price, market_cap, total_volume) not found in CoinGecko response.' }), {
-              status: 502,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
+            return c.json({ error: 'Required USD market data (price, market_cap, total_volume) not found in CoinGecko response.' }, 502, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
 
           // 3. Check for OPENAI_API_KEY
           const OPENAI_API_KEY = env.OPENAI_API_KEY;
           if (!OPENAI_API_KEY) {
             console.error('OPENAI_API_KEY not configured');
-            return new Response(JSON.stringify({ error: 'OpenAI API key is not configured.' }), {
-              status: 500, // Internal Server Error
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
+            return c.json({ error: 'OpenAI API key is not configured.' }, 500, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
 
           // 4. Construct OpenAI Prompt
@@ -382,39 +381,27 @@ Keep the entire response concise.
           if (!openaiResponse.ok) {
             const errorText = await openaiResponse.text();
             console.error('OpenAI API Error:', errorText);
-            return new Response(JSON.stringify({ error: `OpenAI API request failed: ${openaiResponse.status} ${errorText}` }), {
-              status: openaiResponse.status,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
+            return c.json({ error: `OpenAI API request failed: ${openaiResponse.status} ${errorText}` }, openaiResponse.status, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
 
           const openaiData = await openaiResponse.json();
           const aiSummary = openaiData.choices && openaiData.choices[0] ? openaiData.choices[0].text.trim() : 'No summary received from AI.';
 
           // 6. Combine and return
-          return new Response(JSON.stringify({
+          return c.json({
             coinGeckoData: historicalData, // Send the whole original object back
             openAiInsights: aiSummary,
-          }), {
-            status: 200,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          }, 200, { ...corsHeaders, 'Content-Type': 'application/json' });
 
         } catch (error) {
           console.error(`Error processing /api/crypto/enriched-historical-data for ${coinId} on ${date}:`, error);
           // Check if the error is from getHistoricalData itself (e.g., CoinGecko API down or invalid coin/date)
           // The getHistoricalData function in cryptoApi.js already throws an error that includes "CoinGecko API request failed"
           if (error.message && error.message.includes("CoinGecko API request failed")) {
-            return new Response(JSON.stringify({ error: error.message }), {
-              status: 502, // Bad Gateway, as it's an upstream API issue
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
+            return c.json({ error: error.message }, 502, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
           // Generic error for other issues
-          return new Response(JSON.stringify({ error: `An unexpected error occurred: ${error.message}` }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return c.json({ error: `An unexpected error occurred: ${error.message}` }, 500, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
 
       } else if (request.method === 'POST' && url.pathname === '/') { // Existing Etherscan/OpenAI functionality - ensure it's for the root path
@@ -423,28 +410,28 @@ Keep the entire response concise.
         try {
           requestBody = await request.json();
         } catch (error) {
-          return new Response('Invalid JSON body for POST request', { status: 400, headers: corsHeaders });
+          return c.text('Invalid JSON body for POST request', 400, corsHeaders);
         }
 
         const { walletAddress } = requestBody;
 
         if (!walletAddress) {
-          return new Response('Missing "walletAddress" in request body for POST request', { status: 400, headers: corsHeaders });
+          return c.text('Missing "walletAddress" in request body for POST request', 400, corsHeaders);
         }
 
         const ethAddressRegex = /^0x[a-fA-F0-9]{40}$/;
         if (!ethAddressRegex.test(walletAddress)) {
-          return new Response('Invalid Ethereum wallet address format.', { status: 400, headers: corsHeaders });
+          return c.text('Invalid Ethereum wallet address format.', 400, corsHeaders);
         }
 
         if (!env.OPENAI_API_KEY) {
           console.error('OPENAI_API_KEY not configured');
-          return new Response('OPENAI_API_KEY not configured.', { status: 500, headers: corsHeaders });
+          return c.text('OPENAI_API_KEY not configured.', 500, corsHeaders);
         }
 
         if (!env.ETHERSCAN_API_KEY) {
           console.error('ETHERSCAN_API_KEY not configured');
-          return new Response('ETHERSCAN_API_KEY not configured.', { status: 500, headers: corsHeaders });
+          return c.text('ETHERSCAN_API_KEY not configured.', 500, corsHeaders);
         }
 
         const etherscanApiUrl = `https://api.etherscan.io/api?module=account&action=txlist&address=${walletAddress}&startblock=0&endblock=99999999&sort=asc&apikey=${env.ETHERSCAN_API_KEY}`;
@@ -453,7 +440,7 @@ Keep the entire response concise.
         if (!etherscanResponse.ok) {
           const errorText = await etherscanResponse.text();
           console.error('Etherscan API Error:', errorText);
-          return new Response(`Etherscan API request failed: ${etherscanResponse.status} ${errorText}`, { status: etherscanResponse.status, headers: corsHeaders });
+          return c.text(`Etherscan API request failed: ${etherscanResponse.status} ${errorText}`, etherscanResponse.status, corsHeaders);
         }
 
         let etherscanData = await etherscanResponse.json();
@@ -540,12 +527,12 @@ Please also provide a general statement about what it means for a wallet to have
           if (!openaiResponse.ok) {
             const errorText = await openaiResponse.text();
             console.error('OpenAI API Error:', errorText);
-            return new Response(`OpenAI API request failed: ${openaiResponse.status} ${errorText}`, { status: openaiResponse.status, headers: corsHeaders });
+            return c.text(`OpenAI API request failed: ${openaiResponse.status} ${errorText}`, openaiResponse.status, corsHeaders);
           }
 
           const openaiData = await openaiResponse.json();
           const aiSummary = openaiData.choices && openaiData.choices[0] ? openaiData.choices[0].text.trim() : 'No summary received from AI.';
-          return new Response(JSON.stringify({ message: "AI summary generated successfully", summary: aiSummary, transactionData: transactions }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          return c.json({ message: "AI summary generated successfully", summary: aiSummary, transactionData: transactions }, 200, { ...corsHeaders, 'Content-Type': 'application/json' });
 
         } else if (etherscanData.status === "0") {
           const openAIPrompt = `Wallet Address: ${walletAddress}
@@ -586,13 +573,13 @@ Please also provide a brief, general statement about what it means for a new or 
 
           if (!openaiResponse.ok) {
             const errorText = await openaiResponse.text();
-            return new Response(`OpenAI API request failed: ${openaiResponse.status} ${errorText}`, { status: openaiResponse.status, headers: corsHeaders });
+            return c.text(`OpenAI API request failed: ${openaiResponse.status} ${errorText}`, openaiResponse.status, corsHeaders);
           }
           const openaiData = await openaiResponse.json();
           const aiSummary = openaiData.choices && openaiData.choices[0] ? openaiData.choices[0].text.trim() : 'No summary received from AI.';
-          return new Response(JSON.stringify({ message: etherscanData.message || "No transactions found", summary: aiSummary, transactionData: [] }), { headers: { ...corsHeaders, 'Content-Type': 'application/json'} });
+          return c.json({ message: etherscanData.message || "No transactions found", summary: aiSummary, transactionData: [] }, 200, { ...corsHeaders, 'Content-Type': 'application/json'} );
         } else {
-          return new Response('Unexpected response from Etherscan API', { status: 500, headers: corsHeaders });
+          return c.text('Unexpected response from Etherscan API', 500, corsHeaders);
         }
         // End of existing POST logic
       // --- Transaction Analysis Route (New) ---
@@ -606,32 +593,20 @@ Please also provide a brief, general statement about what it means for a new or 
 
 
         if (!coinSymbol || !['btc', 'eth', 'ltc'].includes(coinSymbol.toLowerCase())) {
-          return new Response(JSON.stringify({ error: 'Missing or invalid "coinSymbol" query parameter. Supported: btc, eth, ltc.' }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return c.json({ error: 'Missing or invalid "coinSymbol" query parameter. Supported: btc, eth, ltc.' }, 400, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
         if (!walletAddress) {
-          return new Response(JSON.stringify({ error: 'Missing "walletAddress" query parameter.' }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return c.json({ error: 'Missing "walletAddress" query parameter.' }, 400, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
         if (!openaiApiKey) {
             console.error('OPENAI_API_KEY not configured');
-            return new Response(JSON.stringify({ error: 'OpenAI API key is not configured for the server.' }), {
-              status: 500,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
+            return c.json({ error: 'OpenAI API key is not configured for the server.' }, 500, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
 
         try {
           const rawTransactions = await getTransactionHistory(coinSymbol, walletAddress, blockcypherToken);
           if (!rawTransactions || rawTransactions.length === 0) {
-            return new Response(JSON.stringify({ analysis: "No transactions found for this address.", transactions: [] }), {
-              status: 200,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
+            return c.json({ analysis: "No transactions found for this address.", transactions: [] }, 200, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
 
           const normalizedTransactions = normalizeBlockCypherTransactions(rawTransactions, coinSymbol, walletAddress);
@@ -680,10 +655,7 @@ Provide a concise, human-readable analysis.
           if (!openaiResponse.ok) {
             const errorText = await openaiResponse.text();
             console.error('OpenAI API Error:', errorText);
-            return new Response(JSON.stringify({ error: `OpenAI API request failed: ${openaiResponse.status} ${errorText}` }), {
-              status: openaiResponse.status,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
+            return c.json({ error: `OpenAI API request failed: ${openaiResponse.status} ${errorText}` }, openaiResponse.status, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
 
           const openaiData = await openaiResponse.json();
@@ -691,13 +663,10 @@ Provide a concise, human-readable analysis.
                              ? openaiData.choices[0].message.content.trim()
                              : 'No analysis received from AI.';
 
-          return new Response(JSON.stringify({
+          return c.json({
             analysis: aiAnalysis,
             normalizedTransactions: normalizedTransactions, // Optionally return normalized data
-          }), {
-            status: 200,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          }, 200, { ...corsHeaders, 'Content-Type': 'application/json' });
 
         } catch (error) {
           console.error(`Error in /api/crypto/transaction-analysis for ${coinSymbol} address ${walletAddress}:`, error);
@@ -706,10 +675,7 @@ Provide a concise, human-readable analysis.
           if (error.message.includes("BlockCypher API request failed")) {
             errorStatus = 502; // Bad Gateway for upstream API errors
           }
-          return new Response(JSON.stringify({ error: errorMessage }), {
-            status: errorStatus,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return c.json({ error: errorMessage }, errorStatus, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
       } // <<< --- ADDED CLOSING BRACE HERE
       // --- End of Transaction Analysis Route ---
@@ -720,10 +686,7 @@ Provide a concise, human-readable analysis.
         const currency = url.searchParams.get('currency'); // e.g., 'usd'
 
         if (!platform || !currency) {
-          return new Response(JSON.stringify({ error: 'Missing "platform" or "currency" query parameters.' }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return c.json({ error: 'Missing "platform" or "currency" query parameters.' }, 400, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
 
         // Map platform parameter to CoinGecko asset_platform_id
@@ -741,31 +704,19 @@ Provide a concise, human-readable analysis.
             assetPlatformId = 'solana';
             break;
           default:
-            return new Response(JSON.stringify({ error: 'Invalid "platform". Supported platforms: ethereum, bsc, solana.' }), {
-              status: 400,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
+            return c.json({ error: 'Invalid "platform". Supported platforms: ethereum, bsc, solana.' }, 400, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
 
         try {
           const data = await getCoinsByBlockchain(assetPlatformId, currency, COINGECKO_API_KEY);
-          return new Response(JSON.stringify(data), {
-            status: 200,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return c.json(data, 200, { ...corsHeaders, 'Content-Type': 'application/json' });
         } catch (error) {
           console.error(`Error fetching coins for platform ${platform}:`, error);
           // Check if the error is from getCoinsByBlockchain itself (e.g., CoinGecko API down)
           if (error.message && error.message.includes("CoinGecko API request failed")) {
-            return new Response(JSON.stringify({ error: error.message }), {
-              status: 502, // Bad Gateway for upstream API issues
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
+            return c.json({ error: error.message }, 502, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
-          return new Response(JSON.stringify({ error: `An unexpected error occurred: ${error.message}` }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return c.json({ error: `An unexpected error occurred: ${error.message}` }, 500, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
       }
       // --- End of New Route ---
@@ -777,10 +728,7 @@ Provide a concise, human-readable analysis.
         const days = url.searchParams.get('days') || '30'; // Default to 30 days if not specified
 
         if (!coinId) {
-          return new Response(JSON.stringify({ error: 'Coin ID missing in path. Expected /api/crypto/market-chart/:coinId' }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return c.json({ error: 'Coin ID missing in path. Expected /api/crypto/market-chart/:coinId' }, 400, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
 
         const COINGECKO_API_KEY = env.COINGECKO_API_KEY || null;
@@ -795,16 +743,10 @@ Provide a concise, human-readable analysis.
               date: new Date(p[0]).toISOString().split('T')[0], // Convert timestamp to YYYY-MM-DD
               price: p[1],
             }));
-            return new Response(JSON.stringify(formattedPrices), {
-              status: 200,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
+            return c.json(formattedPrices, 200, { ...corsHeaders, 'Content-Type': 'application/json' });
           } else {
             console.error(`No price data or unexpected format from getMarketChartData for ${coinId}, days ${days}:`, rawChartData);
-            return new Response(JSON.stringify({ error: 'No chart data found or unexpected format from upstream API.' }), {
-              status: 404,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
+            return c.json({ error: 'No chart data found or unexpected format from upstream API.' }, 404, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
         } catch (error) {
           console.error(`Error fetching market chart for ${coinId}, days ${days}:`, error);
@@ -812,10 +754,7 @@ Provide a concise, human-readable analysis.
           if (error.message && error.message.includes("CoinGecko API request failed")) {
             errorStatus = 502;
           }
-          return new Response(JSON.stringify({ error: error.message || 'Error retrieving market chart data.' }), {
-            status: errorStatus,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return c.json({ error: error.message || 'Error retrieving market chart data.' }, errorStatus, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
       }
       // --- End of New Crypto Market Chart Route ---
@@ -824,23 +763,14 @@ Provide a concise, human-readable analysis.
       else if (url.pathname === '/api/crypto/trending' && request.method === 'GET') {
         try {
           const data = await fetchTrendingCoins(COINGECKO_API_KEY);
-          return new Response(JSON.stringify(data), {
-            status: 200,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return c.json(data, 200, { ...corsHeaders, 'Content-Type': 'application/json' });
         } catch (error) {
           console.error('Error fetching trending coins:', error);
           // Check if the error is from fetchTrendingCoins itself
           if (error.message && error.message.includes("CoinGecko API request failed")) {
-            return new Response(JSON.stringify({ error: error.message }), {
-              status: 502, // Bad Gateway for upstream API issues
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
+            return c.json({ error: error.message }, 502, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
-          return new Response(JSON.stringify({ error: `An unexpected error occurred: ${error.message}` }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return c.json({ error: `An unexpected error occurred: ${error.message}` }, 500, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
       }
       // --- End of New Route for Trending Coins ---
@@ -849,22 +779,13 @@ Provide a concise, human-readable analysis.
       else if (url.pathname === '/api/crypto/global' && request.method === 'GET') {
         try {
           const data = await fetchGlobalMarketData(COINGECKO_API_KEY);
-          return new Response(JSON.stringify(data), {
-            status: 200,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return c.json(data, 200, { ...corsHeaders, 'Content-Type': 'application/json' });
         } catch (error) {
           console.error('Error fetching global market data:', error);
           if (error.message && error.message.includes("CoinGecko API request failed")) {
-            return new Response(JSON.stringify({ error: error.message }), {
-              status: 502, // Bad Gateway
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
+            return c.json({ error: error.message }, 502, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
-          return new Response(JSON.stringify({ error: `An unexpected error occurred: ${error.message}` }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return c.json({ error: `An unexpected error occurred: ${error.message}` }, 500, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
       }
       // --- End of New Route for Global Market Data ---
@@ -879,14 +800,14 @@ Provide a concise, human-readable analysis.
 
         if (!openaiApiKey) {
           console.error('OPENAI_API_KEY not configured');
-          return new Response(JSON.stringify({ error: 'OpenAI API key is not configured.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          return c.json({ error: 'OpenAI API key is not configured.' }, 500, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
         if (!alphaVantageApiKey) {
           console.error('ALPHA_VANTAGE_API_KEY not configured');
-          return new Response(JSON.stringify({ error: 'Alpha Vantage API key is not configured.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          return c.json({ error: 'Alpha Vantage API key is not configured.' }, 500, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
         if (!naturalQuery) {
-          return new Response(JSON.stringify({ error: 'Missing "q" query parameter for natural language search.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          return c.json({ error: 'Missing "q" query parameter for natural language search.' }, 400, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
 
         const financialQueryFunction = {
@@ -930,10 +851,7 @@ Provide a concise, human-readable analysis.
           if (!openaiResponse.ok) {
             const errorText = await openaiResponse.text();
             console.error('OpenAI API Error for natural search:', errorText);
-            return new Response(JSON.stringify({ error: `OpenAI API request failed: ${openaiResponse.status} ${errorText}` }), {
-              status: openaiResponse.status,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
+            return c.json({ error: `OpenAI API request failed: ${openaiResponse.status} ${errorText}` }, openaiResponse.status, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
 
           const openaiData = await openaiResponse.json();
@@ -942,10 +860,7 @@ Provide a concise, human-readable analysis.
             openAICriteria = JSON.parse(openaiData.choices[0].message.function_call.arguments);
           } else {
             console.warn('OpenAI did not return a function call or arguments. Response:', openaiData);
-            return new Response(JSON.stringify({ error: 'Could not parse search criteria using OpenAI.', openAIResponse: openaiData }), {
-                status: 502, // Bad Gateway, as OpenAI response was not as expected
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
+            return c.json({ error: 'Could not parse search criteria using OpenAI.', openAIResponse: openaiData }, 502, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
 
           // Combine keywords and sector for Alpha Vantage SYMBOL_SEARCH
@@ -956,12 +871,12 @@ Provide a concise, human-readable analysis.
           const alphaVantageSearchString = searchKeywordsArray.join(' ');
 
           if (!alphaVantageSearchString.trim()) {
-            return new Response(JSON.stringify({
+            return c.json({
                 openAICriteria: openAICriteria,
                 alphaVantageSearchQuery: "",
                 alphaVantageSearchResults: [],
                 message: "No valid keywords extracted for search."
-            }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            }, 400, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
 
           const alphaVantageUrl = `https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=${encodeURIComponent(alphaVantageSearchString)}&apikey=${alphaVantageApiKey}`;
@@ -970,10 +885,7 @@ Provide a concise, human-readable analysis.
           if (!alphaVantageResponse.ok) {
             const alphaVantageErrorText = await alphaVantageResponse.text();
             console.error('Alpha Vantage API Error for SYMBOL_SEARCH:', alphaVantageErrorText);
-            return new Response(JSON.stringify({ error: `Alpha Vantage SYMBOL_SEARCH API request failed: ${alphaVantageResponse.status} ${alphaVantageErrorText}`, alphaVantageSearchQuery: alphaVantageSearchString }), {
-              status: alphaVantageResponse.status,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
+            return c.json({ error: `Alpha Vantage SYMBOL_SEARCH API request failed: ${alphaVantageResponse.status} ${alphaVantageErrorText}`, alphaVantageSearchQuery: alphaVantageSearchString }, alphaVantageResponse.status, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
 
           const alphaVantageData = await alphaVantageResponse.json();
@@ -981,43 +893,34 @@ Provide a concise, human-readable analysis.
           // Handle cases like API notes or error messages from Alpha Vantage
           if (alphaVantageData['Error Message']) {
             console.warn(`Alpha Vantage SYMBOL_SEARCH API error: ${alphaVantageData['Error Message']}`);
-            return new Response(JSON.stringify({ error: `Alpha Vantage API error: ${alphaVantageData['Error Message']}`, openAICriteria, alphaVantageSearchQuery: alphaVantageSearchString }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            return c.json({ error: `Alpha Vantage API error: ${alphaVantageData['Error Message']}`, openAICriteria, alphaVantageSearchQuery: alphaVantageSearchString }, 502, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
            if (alphaVantageData['Note'] && (!alphaVantageData.bestMatches || alphaVantageData.bestMatches.length === 0)) {
             console.warn(`Alpha Vantage SYMBOL_SEARCH API Note (potential issue or no results): ${alphaVantageData['Note']}`);
             // If 'bestMatches' is also empty or not present, treat it as no results or an issue.
-            return new Response(JSON.stringify({
+            return c.json({
                 openAICriteria: openAICriteria,
                 alphaVantageSearchQuery: alphaVantageSearchString,
                 alphaVantageSearchResults: [],
                 message: `Alpha Vantage API Note: ${alphaVantageData['Note']}`
-            }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }); // 200 as the request was "successful" but yielded a note and no data
+            }, 200, { ...corsHeaders, 'Content-Type': 'application/json' }); // 200 as the request was "successful" but yielded a note and no data
           }
 
 
-          return new Response(JSON.stringify({
+          return c.json({
               openAICriteria: openAICriteria,
               alphaVantageSearchQuery: alphaVantageSearchString,
               alphaVantageSearchResults: alphaVantageData.bestMatches || []
-          }), {
-            status: 200,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          }, 200, { ...corsHeaders, 'Content-Type': 'application/json' });
 
         } catch (error) {
           console.error('Error in /api/stocks/natural-search:', error);
           // Check if error is JSON parsing error from function call arguments
           if (error instanceof SyntaxError && error.message.includes("function_call.arguments")) {
              console.error('Failed to parse OpenAI function call arguments:', error);
-             return new Response(JSON.stringify({ error: 'Failed to parse financial criteria from OpenAI response.' }), {
-                status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
+             return c.json({ error: 'Failed to parse financial criteria from OpenAI response.' }, 500, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
-          return new Response(JSON.stringify({ error: `An unexpected error occurred: ${error.message}` }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return c.json({ error: `An unexpected error occurred: ${error.message}` }, 500, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
       }
       // --- End of Natural Language Stock Search Route ---
@@ -1029,10 +932,10 @@ Provide a concise, human-readable analysis.
 
         if (!apiKey) {
           console.error('ALPHA_VANTAGE_API_KEY not configured');
-          return new Response(JSON.stringify({ error: 'Alpha Vantage API key not configured.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          return c.json({ error: 'Alpha Vantage API key not configured.' }, 500, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
         if (!symbol) {
-          return new Response(JSON.stringify({ error: 'Stock symbol missing in path.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          return c.json({ error: 'Stock symbol missing in path.' }, 400, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
 
         const alphaVantageUrl = `https://www.alphavantage.co/query?function=OVERVIEW&symbol=${symbol}&apikey=${apiKey}`;
@@ -1040,21 +943,21 @@ Provide a concise, human-readable analysis.
           const alphaVantageResponse = await fetch(alphaVantageUrl);
           if (!alphaVantageResponse.ok) {
             console.error(`Alpha Vantage API error for profile ${symbol}: ${alphaVantageResponse.status} ${alphaVantageResponse.statusText}`);
-            return new Response(JSON.stringify({ error: `Failed to fetch company profile from Alpha Vantage: ${alphaVantageResponse.status}` }), { status: alphaVantageResponse.status === 404 ? 404 : 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            return c.json({ error: `Failed to fetch company profile from Alpha Vantage: ${alphaVantageResponse.status}` }, alphaVantageResponse.status === 404 ? 404 : 502, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
           const data = await alphaVantageResponse.json();
 
           // Check for Alpha Vantage API error messages (e.g., if symbol doesn't exist or API limit reached)
           if (data['Error Message'] || Object.keys(data).length === 0) {
             console.warn(`Alpha Vantage API returned an error or empty object for symbol ${symbol}:`, data['Error Message'] || 'Empty object');
-            return new Response(JSON.stringify({ error: `No profile data found for symbol ${symbol} or API error: ${data['Error Message'] || 'Not found'}` }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            return c.json({ error: `No profile data found for symbol ${symbol} or API error: ${data['Error Message'] || 'Not found'}` }, 404, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
           // Check if the response indicates a "thank you for using Alpha Vantage" message, which often means no data or an issue.
           if (data['Note'] && data['Note'].includes('Thank you for using Alpha Vantage')) {
             console.warn(`Alpha Vantage API note for symbol ${symbol} might indicate no data:`, data['Note']);
             // If other fields are also missing, treat as not found.
             if (!data.Symbol && !data.Name) {
-                 return new Response(JSON.stringify({ error: `No substantive profile data found for symbol ${symbol}. API Note: ${data['Note']}` }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+                 return c.json({ error: `No substantive profile data found for symbol ${symbol}. API Note: ${data['Note']}` }, 404, { ...corsHeaders, 'Content-Type': 'application/json' });
             }
           }
 
@@ -1076,13 +979,13 @@ Provide a concise, human-readable analysis.
           // If essential fields like symbol or companyName are null after mapping,
           // it might indicate that the symbol was not found or data is incomplete.
           if (!profileData.symbol && !profileData.companyName) {
-            return new Response(JSON.stringify({ error: `Incomplete profile data received for symbol ${symbol}.` }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            return c.json({ error: `Incomplete profile data received for symbol ${symbol}.` }, 404, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
 
-          return new Response(JSON.stringify(profileData), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          return c.json(profileData, 200, { ...corsHeaders, 'Content-Type': 'application/json' });
         } catch (err) {
           console.error(`Error fetching/processing Alpha Vantage profile for ${symbol}:`, err);
-          return new Response(JSON.stringify({ error: 'Internal server error while fetching company profile.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          return c.json({ error: 'Internal server error while fetching company profile.' }, 500, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
       }
       else if (url.pathname.startsWith('/api/stocks/quote/') && request.method === 'GET') {
@@ -1091,10 +994,10 @@ Provide a concise, human-readable analysis.
 
         if (!apiKey) {
           console.error('ALPHA_VANTAGE_API_KEY not configured');
-          return new Response(JSON.stringify({ error: 'Alpha Vantage API key not configured.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          return c.json({ error: 'Alpha Vantage API key not configured.' }, 500, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
         if (!symbol) {
-          return new Response(JSON.stringify({ error: 'Stock symbol missing in path.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          return c.json({ error: 'Stock symbol missing in path.' }, 400, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
 
         const alphaVantageUrl = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${apiKey}`;
@@ -1102,7 +1005,7 @@ Provide a concise, human-readable analysis.
           const alphaVantageResponse = await fetch(alphaVantageUrl);
           if (!alphaVantageResponse.ok) {
             console.error(`Alpha Vantage API error for quote ${symbol}: ${alphaVantageResponse.status} ${alphaVantageResponse.statusText}`);
-            return new Response(JSON.stringify({ error: `Failed to fetch stock quote from Alpha Vantage: ${alphaVantageResponse.status}` }), { status: alphaVantageResponse.status === 404 ? 404 : 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            return c.json({ error: `Failed to fetch stock quote from Alpha Vantage: ${alphaVantageResponse.status}` }, alphaVantageResponse.status === 404 ? 404 : 502, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
           const data = await alphaVantageResponse.json();
 
@@ -1114,14 +1017,14 @@ Provide a concise, human-readable analysis.
             // Check for API error messages or "thank you" notes which might indicate an issue
             if (data['Error Message']) {
                 console.warn(`Alpha Vantage API error for symbol ${symbol}: ${data['Error Message']}`);
-                return new Response(JSON.stringify({ error: `Alpha Vantage API error: ${data['Error Message']}` }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+                return c.json({ error: `Alpha Vantage API error: ${data['Error Message']}` }, 502, { ...corsHeaders, 'Content-Type': 'application/json' });
             }
             if (data['Note'] && data['Note'].includes('Thank you for using Alpha Vantage')) {
                  console.warn(`Alpha Vantage API note for symbol ${symbol} (likely invalid or premium endpoint): ${data['Note']}`);
-                 return new Response(JSON.stringify({ error: `No quote data found for symbol ${symbol}. API Note: ${data['Note']}` }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+                 return c.json({ error: `No quote data found for symbol ${symbol}. API Note: ${data['Note']}` }, 404, { ...corsHeaders, 'Content-Type': 'application/json' });
             }
             console.warn(`No "Global Quote" data found for symbol ${symbol} or it was empty. Response:`, data);
-            return new Response(JSON.stringify({ error: 'No quote data found for symbol or unexpected format.' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            return c.json({ error: 'No quote data found for symbol or unexpected format.' }, 404, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
 
           // Helper to safely parse float, returning null if NaN or input is invalid
@@ -1154,10 +1057,10 @@ Provide a concise, human-readable analysis.
             // exchange: undefined, // Omitted
           };
 
-          return new Response(JSON.stringify(formattedQuote), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          return c.json(formattedQuote, 200, { ...corsHeaders, 'Content-Type': 'application/json' });
         } catch (err) {
           console.error(`Error fetching/processing Alpha Vantage quote for ${symbol}:`, err);
-          return new Response(JSON.stringify({ error: 'Internal server error while fetching stock quote.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          return c.json({ error: 'Internal server error while fetching stock quote.' }, 500, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
       }
       else if (url.pathname.startsWith('/api/stocks/historical/') && request.method === 'GET') {
@@ -1166,10 +1069,10 @@ Provide a concise, human-readable analysis.
 
         if (!apiKey) {
           console.error('ALPHA_VANTAGE_API_KEY not configured');
-          return new Response(JSON.stringify({ error: 'Alpha Vantage API key not configured.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          return c.json({ error: 'Alpha Vantage API key not configured.' }, 500, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
         if (!symbol) {
-          return new Response(JSON.stringify({ error: 'Stock symbol missing in path.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          return c.json({ error: 'Stock symbol missing in path.' }, 400, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
 
         const alphaVantageUrl = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&outputsize=full&apikey=${apiKey}`;
@@ -1177,7 +1080,7 @@ Provide a concise, human-readable analysis.
           const alphaVantageResponse = await fetch(alphaVantageUrl);
           if (!alphaVantageResponse.ok) {
             console.error(`Alpha Vantage API error for historical data ${symbol}: ${alphaVantageResponse.status} ${alphaVantageResponse.statusText}`);
-            return new Response(JSON.stringify({ error: `Failed to fetch historical data from Alpha Vantage: ${alphaVantageResponse.status}` }), { status: alphaVantageResponse.status === 404 ? 404 : 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            return c.json({ error: `Failed to fetch historical data from Alpha Vantage: ${alphaVantageResponse.status}` }, alphaVantageResponse.status === 404 ? 404 : 502, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
           const data = await alphaVantageResponse.json();
           console.log('Alpha Vantage raw response:', JSON.stringify(data));
@@ -1185,26 +1088,26 @@ Provide a concise, human-readable analysis.
           // Check for Alpha Vantage API error messages or notes
           if (data['Error Message']) {
             console.warn(`Alpha Vantage API error for symbol ${symbol}: ${data['Error Message']}`);
-            return new Response(JSON.stringify({ error: `Alpha Vantage API error: ${data['Error Message']}` }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            return c.json({ error: `Alpha Vantage API error: ${data['Error Message']}` }, 502, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
           if (data['Note'] && data['Note'].includes('Thank you for using Alpha Vantage')) {
             console.warn(`Alpha Vantage API note for symbol ${symbol} (likely invalid symbol or API limit): ${data['Note']}`);
             // It's possible to get this note even with valid data if the API key is free and makes too many requests.
             // However, if "Time Series (Daily)" is also missing, it's more likely an issue with the symbol or request.
              if (!data['Time Series (Daily)']) {
-                return new Response(JSON.stringify({ error: `No historical data found for symbol ${symbol}. API Note: ${data['Note']}` }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+                return c.json({ error: `No historical data found for symbol ${symbol}. API Note: ${data['Note']}` }, 404, { ...corsHeaders, 'Content-Type': 'application/json' });
              }
           }
 
           if (data['Information'] && data['Information'].toLowerCase().includes('premium endpoint')) {
             console.warn(`Alpha Vantage API information for symbol ${symbol}: ${data['Information']}`);
-            return new Response(JSON.stringify({ error: `Alpha Vantage API access error: ${data['Information']}` }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            return c.json({ error: `Alpha Vantage API access error: ${data['Information']}` }, 403, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
 
           const timeSeriesData = data['Time Series (Daily)'];
           if (!timeSeriesData || Object.keys(timeSeriesData).length === 0) {
             console.warn(`No "Time Series (Daily)" data found for symbol ${symbol}. Response:`, data);
-            return new Response(JSON.stringify({ error: 'No historical data found for symbol or unexpected format.' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            return c.json({ error: 'No historical data found for symbol or unexpected format.' }, 404, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
 
           // Helper to safely parse float, returning null if NaN or input is invalid
@@ -1224,10 +1127,10 @@ Provide a concise, human-readable analysis.
             volume: parseIntSafe(dailyData['5. volume']),
           })).sort((a, b) => new Date(a.date) - new Date(b.date)); // Sort by date ascending
 
-          return new Response(JSON.stringify(historicalData), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          return c.json(historicalData, 200, { ...corsHeaders, 'Content-Type': 'application/json' });
         } catch (err) {
           console.error(`Error fetching/processing Alpha Vantage historical for ${symbol}:`, err);
-          return new Response(JSON.stringify({ error: 'Internal server error while fetching historical stock data.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          return c.json({ error: 'Internal server error while fetching historical stock data.' }, 500, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
       }
       // --- End of Stock Market API Routes ---
@@ -1241,17 +1144,11 @@ Provide a concise, human-readable analysis.
 
         if (!newsApiKey) {
           console.error('NEWS_API_KEY not configured');
-          return new Response(JSON.stringify({ error: 'News API service is not configured by the server administrator.' }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
+          return c.json({ error: 'News API service is not configured by the server administrator.' }, 500, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
         if (!openaiApiKey) {
           console.error('OPENAI_API_KEY not configured for news summarization');
-          return new Response(JSON.stringify({ error: 'OpenAI API key is not configured for news processing.' }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
+          return c.json({ error: 'OpenAI API key is not configured for news processing.' }, 500, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
 
         const newsApiUrl = `https://newsapi.org/v2/top-headlines?country=us&category=business&pageSize=10&apiKey=${newsApiKey}`; // pageSize=10 to limit article count for now
@@ -1264,9 +1161,7 @@ Provide a concise, human-readable analysis.
           if (!newsResponse.ok) {
             const errorText = await newsResponse.text();
             console.error(`External News API error: ${newsResponse.status} ${newsResponse.statusText}`, errorText);
-            return new Response(JSON.stringify({ error: `Failed to fetch news from external source: ${newsResponse.status}` }), {
-              status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
+            return c.json({ error: `Failed to fetch news from external source: ${newsResponse.status}` }, 502, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
           const newsData = await newsResponse.json();
           let rawArticles = [];
@@ -1363,16 +1258,11 @@ For example:
             processedArticles.push({ ...article, aiSummary, sentiment });
           }
 
-          return new Response(JSON.stringify(processedArticles), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
+          return c.json(processedArticles, 200, { ...corsHeaders, 'Content-Type': 'application/json' });
 
         } catch (err) {
           console.error('Error fetching or processing news data with OpenAI:', err);
-          return new Response(JSON.stringify({ error: 'Internal server error while fetching and processing news.' }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
+          return c.json({ error: 'Internal server error while fetching and processing news.' }, 500, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
       }
       // --- End of News API Route ---
@@ -1394,10 +1284,7 @@ For example:
           if (!cryptoPanicResponse.ok) {
             const errorText = await cryptoPanicResponse.text();
             console.error(`CryptoPanic API error: ${cryptoPanicResponse.status} ${cryptoPanicResponse.statusText}`, errorText);
-            return new Response(JSON.stringify({ error: `Failed to fetch news from CryptoPanic: ${cryptoPanicResponse.status}` }), {
-              status: 502, // Bad Gateway for upstream API errors
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
+            return c.json({ error: `Failed to fetch news from CryptoPanic: ${cryptoPanicResponse.status}` }, 502, { ...corsHeaders, 'Content-Type': 'application/json' });
           }
 
           const newsData = await cryptoPanicResponse.json();
@@ -1421,17 +1308,11 @@ For example:
             console.warn("CryptoPanic API response did not contain 'results' array or was empty. Data:", newsData);
           }
 
-          return new Response(JSON.stringify(transformedArticles), {
-            status: 200,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
+          return c.json(transformedArticles, 200, { ...corsHeaders, 'Content-Type': 'application/json' });
 
         } catch (err) {
           console.error('Error fetching or processing CryptoPanic news data:', err);
-          return new Response(JSON.stringify({ error: 'Internal server error while fetching CryptoPanic news.' }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
+          return c.json({ error: 'Internal server error while fetching CryptoPanic news.' }, 500, { ...corsHeaders, 'Content-Type': 'application/json' });
         }
       }
       // --- End of CryptoPanic News API Route ---
@@ -1442,7 +1323,7 @@ For example:
         supportedEndpoints += ', POST /api/budgets, GET /api/budgets, GET /api/budgets/:id, PUT /api/budgets/:id, DELETE /api/budgets/:id';
         supportedEndpoints += ', GET /api/stocks/natural-search, GET /api/stocks/profile/:symbol, GET /api/stocks/quote/:symbol, GET /api/stocks/historical/:symbol';
         supportedEndpoints += ', GET /api/news, GET /api/crypto-news'; // Added crypto-news endpoint
-        return new Response(`Not Found. Supported endpoints: ${supportedEndpoints}`, { status: 404, headers: corsHeaders });
+        return c.text(`Not Found. Supported endpoints: ${supportedEndpoints}`, 404, corsHeaders);
       }
     } catch (error) {
       console.error('Error processing request in worker:', error);
@@ -1455,10 +1336,7 @@ For example:
       }
       // For other errors, 500 is appropriate.
 
-      return new Response(JSON.stringify({ error: `Error processing your request: ${errorMessage}` }), {
-        status: status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      return c.json({ error: `Error processing your request: ${errorMessage}` }, status, { ...corsHeaders, 'Content-Type': 'application/json' });
     }
   },
 };

@@ -1,6 +1,8 @@
 import React from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
-function Header({ onToggleNav, isLoggedIn }) {
+function Header({ onToggleNav }) {
+  const { logout } = useAuth();
 
   const headerStyle = {
     width: '100%',
@@ -8,7 +10,7 @@ function Header({ onToggleNav, isLoggedIn }) {
     color: '#1ac0ff',           // Laser blue
     padding: '10px 20px',
     display: 'flex',
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
     alignItems: 'center',
     boxSizing: 'border-box',
     position: 'sticky',
@@ -24,7 +26,7 @@ function Header({ onToggleNav, isLoggedIn }) {
     fontWeight: 'bold',
   };
 
-  const toggleButtonStyle = {
+  const buttonStyle = {
     padding: '8px 15px',
     fontSize: '0.9em',
     cursor: 'pointer',
@@ -38,12 +40,15 @@ function Header({ onToggleNav, isLoggedIn }) {
 
   return (
     <header style={headerStyle}>
-      {isLoggedIn && (
-        <button onClick={onToggleNav} style={toggleButtonStyle}>
+      <div>
+        <button onClick={onToggleNav} style={buttonStyle}>
           ☰
         </button>
-      )}
-      <h4 style={titleStyle}>Lumex Crypto AI</h4>
+        <h4 style={{ ...titleStyle, display: 'inline', marginLeft: '10px' }}>Lumex Crypto AI</h4>
+      </div>
+      <button onClick={logout} style={buttonStyle}>
+        Logout
+      </button>
     </header>
   );
 }

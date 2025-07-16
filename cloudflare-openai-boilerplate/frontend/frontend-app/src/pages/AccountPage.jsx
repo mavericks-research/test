@@ -1,19 +1,20 @@
 // frontend/frontend-app/src/pages/AccountPage.jsx
 import React from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
 function AccountPage() {
+  const { user } = useAuth();
+
+  if (!user) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div>
-      <h1>Account</h1>
-      <p>Manage your account settings here.</p>
-      <div>
-        <label htmlFor="username">Username: </label>
-        <input type="text" id="username" />
-      </div>
-      <div>
-        <label htmlFor="email">Email: </label>
-        <input type="email" id="email" />
-      </div>
+      <h2>My Account</h2>
+      <p>Email: {user.email}</p>
+      {user.name && <p>Name: {user.name}</p>}
+      {user.picture && <img src={user.picture} alt="Profile" />}
     </div>
   );
 }
