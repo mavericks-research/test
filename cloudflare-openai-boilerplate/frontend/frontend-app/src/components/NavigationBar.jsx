@@ -82,7 +82,7 @@ function NavigationBar({ isNavVisible, onToggleNav, isLoggedIn, onLogout }) {
           )}
 
           <li style={liStyle}>
-            <Link to="/wallets" style={linkStyle}>Wallets</Link>
+            <Link to="/accounts" style={linkStyle}>Accounts</Link>
           </li>
           <li style={liStyle}>
             <Link to="/planner" style={linkStyle}>Planner</Link>

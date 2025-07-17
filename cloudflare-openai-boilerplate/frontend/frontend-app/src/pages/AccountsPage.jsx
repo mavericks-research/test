@@ -1,12 +1,25 @@
-// frontend/frontend-app/src/pages/WalletsPage.jsx
-import React, { useState } from 'react';
+// frontend/frontend-app/src/pages/AccountsPage.jsx
+import React, { useState, useCallback } from 'react';
+import { usePlaidLink } from 'react-plaid-link';
 import { ethers } from 'ethers';
 
-function WalletsPage() { // Removed handleLogout from props
+function AccountsPage() { // Removed handleLogout from props
   const [walletAddress, setWalletAddress] = useState('');
   const [walletBalance, setWalletBalance] = useState('');
   const [network, setNetwork] = useState('');
   const [ensName, setEnsName] = useState('');
+  const [plaidData, setPlaidData] = useState(null);
+
+  const onPlaidSuccess = useCallback((public_token, metadata) => {
+    // send public_token to server
+    console.log(public_token, metadata);
+    setPlaidData(metadata);
+  }, []);
+
+  const { open, ready, error } = usePlaidLink({
+    token: 'link-sandbox-...', // mocked token
+    onSuccess: onPlaidSuccess,
+  });
 
   const connectToMetaMask = async () => {
     if (window.ethereum) {
@@ -46,6 +59,11 @@ function WalletsPage() { // Removed handleLogout from props
       </div>
       <button>Add Wallet</button>
       <hr />
+      <h3>Connect with Plaid</h3>
+      <button onClick={() => open()} disabled={!ready}>
+        Link Bank Account
+      </button>
+      <hr />
       <h3>Connect with MetaMask</h3>
       <button onClick={connectToMetaMask}>Connect to MetaMask</button>
       {walletAddress && (
@@ -56,8 +74,21 @@ function WalletsPage() { // Removed handleLogout from props
           <p>Network: {network}</p>
         </div>
       )}
+      {plaidData && (
+        <div>
+          <h3>Plaid Account Information</h3>
+          <p>Institution: {plaidData.institution.name}</p>
+          <ul>
+            {plaidData.accounts.map((account) => (
+              <li key={account.id}>
+                {account.name} ({account.subtype}): ${account.balances.current}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
 
-export default WalletsPage;
+export default AccountsPage;

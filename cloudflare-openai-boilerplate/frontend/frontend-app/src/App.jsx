@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { SettingsContext } from './contexts/SettingsContext.jsx';
 import { getMetaMaskSession, setMetaMaskSession, clearMetaMaskSession } from './services/MetaMaskSession.js';
 import DashboardPage from './pages/DashboardPage';
-import WalletsPage from './pages/WalletsPage';
+import AccountsPage from './pages/AccountsPage.jsx';
 import BudgetPlannerPage from './pages/BudgetPlannerPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
@@ -78,7 +78,7 @@ function AppContent() {
             ) : (
               <>
                 <Route path="/dashboard" element={<DashboardPage workerUrl={WORKER_URL} />} />
-                <Route path="/wallets" element={<WalletsPage />} />
+                <Route path="/accounts" element={<AccountsPage />} />
                 <Route path="/planner" element={<BudgetPlannerPage username={username} />} />
                 <Route path="/reports" element={<ReportsPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
