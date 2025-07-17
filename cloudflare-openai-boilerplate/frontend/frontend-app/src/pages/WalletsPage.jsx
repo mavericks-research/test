@@ -1,23 +1,29 @@
 // frontend/frontend-app/src/pages/WalletsPage.jsx
 import React, { useState } from 'react';
-// Removed NavigationBar import
+import { ethers } from 'ethers';
 
 function WalletsPage() { // Removed handleLogout from props
   const [walletAddress, setWalletAddress] = useState('');
   const [walletBalance, setWalletBalance] = useState('');
+  const [network, setNetwork] = useState('');
+  const [ensName, setEnsName] = useState('');
 
   const connectToMetaMask = async () => {
     if (window.ethereum) {
       try {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const accounts = await provider.send('eth_requestAccounts', []);
         const address = accounts[0];
         setWalletAddress(address);
 
-        const balance = await window.ethereum.request({
-          method: 'eth_getBalance',
-          params: [address, 'latest'],
-        });
-        setWalletBalance(balance);
+        const balance = await provider.getBalance(address);
+        setWalletBalance(ethers.formatEther(balance));
+
+        const network = await provider.getNetwork();
+        setNetwork(network.name);
+
+        const ensName = await provider.lookupAddress(address);
+        setEnsName(ensName);
       } catch (error) {
         console.error('Error connecting to MetaMask:', error);
       }
@@ -45,7 +51,9 @@ function WalletsPage() { // Removed handleLogout from props
       {walletAddress && (
         <div>
           <p>Connected Wallet: {walletAddress}</p>
-          <p>Balance: {walletBalance ? `${(parseInt(walletBalance) / 1e18).toFixed(4)} ETH` : 'Loading...'}</p>
+          {ensName && <p>ENS Name: {ensName}</p>}
+          <p>Balance: {walletBalance ? `${walletBalance} ETH` : 'Loading...'}</p>
+          <p>Network: {network}</p>
         </div>
       )}
     </div>
