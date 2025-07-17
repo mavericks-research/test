@@ -1,7 +1,8 @@
 // frontend/frontend-app/src/App.jsx
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { SettingsContext } from './contexts/SettingsContext.jsx';
+import { getMetaMaskSession, setMetaMaskSession, clearMetaMaskSession } from './services/MetaMaskSession.js';
 import DashboardPage from './pages/DashboardPage';
 import WalletsPage from './pages/WalletsPage';
 import BudgetPlannerPage from './pages/BudgetPlannerPage';
@@ -22,15 +23,25 @@ function AppContent() {
   const [isNavVisible, setIsNavVisible] = useState(false);
   const WORKER_URL = import.meta.env.VITE_WORKER_URL;
 
+  useEffect(() => {
+    const session = getMetaMaskSession();
+    if (session) {
+      setIsAuthenticated(true);
+      setUsername(session.username);
+    }
+  }, []);
+
   const toggleNav = () => setIsNavVisible(prev => !prev);
 
   const handleLogin = (user) => {
     setIsAuthenticated(true);
     setUsername(user);
+    setMetaMaskSession({ username: user });
   };
   const handleLogout = () => {
     setIsAuthenticated(false);
     setUsername('');
+    clearMetaMaskSession();
   };
 
   return (
@@ -44,7 +55,7 @@ function AppContent() {
         backgroundColor: !isAuthenticated ? 'transparent' : undefined,
       }}
     >
-      {isAuthenticated && <Header onToggleNav={toggleNav} isLoggedIn={true} />}
+      {isAuthenticated && <Header onToggleNav={toggleNav} isLoggedIn={true} username={username} />}
       <AdBanner />
 
       {isAuthenticated && (

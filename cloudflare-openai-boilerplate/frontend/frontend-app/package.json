@@ -7,12 +7,16 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "jest"
   },
   "dependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
     "axios": "^1.9.0",
     "ethers": "^6.15.0",
     "framer-motion": "^12.16.0",
+    "jest": "^30.0.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^6.23.1",

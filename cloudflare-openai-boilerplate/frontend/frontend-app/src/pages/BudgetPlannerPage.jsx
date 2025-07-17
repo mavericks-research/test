@@ -1,8 +1,7 @@
 // frontend/frontend-app/src/pages/BudgetPlannerPage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
+import { getBudgetPlan, saveBudgetPlan } from '../services/BudgetPlan.js';
 import './BudgetPlannerPage.css'; // Import the CSS file
-
-const WORKER_URL = 'https://worker-backend.lumexai.workers.dev'; // Define WORKER_URL locally
 
 const defaultPlanState = {
   id: null,
@@ -20,24 +19,19 @@ function BudgetPlannerPage({ username }) {
   const [error, setError] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
 
-  const fetchBudgetPlans = useCallback(async () => {
+  const fetchBudgetPlans = useCallback(() => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${WORKER_URL}/api/budgets?username=${username}`);
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to fetch budget plans. Server returned an error.' }));
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      setBudgetPlans(data);
+      const plans = getBudgetPlan(username);
+      setBudgetPlans(plans || []);
     } catch (e) {
       console.error("Fetch error:", e);
       setError(e.message || 'Failed to fetch budget plans.');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [username]);
 
   useEffect(() => {
     if (username) {
@@ -119,63 +113,42 @@ function BudgetPlannerPage({ username }) {
     return Object.keys(errors).length === 0;
   };
 
-  const handleSavePlan = async () => {
+  const handleSavePlan = () => {
     if (!validatePlan()) {
       return;
     }
     setIsLoading(true);
     setError(null);
-    const method = currentPlan.id ? 'PUT' : 'POST';
-    const url = currentPlan.id ? `${WORKER_URL}/api/budgets/${currentPlan.id}` : `${WORKER_URL}/api/budgets`;
-
-    const planToSave = {
-        ...currentPlan,
-        categories: currentPlan.categories.map(cat => ({
-            id: cat.id && !cat.id.startsWith('temp-') ? cat.id : null,
-            name: cat.name,
-            budgetedAmount: parseFloat(cat.budgetedAmount) || 0,
-            spentAmount: parseFloat(cat.spentAmount) || 0
-        }))
-    };
-
-    const body = { ...planToSave, username };
 
     try {
-      const response = await fetch(url, {
-        method: method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: `Failed to ${method === 'POST' ? 'create' : 'update'} plan. Server error.` }));
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      const plans = getBudgetPlan(username) || [];
+      if (isEditing) {
+        const planIndex = plans.findIndex(p => p.id === currentPlan.id);
+        plans[planIndex] = currentPlan;
+      } else {
+        const newPlan = { ...currentPlan, id: Date.now() };
+        plans.push(newPlan);
       }
-      await fetchBudgetPlans();
+      saveBudgetPlan(username, plans);
+      fetchBudgetPlans();
       handleCancelEdit();
     } catch (e) {
       console.error("Save error:", e);
-      setError(e.message || `Failed to ${method === 'POST' ? 'create' : 'update'} plan.`);
+      setError(e.message || `Failed to save plan.`);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleDeletePlan = async (planId) => {
+  const handleDeletePlan = (planId) => {
     if (window.confirm("Are you sure you want to delete this budget plan?")) {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch(`${WORKER_URL}/api/budgets/${planId}`, {
-          method: 'DELETE',
-        });
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: 'Failed to delete plan. Server error.' }));
-          throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-        }
-        await fetchBudgetPlans();
+        const plans = getBudgetPlan(username) || [];
+        const newPlans = plans.filter(p => p.id !== planId);
+        saveBudgetPlan(username, newPlans);
+        fetchBudgetPlans();
       } catch (e) {
         console.error("Delete error:", e);
         setError(e.message || 'Failed to delete budget plan.');

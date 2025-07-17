@@ -1,6 +1,6 @@
 import React from 'react';
 
-function Header({ onToggleNav, isLoggedIn }) {
+function Header({ onToggleNav, isLoggedIn, username }) {
 
   const headerStyle = {
     width: '100%',
@@ -44,6 +44,11 @@ function Header({ onToggleNav, isLoggedIn }) {
         </button>
       )}
       <h4 style={titleStyle}>Lumex Crypto AI</h4>
+      {isLoggedIn && username && (
+        <div style={{ marginLeft: 'auto', color: '#1ac0ff' }}>
+          Welcome, {username}
+        </div>
+      )}
     </header>
   );
 }
