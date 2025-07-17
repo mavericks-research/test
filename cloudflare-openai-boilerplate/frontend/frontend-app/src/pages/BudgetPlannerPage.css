@@ -215,6 +215,10 @@
   color: var(--color-accent); /* Changed from #00ffc6 */
 }
 
+.input-error {
+  border-color: var(--color-error) !important;
+}
+
 /* Responsive */
 @media (max-width: 600px) {
   .budget-planner-page {

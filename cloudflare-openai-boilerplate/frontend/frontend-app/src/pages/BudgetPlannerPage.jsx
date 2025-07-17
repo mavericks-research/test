@@ -18,6 +18,7 @@ function BudgetPlannerPage({ username }) {
   const [showForm, setShowForm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [validationErrors, setValidationErrors] = useState({});
 
   const fetchBudgetPlans = useCallback(async () => {
     setIsLoading(true);
@@ -86,7 +87,38 @@ function BudgetPlannerPage({ username }) {
     setError(null);
   };
 
+  const validatePlan = () => {
+    const errors = {};
+    if (!currentPlan.name) {
+      errors.name = 'Plan name is required.';
+    }
+    if (!currentPlan.monthYear) {
+      errors.monthYear = 'Month/Year is required.';
+    }
+    const categoryErrors = [];
+    currentPlan.categories.forEach((category, index) => {
+      const error = {};
+      if (!category.name) {
+        error.name = 'Category name is required.';
+      }
+      if (category.budgetedAmount === undefined || category.budgetedAmount < 0) {
+        error.budgetedAmount = 'Budgeted amount is required.';
+      }
+      if (Object.keys(error).length > 0) {
+        categoryErrors[index] = error;
+      }
+    });
+    if (categoryErrors.length > 0) {
+      errors.categories = categoryErrors;
+    }
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSavePlan = async () => {
+    if (!validatePlan()) {
+      return;
+    }
     setIsLoading(true);
     setError(null);
     const method = currentPlan.id ? 'PUT' : 'POST';
@@ -207,6 +239,7 @@ function BudgetPlannerPage({ username }) {
               value={currentPlan.name}
               onChange={handleInputChange}
               disabled={isLoading}
+              className={validationErrors.name ? 'input-error' : ''}
             />
           </div>
           <div className="form-group">
@@ -219,6 +252,7 @@ function BudgetPlannerPage({ username }) {
               onChange={handleInputChange}
               placeholder="e.g., 2024-07"
               disabled={isLoading}
+              className={validationErrors.monthYear ? 'input-error' : ''}
             />
           </div>
 
@@ -235,6 +269,7 @@ function BudgetPlannerPage({ username }) {
                     value={category.name}
                     onChange={(e) => handleInputChange(e, index)}
                     disabled={isLoading}
+                    className={validationErrors.categories?.[index]?.name ? 'input-error' : ''}
                   />
                 </div>
                 <div className="form-group">
@@ -246,6 +281,7 @@ function BudgetPlannerPage({ username }) {
                     value={category.budgetedAmount}
                     onChange={(e) => handleInputChange(e, index)}
                     disabled={isLoading}
+                    className={validationErrors.categories?.[index]?.budgetedAmount ? 'input-error' : ''}
                   />
                 </div>
                 <div className="form-group">
