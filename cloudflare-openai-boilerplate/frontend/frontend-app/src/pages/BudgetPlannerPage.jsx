@@ -70,7 +70,9 @@ function BudgetPlannerPage({ username }) {
   };
 
   const handleCreateNewPlanClick = () => {
-    setCurrentPlan(defaultPlanState);
+    const now = new Date();
+    const monthYear = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    setCurrentPlan({ ...defaultPlanState, monthYear });
     setIsEditing(false);
     setShowForm(true);
     setError(null);
@@ -101,7 +103,7 @@ function BudgetPlannerPage({ username }) {
       if (!category.name) {
         error.name = 'Category name is required.';
       }
-      if (category.budgetedAmount === undefined || category.budgetedAmount < 0) {
+      if (parseFloat(category.budgetedAmount) === undefined || parseFloat(category.budgetedAmount) < 0) {
         error.budgetedAmount = 'Budgeted amount is required.';
       }
       if (Object.keys(error).length > 0) {
