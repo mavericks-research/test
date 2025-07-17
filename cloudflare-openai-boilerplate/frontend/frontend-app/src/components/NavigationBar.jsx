@@ -84,11 +84,11 @@ function NavigationBar({ isNavVisible, onToggleNav, isLoggedIn, onLogout }) {
           <li style={liStyle}>
             <Link to="/wallets" style={linkStyle}>Wallets</Link>
           </li>
-          {/*
-                    <li style={liStyle}>
+          <li style={liStyle}>
             <Link to="/planner" style={linkStyle}>Planner</Link>
           </li>
-          <li style={liStyle}>
+          {/*
+                    <li style={liStyle}>
             <Link to="/reports" style={linkStyle}>Reports</Link>
           </li>
          

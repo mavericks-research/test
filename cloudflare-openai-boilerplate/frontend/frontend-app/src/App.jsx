@@ -18,13 +18,20 @@ function AppContent() {
   const location = useLocation();
   const { theme } = useContext(SettingsContext);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [username, setUsername] = useState('');
   const [isNavVisible, setIsNavVisible] = useState(false);
   const WORKER_URL = import.meta.env.VITE_WORKER_URL;
 
   const toggleNav = () => setIsNavVisible(prev => !prev);
 
-  const handleLogin = () => setIsAuthenticated(true);
-  const handleLogout = () => setIsAuthenticated(false);
+  const handleLogin = (user) => {
+    setIsAuthenticated(true);
+    setUsername(user);
+  };
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setUsername('');
+  };
 
   return (
     <div
@@ -61,7 +68,7 @@ function AppContent() {
               <>
                 <Route path="/dashboard" element={<DashboardPage workerUrl={WORKER_URL} />} />
                 <Route path="/wallets" element={<WalletsPage />} />
-                <Route path="/planner" element={<BudgetPlannerPage />} />
+                <Route path="/planner" element={<BudgetPlannerPage username={username} />} />
                 <Route path="/reports" element={<ReportsPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/" element={<Navigate to="/dashboard" />} />

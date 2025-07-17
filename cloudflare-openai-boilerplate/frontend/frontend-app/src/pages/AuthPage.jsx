@@ -29,7 +29,7 @@ const AuthPage = ({ workerUrl, onLogin }) => {
 
       if (response.ok) {
         if (isLogin) {
-          onLogin();
+          onLogin(username);
           navigate('/dashboard');
         } else {
           setIsLogin(true);

@@ -11,7 +11,7 @@ const defaultPlanState = {
   categories: [{ id: null, name: '', budgetedAmount: 0, spentAmount: 0 }],
 };
 
-function BudgetPlannerPage() {
+function BudgetPlannerPage({ username }) {
   const [budgetPlans, setBudgetPlans] = useState([]);
   const [currentPlan, setCurrentPlan] = useState(defaultPlanState);
   const [isEditing, setIsEditing] = useState(false);
@@ -23,7 +23,7 @@ function BudgetPlannerPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${WORKER_URL}/api/budgets`);
+      const response = await fetch(`${WORKER_URL}/api/budgets?username=${username}`);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Failed to fetch budget plans. Server returned an error.' }));
         throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
@@ -102,13 +102,15 @@ function BudgetPlannerPage() {
         }))
     };
 
+    const body = method === 'POST' ? { planData: planToSave, username } : planToSave;
+
     try {
       const response = await fetch(url, {
         method: method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(planToSave),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {

@@ -120,7 +120,7 @@ async function createUser(userData, env) {
  * @param {object} env - The Cloudflare environment object.
  * @returns {object} The created budget plan.
  */
-async function createBudgetPlan(planData, env) {
+async function createBudgetPlan(planData, username, env) {
   if (!env.BUDGET_PLANS_KV) {
     throw new Error("BUDGET_PLANS_KV namespace not bound.");
   }
@@ -130,8 +130,8 @@ async function createBudgetPlan(planData, env) {
     id: crypto.randomUUID(),
     spentAmount: 0,
   }));
-  const newPlan = { ...planData, id, categories };
-  await env.BUDGET_PLANS_KV.put(`plan_${id}`, JSON.stringify(newPlan));
+  const newPlan = { ...planData, id, categories, username };
+  await env.BUDGET_PLANS_KV.put(`plan_${username}_${id}`, JSON.stringify(newPlan));
   return newPlan;
 }
 
@@ -155,11 +155,11 @@ async function getBudgetPlan(id, env) {
  * @returns {Array<object>} An array of budget plans.
  * @todo Implement pagination or a more efficient listing mechanism for large datasets.
  */
-async function getAllBudgetPlans(env) {
+async function getAllBudgetPlans(username, env) {
   if (!env.BUDGET_PLANS_KV) {
     throw new Error("BUDGET_PLANS_KV namespace not bound.");
   }
-  const listResult = await env.BUDGET_PLANS_KV.list({ prefix: "plan_" });
+  const listResult = await env.BUDGET_PLANS_KV.list({ prefix: `plan_${username}_` });
   const plans = [];
   for (const key of listResult.keys) {
     const planData = await env.BUDGET_PLANS_KV.get(key.name);
@@ -304,12 +304,12 @@ export default {
       // --- Budget API Routes ---
       else if (url.pathname === '/api/budgets' && request.method === 'POST') {
         try {
-          const planData = await request.json();
+          const { planData, username } = await request.json();
           // Validation for POST
           if (!planData.name || typeof planData.name !== 'string' ||
               !planData.monthYear || typeof planData.monthYear !== 'string' ||
-              !Array.isArray(planData.categories) || planData.categories.length === 0) {
-            return new Response(JSON.stringify({ error: 'Missing or invalid required fields: name (string), monthYear (string), categories (non-empty array).' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+              !Array.isArray(planData.categories) || planData.categories.length === 0 || !username) {
+            return new Response(JSON.stringify({ error: 'Missing or invalid required fields: name (string), monthYear (string), categories (non-empty array), username.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
           }
           for (const category of planData.categories) {
             if (!category.name || typeof category.name !== 'string' ||
@@ -318,7 +318,7 @@ export default {
             }
           }
 
-          const newPlan = await createBudgetPlan(planData, env);
+          const newPlan = await createBudgetPlan(planData, username, env);
           return new Response(JSON.stringify(newPlan), { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         } catch (e) {
           // Catch JSON parsing errors or other unexpected issues
@@ -330,7 +330,11 @@ export default {
         }
       } else if (url.pathname === '/api/budgets' && request.method === 'GET') {
         try {
-          const plans = await getAllBudgetPlans(env);
+          const username = url.searchParams.get('username');
+          if (!username) {
+            return new Response(JSON.stringify({ error: 'Missing username query parameter.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+          const plans = await getAllBudgetPlans(username, env);
           return new Response(JSON.stringify(plans), {
             status: 200,
             headers: {
