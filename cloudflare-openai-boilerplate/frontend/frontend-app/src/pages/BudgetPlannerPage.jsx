@@ -40,8 +40,10 @@ function BudgetPlannerPage({ username }) {
   }, []);
 
   useEffect(() => {
-    fetchBudgetPlans();
-  }, [fetchBudgetPlans]);
+    if (username) {
+      fetchBudgetPlans();
+    }
+  }, [username, fetchBudgetPlans]);
 
   const handleInputChange = (event, categoryIndex = null) => {
     const { name, value } = event.target;
