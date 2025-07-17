@@ -4,12 +4,20 @@ import React, { useState } from 'react';
 
 function WalletsPage() { // Removed handleLogout from props
   const [walletAddress, setWalletAddress] = useState('');
+  const [walletBalance, setWalletBalance] = useState('');
 
   const connectToMetaMask = async () => {
     if (window.ethereum) {
       try {
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        setWalletAddress(accounts[0]);
+        const address = accounts[0];
+        setWalletAddress(address);
+
+        const balance = await window.ethereum.request({
+          method: 'eth_getBalance',
+          params: [address, 'latest'],
+        });
+        setWalletBalance(balance);
       } catch (error) {
         console.error('Error connecting to MetaMask:', error);
       }
@@ -34,7 +42,12 @@ function WalletsPage() { // Removed handleLogout from props
       <hr />
       <h3>Connect with MetaMask</h3>
       <button onClick={connectToMetaMask}>Connect to MetaMask</button>
-      {walletAddress && <p>Connected Wallet: {walletAddress}</p>}
+      {walletAddress && (
+        <div>
+          <p>Connected Wallet: {walletAddress}</p>
+          <p>Balance: {walletBalance ? `${(parseInt(walletBalance) / 1e18).toFixed(4)} ETH` : 'Loading...'}</p>
+        </div>
+      )}
     </div>
   );
 }
