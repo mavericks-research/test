@@ -134,7 +134,7 @@ function BudgetPlannerPage({ username }) {
         }))
     };
 
-    const body = method === 'POST' ? { planData: planToSave, username } : planToSave;
+    const body = method === 'POST' ? { planData: planToSave, username } : { ...planToSave, username };
 
     try {
       const response = await fetch(url, {
@@ -243,14 +243,13 @@ function BudgetPlannerPage({ username }) {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="monthYear">Month/Year (YYYY-MM): </label>
+            <label htmlFor="monthYear">Month/Year: </label>
             <input
-              type="text"
+              type="month"
               id="monthYear"
               name="monthYear"
               value={currentPlan.monthYear}
               onChange={handleInputChange}
-              placeholder="e.g., 2024-07"
               disabled={isLoading}
               className={validationErrors.monthYear ? 'input-error' : ''}
             />
