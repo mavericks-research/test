@@ -136,7 +136,7 @@ function BudgetPlannerPage({ username }) {
         }))
     };
 
-    const body = method === 'POST' ? { planData: planToSave, username } : { ...planToSave, username };
+    const body = { ...planToSave, username };
 
     try {
       const response = await fetch(url, {

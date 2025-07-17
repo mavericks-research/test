@@ -371,7 +371,7 @@ export default {
           return new Response(JSON.stringify({ error: 'Budget plan ID missing in path.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
         try {
-          const updatedData = await request.json();
+          const { username, ...updatedData } = await request.json();
 
           // Validation for PUT (partial updates are allowed, but validate what's provided)
           if (updatedData.name !== undefined && typeof updatedData.name !== 'string') {
