@@ -16,9 +16,14 @@ function AccountsPage() { // Removed handleLogout from props
     setPlaidData(metadata);
   }, []);
 
+  const onPlaidError = useCallback((error) => {
+    console.error('Plaid Link Error:', error);
+  }, []);
+
   const { open, ready, error } = usePlaidLink({
     token: 'link-sandbox-...', // mocked token
     onSuccess: onPlaidSuccess,
+    onError: onPlaidError,
   });
 
   const connectToMetaMask = async () => {
