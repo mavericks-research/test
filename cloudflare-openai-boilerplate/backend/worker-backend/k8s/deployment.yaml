@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: worker-backend
+        ports:
+        - containerPort: 8787
+        env:
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: api-keys
+              key: openai_api_key
+        - name: ETHERSCAN_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: api-keys
+              key: etherscan_api_key
+        - name: COINGECKO_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: api-keys
+              key: coingecko_api_key

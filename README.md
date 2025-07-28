@@ -202,3 +202,52 @@ This application includes a banner ad component designed for Google AdSense, loc
     *   The main application layout in `cloudflare-openai-boilerplate/frontend/frontend-app/src/App.jsx` has a `paddingBottom` style applied to its main container div to prevent the ad banner from overlapping content. This padding is currently set to `50px`. If your ad banner renders at a different height, you may need to adjust this `paddingBottom` value in `App.jsx` to match the actual height of the loaded ad.
 
 After following these steps and deploying your updated application, the AdSense banner should appear at the bottom of your site. Monitor your AdSense dashboard for performance and any policy notifications.
+
+## Containerization and Kubernetes
+
+This project can be containerized using Docker and deployed to a Kubernetes cluster. Skaffold is used to streamline the development and deployment workflow.
+
+### Prerequisites
+
+*   **Docker:** Install Docker Desktop from [docker.com](https://www.docker.com/).
+*   **Kubernetes:** A Kubernetes cluster is required. Docker Desktop includes a single-node cluster that can be enabled for local development.
+*   **Skaffold:** Install Skaffold from [skaffold.dev](https://skaffold.dev/).
+
+### Building and Running with Docker
+
+Dockerfiles are provided for both the frontend and backend.
+
+**Frontend:**
+```bash
+cd cloudflare-openai-boilerplate/frontend/frontend-app
+docker build -t frontend-app .
+docker run -p 8080:80 frontend-app
+```
+The frontend will be available at `http://localhost:8080`.
+
+**Backend:**
+```bash
+cd cloudflare-openai-boilerplate/backend/worker-backend
+docker build -t worker-backend .
+docker run -p 8787:8787 -e OPENAI_API_KEY=your-key -e ETHERSCAN_API_KEY=your-key -e COINGECKO_API_KEY=your-key worker-backend
+```
+The backend will be available at `http://localhost:8787`.
+
+### Deploying with Kubernetes and Skaffold
+
+Skaffold automates the process of building, pushing, and deploying the application.
+
+1.  **Create a Kubernetes secret for API keys:**
+    ```bash
+    kubectl create secret generic api-keys \
+    --from-literal=openai_api_key='your-openai-api-key' \
+    --from-literal=etherscan_api_key='your-etherscan-api-key' \
+    --from-literal=coingecko_api_key='your-coingecko-api-key'
+    ```
+
+2.  **Run Skaffold:**
+    From the root of the project, run:
+    ```bash
+    skaffold dev
+    ```
+    Skaffold will build the Docker images, deploy the Kubernetes resources, and tail the logs. The frontend will be accessible via a LoadBalancer service. To find the external IP, run `kubectl get services frontend`.

@@ -1,0 +1,17 @@
+apiVersion: skaffold/v2beta29
+kind: Config
+deploy:
+  kubectl:
+    manifests:
+      - cloudflare-openai-boilerplate/frontend/frontend-app/k8s/*.yaml
+      - cloudflare-openai-boilerplate/backend/worker-backend/k8s/*.yaml
+build:
+  artifacts:
+    - image: frontend-app
+      context: cloudflare-openai-boilerplate/frontend/frontend-app
+      docker:
+        dockerfile: Dockerfile
+    - image: worker-backend
+      context: cloudflare-openai-boilerplate/backend/worker-backend
+      docker:
+        dockerfile: Dockerfile
